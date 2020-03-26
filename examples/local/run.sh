@@ -1,0 +1,1 @@
+train --config config.yaml
