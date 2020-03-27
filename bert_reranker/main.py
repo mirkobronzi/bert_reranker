@@ -23,7 +23,8 @@ def main():
     parser.add_argument('--config',
                         help='config file with generic hyper-parameters,  such as optimizer, '
                              'batch_size, ... -  in yaml format', required=True)
-    parser.add_argument('--gpu', help='gpu_size', default=0)
+    parser.add_argument('--gpu', help='list of gpu ids to use. default is cpu. example: --gpu 0 1',
+                        type=int, nargs='+', default=0)
     parser.add_argument('--output',
                         help='where to store models', required=True)
     args = parser.parse_args()
