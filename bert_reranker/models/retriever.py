@@ -148,9 +148,18 @@ class RetrieverTrainer(pl.LightningModule):
             loss = nn.CrossEntropyLoss()(
                 logits, torch.zeros(logits.size()[0], dtype=torch.long).to(logits.device)
             )
+        elif self.loss_type == 'cosine':
+            labs = torch.ones(batch_size, num_document)
+            labs[:, 1:] *= -1
+            labs = labs.reshape(-1).to(h_question.device)
+            h_question.repeat(num_document, 1), h_paragraphs_batch.reshape(-1, self.emb_dim)
+            loss = torch.nn.CosineEmbeddingLoss()(
+                h_question.repeat(num_document, 1), h_paragraphs_batch.reshape(-1, self.emb_dim),
+                labs
+            )
         else:
             raise ValueError('loss_type {} not supported. Please choose between negative_sampling,'
-                             ' classification')
+                             ' classification, cosine')
         return loss, all_prob
 
     def training_step(self, batch, batch_idx):
