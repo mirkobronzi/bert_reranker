@@ -36,7 +36,7 @@ def main():
 
     check_and_log_hp(
         ['natq_json_file', 'cache_folder', 'batch_size', 'model_name', 'max_question_len',
-         'max_paragraph_len', 'embedding_dim', 'patience'],
+         'max_paragraph_len', 'embedding_dim', 'patience', 'gradient_clipping'],
         hyper_params)
 
     os.makedirs(hyper_params['cache_folder'], exist_ok=True)
@@ -76,6 +76,7 @@ def main():
         distributed_backend='dp',
         val_check_interval=0.1,
         min_epochs=1,
+        gradient_clip_val=hyper_params['gradient_clipping'],
         checkpoint_callback=checkpoint_callback,
         early_stop_callback=early_stopping)
     ret_trainee = RetrieverTrainer(ret, train_dataloader, dev_dataloader,
