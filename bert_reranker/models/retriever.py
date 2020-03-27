@@ -148,6 +148,9 @@ class RetrieverTrainer(pl.LightningModule):
             loss = nn.CrossEntropyLoss()(
                 logits, torch.zeros(logits.size()[0], dtype=torch.long).to(logits.device)
             )
+        elif self.loss_type == 'triplet_loss':
+            triplet_loss = nn.TripletMarginLoss(margin=1.0, p=2)
+            loss = triplet_loss(h_question, h_paragraphs_batch[:,0,:], h_paragraphs_batch[:,1,:])
         elif self.loss_type == 'cosine':
             labs = torch.ones(batch_size, num_document)
             labs[:, 1:] *= -1
