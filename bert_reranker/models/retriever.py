@@ -107,12 +107,13 @@ class Retriever(nn.Module):
 
 class RetrieverTrainer(pl.LightningModule):
 
-    def __init__(self, retriever, train_data, dev_data, emb_dim):
+    def __init__(self, retriever, train_data, dev_data, emb_dim, loss_type):
         super(RetrieverTrainer, self).__init__()
         self.retriever = retriever
         self.train_data = train_data
         self.dev_data = dev_data
         self.emb_dim = emb_dim
+        self.loss_type = loss_type
 
     def forward(self, **kwargs):
         return self.retriever(**kwargs)
@@ -138,9 +139,18 @@ class RetrieverTrainer(pl.LightningModule):
             h_paragraphs_batch.reshape(-1, self.emb_dim).unsqueeze(2)).reshape(batch_size, num_document)
         all_prob = torch.sigmoid(all_dots)
 
-        pos_loss = - torch.log(all_prob[:, 0]).sum()
-        neg_loss = - torch.log(1 - all_prob[:, 1:]).sum()
-        loss = pos_loss + neg_loss
+        if self.loss_type == 'negative_sampling':
+            pos_loss = - torch.log(all_prob[:, 0]).sum()
+            neg_loss = - torch.log(1 - all_prob[:, 1:]).sum()
+            loss = pos_loss + neg_loss
+        elif self.loss_type == 'classification':
+            logits = all_dots
+            loss = nn.CrossEntropyLoss()(
+                logits, torch.zeros(logits.size()[0], dtype=torch.long).to(logits.device)
+            )
+        else:
+            raise ValueError('loss_type {} not supported. Please choose between negative_sampling,'
+                             ' classification')
         return loss, all_prob
 
     def training_step(self, batch, batch_idx):

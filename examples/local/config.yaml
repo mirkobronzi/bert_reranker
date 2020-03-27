@@ -2,6 +2,7 @@ batch_size: 1
 natq_json_file: 'natq.json'
 cache_folder: 'cached_natq'
 model_name: 'bert-base-uncased'
+loss_type: 'classification'
 max_question_len: 30
 max_paragraph_len: 512
 embedding_dim: 768
