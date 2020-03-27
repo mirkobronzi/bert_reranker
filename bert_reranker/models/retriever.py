@@ -116,6 +116,8 @@ class RetrieverTrainer(pl.LightningModule):
         self.loss_type = loss_type
         self.optimizer_type = optimizer_type
 
+        self.cross_entropy = nn.CrossEntropyLoss()
+
     def forward(self, **kwargs):
         return self.retriever(**kwargs)
 
@@ -146,13 +148,13 @@ class RetrieverTrainer(pl.LightningModule):
             loss = pos_loss + neg_loss
         elif self.loss_type == 'classification':
             logits = all_dots
-            loss = nn.CrossEntropyLoss()(
+            loss = self.cross_entropy(
                 logits, torch.zeros(logits.size()[0], dtype=torch.long).to(logits.device)
             )
         elif self.loss_type == 'triplet_loss':
             # FIXME: for now using only one negative paragraph.
             triplet_loss = nn.TripletMarginLoss(margin=1.0, p=2)
-            loss = triplet_loss(h_question, h_paragraphs_batch[:,0,:], h_paragraphs_batch[:,1,:])
+            loss = triplet_loss(h_question, h_paragraphs_batch[:, 0, :], h_paragraphs_batch[:, 1, :])
         elif self.loss_type == 'cosine':
             labs = torch.ones(batch_size, num_document)
             labs[:, 1:] *= -1

@@ -8,7 +8,7 @@ setup(
     python_requires='>=3.7',
     install_requires=[
         'flake8', 'tqdm', 'pyyaml>=5.3', 'pytest',
-        'torch', 'transformers', 'pytorch-lightning'],
+        'torch', 'transformers', 'pytorch-lightning', 'sklearn'],
     entry_points={
         'console_scripts': [
             'train=bert_reranker.main:main'
