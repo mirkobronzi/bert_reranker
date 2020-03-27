@@ -1,1 +1,1 @@
-train --config config.yaml
+train --config config.yaml --output output

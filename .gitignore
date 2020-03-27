@@ -1,6 +1,7 @@
 .idea
 mlruns
 lightning_logs
+cached_natq
 
 # Ignore example outputs
 examples/*/output/

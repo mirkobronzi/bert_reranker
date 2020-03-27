@@ -17,10 +17,6 @@ from bert_reranker.utils.hp_utils import check_and_log_hp
 
 logger = logging.getLogger(__name__)
 
-# TODO
-max_question_len_global = 30
-max_paragraph_len_global = 512
-
 
 def main():
     parser = argparse.ArgumentParser()
@@ -28,6 +24,8 @@ def main():
                         help='config file with generic hyper-parameters,  such as optimizer, '
                              'batch_size, ... -  in yaml format', required=True)
     parser.add_argument('--gpu', help='gpu_size', default=0)
+    parser.add_argument('--output',
+                        help='where to store models', required=True)
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.INFO)
@@ -37,7 +35,7 @@ def main():
 
     check_and_log_hp(
         ['natq_json_file', 'cache_folder', 'batch_size', 'model_name', 'max_question_len',
-         'max_paragraph_len', 'embedding_dim'],
+         'max_paragraph_len', 'embedding_dim', 'patience'],
         hyper_params)
 
     os.makedirs(hyper_params['cache_folder'], exist_ok=True)
@@ -53,23 +51,24 @@ def main():
     bert_question = BertModel.from_pretrained(model_name)
     bert_paragraph = BertModel.from_pretrained(model_name)
 
-    bert_question_encoder = BertEncoder(bert_question, max_question_len_global)
-    bert_paragraph_encoder = BertEncoder(bert_paragraph, max_paragraph_len_global)
+    bert_question_encoder = BertEncoder(bert_question, hyper_params['max_question_len'],
+                                        hyper_params['embedding_dim'])
+    bert_paragraph_encoder = BertEncoder(bert_paragraph, hyper_params['max_paragraph_len'],
+                                         hyper_params['embedding_dim'])
 
     ret = Retriever(bert_question_encoder, bert_paragraph_encoder, tokenizer,
                     hyper_params['max_question_len'], hyper_params['max_paragraph_len'],
                     hyper_params['embedding_dim'])
-    os.makedirs('out', exist_ok=True)
+    os.makedirs(args.output, exist_ok=True)
     checkpoint_callback = ModelCheckpoint(
-        filepath='out/{epoch}-{val_loss:.2f}-{val_acc:.2f}',
+        filepath=os.path.join(args.output, '{epoch}-{val_loss:.2f}-{val_acc:.2f}'),
         save_top_k=1,
         verbose=True,
         monitor='val_acc',
         mode='max'
     )
 
-    # TODO patience
-    early_stopping = EarlyStopping('val_acc', mode='max', patience=5)
+    early_stopping = EarlyStopping('val_acc', mode='max', patience=hyper_params['patience'])
 
     trainer = pl.Trainer(
         gpus=args.gpu,

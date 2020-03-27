@@ -5,3 +5,4 @@ model_name: 'bert-base-uncased'
 max_question_len: 30
 max_paragraph_len: 512
 embedding_dim: 768
+patience: 5
