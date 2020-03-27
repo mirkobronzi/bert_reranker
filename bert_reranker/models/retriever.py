@@ -107,13 +107,14 @@ class Retriever(nn.Module):
 
 class RetrieverTrainer(pl.LightningModule):
 
-    def __init__(self, retriever, train_data, dev_data, emb_dim, loss_type):
+    def __init__(self, retriever, train_data, dev_data, emb_dim, loss_type, optimizer_type):
         super(RetrieverTrainer, self).__init__()
         self.retriever = retriever
         self.train_data = train_data
         self.dev_data = dev_data
         self.emb_dim = emb_dim
         self.loss_type = loss_type
+        self.optimizer_type = optimizer_type
 
     def forward(self, **kwargs):
         return self.retriever(**kwargs)
@@ -149,6 +150,7 @@ class RetrieverTrainer(pl.LightningModule):
                 logits, torch.zeros(logits.size()[0], dtype=torch.long).to(logits.device)
             )
         elif self.loss_type == 'triplet_loss':
+            # FIXME: for now using only one negative paragraph.
             triplet_loss = nn.TripletMarginLoss(margin=1.0, p=2)
             loss = triplet_loss(h_question, h_paragraphs_batch[:,0,:], h_paragraphs_batch[:,1,:])
         elif self.loss_type == 'cosine':
@@ -202,7 +204,12 @@ class RetrieverTrainer(pl.LightningModule):
         return results
 
     def configure_optimizers(self):
-        return torch.optim.AdamW([p for p in self.parameters() if p.requires_grad])
+        if self.optimizer_type == 'adamw':
+            return torch.optim.AdamW([p for p in self.parameters() if p.requires_grad])
+        elif self.optimizer_type == 'adam':
+            return torch.optim.Adam([p for p in self.parameters() if p.requires_grad], lr=0.0001)
+        else:
+            raise ValueError('optimizer {} not supported'.format(self.optimizer_type))
 
     def train_dataloader(self):
         return self.train_data

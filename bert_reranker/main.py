@@ -36,7 +36,8 @@ def main():
 
     check_and_log_hp(
         ['natq_json_file', 'cache_folder', 'batch_size', 'model_name', 'max_question_len',
-         'max_paragraph_len', 'embedding_dim', 'patience', 'gradient_clipping', 'loss_type'],
+         'max_paragraph_len', 'embedding_dim', 'patience', 'gradient_clipping', 'loss_type',
+         'optimizer_type'],
         hyper_params)
 
     os.makedirs(hyper_params['cache_folder'], exist_ok=True)
@@ -81,7 +82,8 @@ def main():
         early_stop_callback=early_stopping)
     ret_trainee = RetrieverTrainer(ret, train_dataloader, dev_dataloader,
                                    hyper_params['embedding_dim'],
-                                   hyper_params['loss_type'])
+                                   hyper_params['loss_type'],
+                                   hyper_params['optimizer_type'])
     trainer.fit(ret_trainee)
 
 
