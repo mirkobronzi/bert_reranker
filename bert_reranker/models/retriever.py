@@ -152,9 +152,12 @@ class RetrieverTrainer(pl.LightningModule):
                 logits, torch.zeros(logits.size()[0], dtype=torch.long).to(logits.device)
             )
         elif self.loss_type == 'triplet_loss':
-            # FIXME: for now using only one negative paragraph.
             triplet_loss = nn.TripletMarginLoss(margin=1.0, p=2)
-            loss = triplet_loss(h_question, h_paragraphs_batch[:, 0, :], h_paragraphs_batch[:, 1, :])
+            negative_examples = all_dots[:, 1:]
+            hardest_example_index = torch.argmax(negative_examples) + 1
+            loss = triplet_loss(h_question,
+                                h_paragraphs_batch[:, 0, :],
+                                h_paragraphs_batch[:, hardest_example_index.to('cpu').item(), :])
         elif self.loss_type == 'cosine':
             labs = torch.ones(batch_size, num_document)
             labs[:, 1:] *= -1
