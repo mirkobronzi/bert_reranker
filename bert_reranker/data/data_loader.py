@@ -25,6 +25,20 @@ def remove_html_toks(s):
 
 def process_natq_clean(natq_json_file, cache_folder, max_question_len, max_paragraph_len,
                        tokenizer):
+    """
+    output format is two datasets (train.dev) - each one with a question ([batch_size, seq_len])
+    and a set of paragraph ([batch_size, paragraph_size, seq_len]).
+
+    A adtaloader contains the token_ids, the padding, and the bert token type.
+
+
+    :param natq_json_file:
+    :param cache_folder:
+    :param max_question_len:
+    :param max_paragraph_len:
+    :param tokenizer:
+    :return:
+    """
 
     if not os.path.exists(natq_json_file):
         raise Exception('{} not found'.format(natq_json_file))
@@ -46,22 +60,22 @@ def process_natq_clean(natq_json_file, cache_folder, max_question_len, max_parag
         dev_batch_input_ids_paragraphs, dev_batch_attention_mask_paragraphs, \
         dev_batch_token_type_ids_paragraphs = [], [], [], [], [], []
 
-    with open(natq_json_file, 'r', encoding='utf-8', errors='ignore') as f:
-        for l in tqdm(f):
-            d = json.loads(l)
+    with open(natq_json_file, 'r', encoding='utf-8', errors='ignore') as in_stream:
+        for line in tqdm(in_stream):
+            data = json.loads(line)
 
-            if d['num_positives'] >= 1 and d['num_negatives'] >= 2:
+            if data['num_positives'] >= 1 and data['num_negatives'] >= 2:
 
-                if d['dataset'] == 'train' and train_exists:
+                if data['dataset'] == 'train' and train_exists:
                     continue
-                if d['dataset'] == 'dev' and dev_exists:
+                if data['dataset'] == 'dev' and dev_exists:
                     continue
 
-                q = d['question']
-                paras = d['right_paragraphs'][:1] + d['wrong_paragraphs'][:2]
+                question = data['question']
+                paras = data['right_paragraphs'][:1] + data['wrong_paragraphs'][:2]
                 paras = [remove_html_toks(i) for i in paras]
 
-                input_question = tokenizer.encode_plus(q, add_special_tokens=True,
+                input_question = tokenizer.encode_plus(question, add_special_tokens=True,
                                                        max_length=max_question_len, pad_to_max_length=True,
                                                        return_tensors='pt')
                 inputs_paragraph = tokenizer.batch_encode_plus(paras,
@@ -71,7 +85,7 @@ def process_natq_clean(natq_json_file, cache_folder, max_question_len, max_parag
                                                                return_tensors='pt'
                                                                )
 
-                if d['dataset'] == 'train':
+                if data['dataset'] == 'train':
                     train_input_ids_question.append(input_question['input_ids'])
                     train_attention_mask_question.append(input_question['attention_mask'])
                     train_token_type_ids_question.append(input_question['token_type_ids'])
@@ -79,7 +93,7 @@ def process_natq_clean(natq_json_file, cache_folder, max_question_len, max_parag
                     train_batch_attention_mask_paragraphs.append(inputs_paragraph['attention_mask'].unsqueeze(0))
                     train_batch_token_type_ids_paragraphs.append(inputs_paragraph['token_type_ids'].unsqueeze(0))
 
-                elif d['dataset'] == 'dev':
+                elif data['dataset'] == 'dev':
                     dev_input_ids_question.append(input_question['input_ids'])
                     dev_attention_mask_question.append(input_question['attention_mask'])
                     dev_token_type_ids_question.append(input_question['token_type_ids'])

@@ -173,7 +173,6 @@ class RetrieverTrainer(pl.LightningModule):
         tensorboard_logs = {'train_loss': train_loss}
         return {'loss': train_loss, 'log': tensorboard_logs}
 
-
     def validation_step(self, batch, batch_idx):
         loss, all_prob = self.step_helper(batch)
         batch_size = all_prob.size()[0]
@@ -181,7 +180,6 @@ class RetrieverTrainer(pl.LightningModule):
         y_true = torch.zeros(batch_size, dtype=y_hat.dtype).type_as(y_hat)
         val_acc = torch.tensor(accuracy_score(y_true.cpu(), y_hat.cpu())).type_as(y_hat)
         return {'val_loss': loss, 'val_acc': val_acc}
-
 
     def validation_epoch_end(self, outputs):
         try:
