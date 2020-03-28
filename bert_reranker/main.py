@@ -37,7 +37,7 @@ def main():
     check_and_log_hp(
         ['natq_json_file', 'cache_folder', 'batch_size', 'model_name', 'max_question_len',
          'max_paragraph_len', 'embedding_dim', 'patience', 'gradient_clipping', 'loss_type',
-         'optimizer_type'],
+         'optimizer_type', 'pooling_type'],
         hyper_params)
 
     os.makedirs(hyper_params['cache_folder'], exist_ok=True)
@@ -54,9 +54,10 @@ def main():
     bert_paragraph = BertModel.from_pretrained(model_name)
 
     bert_question_encoder = BertEncoder(bert_question, hyper_params['max_question_len'],
-                                        hyper_params['embedding_dim'])
+                                        hyper_params['embedding_dim'], hyper_params['pooling_type'])
     bert_paragraph_encoder = BertEncoder(bert_paragraph, hyper_params['max_paragraph_len'],
-                                         hyper_params['embedding_dim'])
+                                         hyper_params['embedding_dim'],
+                                         hyper_params['pooling_type'])
 
     ret = Retriever(bert_question_encoder, bert_paragraph_encoder, tokenizer,
                     hyper_params['max_question_len'], hyper_params['max_paragraph_len'],
