@@ -135,6 +135,9 @@ class RetrieverTrainer(pl.LightningModule):
             'batch_token_type_ids_paragraphs': batch_token_type_ids_paragraphs
         }
 
+        batch_size = input_ids_question.shape[0]
+        assert all(bs.shape[0] == batch_size for bs in inputs.values())
+
         h_question, h_paragraphs_batch = self(**inputs)
         batch_size, num_document, emb_dim = batch_input_ids_paragraphs.size()
 
