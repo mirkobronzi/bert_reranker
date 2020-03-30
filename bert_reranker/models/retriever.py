@@ -137,16 +137,17 @@ class RetrieverTrainer(pl.LightningModule):
             'batch_token_type_ids_paragraphs': batch_token_type_ids_paragraphs
         }
 
-        # batch_size = input_ids_question.shape[0]
-        # if not all(bs.shape[0] == batch_size for bs in inputs.values()):
+        batch_size = input_ids_question.shape[0]
+        assert all(bs.shape[0] == batch_size for bs in inputs.values())
 
-        for i in range(batch_input_ids_paragraphs.shape[0]):
-            print('sentence {} of {}'.format(i, batch_input_ids_paragraphs.shape[0]))
-            q = self.tokenizer.decode(input_ids_question[i]).replace('[PAD] ', '')
-            print('\n' + q)
-            for j in range(batch_input_ids_paragraphs.shape[1]):
-                a = self.tokenizer.decode(batch_input_ids_paragraphs[i][j]).replace('[PAD] ', '')
-                print('\t' + a)
+        with open('./log', 'w')as out:
+            for i in range(batch_input_ids_paragraphs.shape[0]):
+                out.write('sentence {} of {}\n'.format(i, batch_input_ids_paragraphs.shape[0]))
+                q = self.tokenizer.decode(input_ids_question[i]).replace('[PAD] ', '')
+                out.write('\n' + q + '\n')
+                for j in range(batch_input_ids_paragraphs.shape[1]):
+                    a = self.tokenizer.decode(batch_input_ids_paragraphs[i][j]).replace('[PAD] ', '')
+                    out.write('\t' + a + '\n')
         import pdb; pdb.set_trace()
 
         h_question, h_paragraphs_batch = self(**inputs)
