@@ -185,7 +185,7 @@ class RetrieverTrainer(pl.LightningModule):
         batch_size = all_prob.size()[0]
         _, y_hat = torch.max(all_prob, 1)
         y_true = torch.zeros(batch_size, dtype=y_hat.dtype).type_as(y_hat)
-        val_acc = torch.tensor(accuracy_score(y_true.cpu(), y_hat.cpu())).type_as(y_hat)
+        val_acc = torch.tensor(accuracy_score(y_true.cpu(), y_hat.cpu())).to(y_true.device)
         return {'val_loss': loss, 'val_acc': val_acc}
 
     def validation_epoch_end(self, outputs):
