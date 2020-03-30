@@ -83,7 +83,8 @@ def main():
     ret_trainee = RetrieverTrainer(ret, train_dataloader, dev_dataloader,
                                    hyper_params['embedding_dim'],
                                    hyper_params['loss_type'],
-                                   hyper_params['optimizer_type'])
+                                   hyper_params['optimizer_type'],
+                                   tokenizer)
     trainer.fit(ret_trainee)
 
 

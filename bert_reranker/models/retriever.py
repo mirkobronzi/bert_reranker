@@ -107,7 +107,8 @@ class Retriever(nn.Module):
 
 class RetrieverTrainer(pl.LightningModule):
 
-    def __init__(self, retriever, train_data, dev_data, emb_dim, loss_type, optimizer_type):
+    def __init__(self, retriever, train_data, dev_data, emb_dim, loss_type, optimizer_type,
+                 tokenizer):
         super(RetrieverTrainer, self).__init__()
         self.retriever = retriever
         self.train_data = train_data
@@ -115,6 +116,7 @@ class RetrieverTrainer(pl.LightningModule):
         self.emb_dim = emb_dim
         self.loss_type = loss_type
         self.optimizer_type = optimizer_type
+        self.tokenizer = tokenizer
 
         self.cross_entropy = nn.CrossEntropyLoss()
 
@@ -135,8 +137,16 @@ class RetrieverTrainer(pl.LightningModule):
             'batch_token_type_ids_paragraphs': batch_token_type_ids_paragraphs
         }
 
-        batch_size = input_ids_question.shape[0]
-        assert all(bs.shape[0] == batch_size for bs in inputs.values())
+        # batch_size = input_ids_question.shape[0]
+        # if not all(bs.shape[0] == batch_size for bs in inputs.values()):
+
+        for i in range(batch_input_ids_paragraphs.shape[0]):
+            q = self.tokenizer.decode(input_ids_question[i])
+            print('\n' + q)
+            for j in range(batch_input_ids_paragraphs.shape[1]):
+                a = self.tokenizer.decode(batch_input_ids_paragraphs[i][j])
+                print('\t' + a)
+        import pdb; pdb.set_trace()
 
         h_question, h_paragraphs_batch = self(**inputs)
         batch_size, num_document, emb_dim = batch_input_ids_paragraphs.size()
