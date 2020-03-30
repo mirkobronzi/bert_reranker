@@ -26,7 +26,10 @@ class BertEncoder(nn.Module):
         if self.pooling_type == 'cls':
             result_pooling = h[:, 0]
         elif self.pooling_type == 'avg':
-            result_pooling = torch.mean(h, axis=1)
+            # not using torch.mean to exclude padding
+            expanded_attention = attention_mask.unsqueeze(-1).repeat(1, 1, h.shape[-1])
+            padded_h = h * expanded_attention
+            result_pooling = torch.sum(padded_h, axis=1) / torch.sum(attention_mask)
         else:
             raise ValueError('pooling {} not supported.'.format(self.pooling_type))
         h_transformed = self.net(result_pooling)

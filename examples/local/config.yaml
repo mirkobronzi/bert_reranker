@@ -1,4 +1,4 @@
-batch_size: 1
+batch_size: 2
 natq_json_file: 'natq.json'
 cache_folder: 'cached_natq'
 model_name: 'bert-base-uncased'
@@ -9,4 +9,4 @@ max_paragraph_len: 512
 embedding_dim: 768
 patience: 5
 gradient_clipping: 0
-pooling_type: avg
+pooling_type: 'avg'
