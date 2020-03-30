@@ -141,10 +141,11 @@ class RetrieverTrainer(pl.LightningModule):
         # if not all(bs.shape[0] == batch_size for bs in inputs.values()):
 
         for i in range(batch_input_ids_paragraphs.shape[0]):
-            q = self.tokenizer.decode(input_ids_question[i])
+            print('sentence {} of {}'.format(i, batch_input_ids_paragraphs.shape[0]))
+            q = self.tokenizer.decode(input_ids_question[i]).replace('[PAD] ', '')
             print('\n' + q)
             for j in range(batch_input_ids_paragraphs.shape[1]):
-                a = self.tokenizer.decode(batch_input_ids_paragraphs[i][j])
+                a = self.tokenizer.decode(batch_input_ids_paragraphs[i][j]).replace('[PAD] ', '')
                 print('\t' + a)
         import pdb; pdb.set_trace()
 
