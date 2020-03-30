@@ -4,14 +4,14 @@ import torch.nn.functional as F
 
 class BertEncoder(nn.Module):
 
-    def __init__(self, bert, max_seq_len, emb_dim):
+    def __init__(self, bert, max_seq_len, emb_dim, freeze_bert):
         super(BertEncoder, self).__init__()
         self.max_seq_len = max_seq_len
         self.emb_dim = emb_dim
         self.bert = bert
-        # to freeze bert
-        for param in self.bert.parameters():
-            param.requires_grad = False
+        if freeze_bert:
+            for param in self.bert.parameters():
+                param.requires_grad = False
         self.net = nn.Sequential(
             nn.Linear(emb_dim, emb_dim),
             nn.ReLU(),
