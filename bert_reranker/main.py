@@ -75,7 +75,7 @@ def main():
     trainer = pl.Trainer(
         gpus=args.gpu,
         distributed_backend='dp',
-        val_check_interval=0.1,
+        val_check_interval=0.0005,
         min_epochs=1,
         gradient_clip_val=hyper_params['gradient_clipping'],
         checkpoint_callback=checkpoint_callback,

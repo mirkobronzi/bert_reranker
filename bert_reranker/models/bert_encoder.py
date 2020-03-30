@@ -9,6 +9,9 @@ class BertEncoder(nn.Module):
         self.max_seq_len = max_seq_len
         self.emb_dim = emb_dim
         self.bert = bert
+        # to freeze bert
+        for param in self.bert.parameters():
+            param.requires_grad = False
         self.net = nn.Sequential(
             nn.Linear(emb_dim, emb_dim),
             nn.ReLU(),
