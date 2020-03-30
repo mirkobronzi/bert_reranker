@@ -25,6 +25,9 @@ def main():
                              'batch_size, ... -  in yaml format', required=True)
     parser.add_argument('--gpu', help='list of gpu ids to use. default is cpu. example: --gpu 0 1',
                         type=int, nargs='+', default=0)
+    parser.add_argument('--validation-interval', help='how often to run validation in one epoch - '
+                                                      'e.g., 0.5 means halfway - default 0.5',
+                        type=float, default=0.5)
     parser.add_argument('--output',
                         help='where to store models', required=True)
     args = parser.parse_args()
@@ -37,7 +40,7 @@ def main():
     check_and_log_hp(
         ['natq_json_file', 'cache_folder', 'batch_size', 'model_name', 'max_question_len',
          'max_paragraph_len', 'embedding_dim', 'patience', 'gradient_clipping', 'loss_type',
-         'optimizer_type', 'pooling_type'],
+         'optimizer_type', 'freeze_bert', 'pooling_type'],
         hyper_params)
 
     os.makedirs(hyper_params['cache_folder'], exist_ok=True)
@@ -54,9 +57,10 @@ def main():
     bert_paragraph = BertModel.from_pretrained(model_name)
 
     bert_question_encoder = BertEncoder(bert_question, hyper_params['max_question_len'],
-                                        hyper_params['embedding_dim'], hyper_params['pooling_type'])
+                                        hyper_params['embedding_dim'], hyper_params['freeze_bert'],
+                                        hyper_params['pooling_type'])
     bert_paragraph_encoder = BertEncoder(bert_paragraph, hyper_params['max_paragraph_len'],
-                                         hyper_params['embedding_dim'],
+                                         hyper_params['embedding_dim'], hyper_params['freeze_bert'],
                                          hyper_params['pooling_type'])
 
     ret = Retriever(bert_question_encoder, bert_paragraph_encoder, tokenizer,
@@ -76,7 +80,7 @@ def main():
     trainer = pl.Trainer(
         gpus=args.gpu,
         distributed_backend='dp',
-        val_check_interval=0.1,
+        val_check_interval=args.validation_interval,
         min_epochs=1,
         gradient_clip_val=hyper_params['gradient_clipping'],
         checkpoint_callback=checkpoint_callback,

@@ -5,13 +5,15 @@ import torch
 
 class BertEncoder(nn.Module):
 
-    def __init__(self, bert, max_seq_len, emb_dim, pooling_type):
+    def __init__(self, bert, max_seq_len, emb_dim, freeze_bert, pooling_type):
         super(BertEncoder, self).__init__()
         self.pooling_type = pooling_type
-
         self.max_seq_len = max_seq_len
         self.emb_dim = emb_dim
         self.bert = bert
+        if freeze_bert:
+            for param in self.bert.parameters():
+                param.requires_grad = False
         self.net = nn.Sequential(
             nn.Linear(emb_dim, emb_dim),
             nn.ReLU(),
@@ -34,3 +36,4 @@ class BertEncoder(nn.Module):
             raise ValueError('pooling {} not supported.'.format(self.pooling_type))
         h_transformed = self.net(result_pooling)
         return F.normalize(h_transformed)
+
