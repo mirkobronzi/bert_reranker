@@ -17,6 +17,7 @@ from bert_reranker.utils.hp_utils import check_and_log_hp
 
 logger = logging.getLogger(__name__)
 
+import pdb
 
 def main():
     parser = argparse.ArgumentParser()
@@ -85,6 +86,7 @@ def main():
         gradient_clip_val=hyper_params['gradient_clipping'],
         checkpoint_callback=checkpoint_callback,
         early_stop_callback=early_stopping)
+    pdb.set_trace()
     ret_trainee = RetrieverTrainer(ret, train_dataloader, dev_dataloader,
                                    hyper_params['embedding_dim'],
                                    hyper_params['loss_type'],
