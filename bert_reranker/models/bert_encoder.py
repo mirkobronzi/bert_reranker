@@ -11,9 +11,7 @@ class BertEncoder(nn.Module):
         self.max_seq_len = max_seq_len
         self.emb_dim = emb_dim
         self.bert = bert
-        if freeze_bert:
-            for param in self.bert.parameters():
-                param.requires_grad = False
+        self.freeze_bert = freeze_bert
         self.net = nn.Sequential(
             nn.Linear(emb_dim, emb_dim),
             nn.ReLU(),
@@ -23,8 +21,13 @@ class BertEncoder(nn.Module):
         )
 
     def forward(self, input_ids, attention_mask, token_type_ids):
-        h, _ = self.bert(input_ids=input_ids, attention_mask=attention_mask,
-                         token_type_ids=token_type_ids)
+        if self.freeze_bert:
+            with torch.no_grad():
+                h, _ = self.bert(input_ids=input_ids, attention_mask=attention_mask,
+                                 token_type_ids=token_type_ids)
+        else:
+            h, _ = self.bert(input_ids=input_ids, attention_mask=attention_mask,
+                             token_type_ids=token_type_ids)
         if self.pooling_type == 'cls':
             result_pooling = h[:, 0, :]
         elif self.pooling_type == 'avg':
