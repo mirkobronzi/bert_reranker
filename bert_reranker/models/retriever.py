@@ -180,30 +180,26 @@ class RetrieverTrainer(pl.LightningModule):
         tensorboard_logs = {'train_loss': train_loss}
         return {'loss': train_loss, 'log': tensorboard_logs}
 
+    def training_step_end(self, outputs):
+        return {'loss': outputs['loss'].mean()}
+
     def validation_step(self, batch, batch_idx):
         loss, all_prob = self.step_helper(batch)
         batch_size = all_prob.size()[0]
         _, y_hat = torch.max(all_prob, 1)
         y_true = torch.zeros(batch_size, dtype=y_hat.dtype).type_as(y_hat)
         val_acc = torch.tensor(accuracy_score(y_true.cpu(), y_hat.cpu())).to(y_true.device)
-        return {'val_loss': loss, 'val_acc': val_acc, 'correct': torch.sum(y_true == y_hat),
-                'total': y_true.shape[0]}
+        return {'val_loss': loss, 'val_acc': val_acc}
 
     def validation_epoch_end(self, outputs):
-        try:
-            avg_val_loss = torch.stack([x['val_loss'] for x in outputs]).mean()
-            avg_val_acc = torch.stack([x['val_acc'] for x in outputs]).double().mean()
-        except:
-            avg_val_loss = torch.cat([x['val_loss'] for x in outputs], 0).mean()
-            avg_val_acc = torch.cat([x['val_acc'] for x in outputs], 0).double().mean()
+        avg_val_loss = torch.stack([x['val_loss'] for x in outputs]).mean()
+        avg_val_acc = torch.stack([x['val_acc'] for x in outputs]).double().mean()
 
-        val_acc2 = float(sum([x['correct'] for x in outputs])) / sum([x['total'] for x in outputs])
-        tqdm_dict = {'val_acc': avg_val_acc, 'val_loss': avg_val_loss, 'val_acc2': val_acc2}
+        tqdm_dict = {'val_acc': avg_val_acc, 'val_loss': avg_val_loss}
 
-        # show val_loss and val_acc in progress bar but only log val_loss
         results = {
             'progress_bar': tqdm_dict,
-            'log': {'val_acc': avg_val_acc, 'val_loss': avg_val_loss, 'val_acc2': val_acc2}
+            'log': tqdm_dict
         }
         return results
 
