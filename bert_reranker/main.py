@@ -7,7 +7,7 @@ import os
 import pytorch_lightning as pl
 import yaml
 from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
-from transformers import BertTokenizer, BertModel
+from transformers import BertTokenizer, BertModel, AutoTokenizer, AutoModel
 from yaml import load
 
 from bert_reranker.data.data_loader import generate_natq_dataloaders
@@ -48,15 +48,15 @@ def main():
     os.makedirs(hyper_params['cache_folder'], exist_ok=True)
 
     model_name = hyper_params['model_name']
-    tokenizer = BertTokenizer.from_pretrained(model_name)
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
 
     train_dataloader, dev_dataloader = generate_natq_dataloaders(
         hyper_params['natq_json_file'], hyper_params['cache_folder'],
         hyper_params['max_question_len'], hyper_params['max_paragraph_len'],
         tokenizer, hyper_params['batch_size'])
 
-    bert_question = BertModel.from_pretrained(model_name)
-    bert_paragraph = BertModel.from_pretrained(model_name)
+    bert_question = AutoModel.from_pretrained(model_name)
+    bert_paragraph = AutoModel.from_pretrained(model_name)
 
     bert_question_encoder = BertEncoder(bert_question, hyper_params['max_question_len'],
                                         hyper_params['embedding_dim'], hyper_params['freeze_bert'],
