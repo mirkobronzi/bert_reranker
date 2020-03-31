@@ -1,4 +1,5 @@
 import hashlib
+import random
 from copy import deepcopy
 from typing import List
 
@@ -152,9 +153,13 @@ class RetrieverTrainer(pl.LightningModule):
                 logits, torch.zeros(logits.size()[0], dtype=torch.long).to(logits.device)
             )
         elif self.loss_type == 'triplet_loss':
-            # FIXME: for now using only one negative paragraph.
+            assert h_paragraphs_batch.shape[1] == 3
+            # picking a random negative example
+            negative_index = random.randint(1, 2)
             triplet_loss = nn.TripletMarginLoss(margin=1.0, p=2)
-            loss = triplet_loss(h_question, h_paragraphs_batch[:, 0, :], h_paragraphs_batch[:, 1, :])
+            loss = triplet_loss(h_question,
+                                h_paragraphs_batch[:, 0, :],
+                                h_paragraphs_batch[:, negative_index, :])
         elif self.loss_type == 'cosine':
             labs = torch.ones(batch_size, num_document)
             labs[:, 1:] *= -1
