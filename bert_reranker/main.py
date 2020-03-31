@@ -7,11 +7,12 @@ import os
 import pytorch_lightning as pl
 import yaml
 from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
-from transformers import BertTokenizer, BertModel
+from transformers import BertTokenizer, BertModel, AutoTokenizer, AutoModel
 from yaml import load
 
 from bert_reranker.data.data_loader import generate_natq_dataloaders
 from bert_reranker.models.bert_encoder import BertEncoder
+from bert_reranker.models.pl_model_loader import try_to_restore_model_weights
 from bert_reranker.models.retriever import Retriever, RetrieverTrainer
 from bert_reranker.utils.hp_utils import check_and_log_hp
 
@@ -29,8 +30,9 @@ def main():
     parser.add_argument('--validation-interval', help='how often to run validation in one epoch - '
                                                       'e.g., 0.5 means halfway - default 0.5',
                         type=float, default=0.5)
-    parser.add_argument('--output',
-                        help='where to store models', required=True)
+    parser.add_argument('--output', help='where to store models', required=True)
+    parser.add_argument('--no-model-restoring', help='will not restore any previous model weights ('
+                                                     'even if present)', action='store_true')
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.INFO)
@@ -47,15 +49,15 @@ def main():
     os.makedirs(hyper_params['cache_folder'], exist_ok=True)
 
     model_name = hyper_params['model_name']
-    tokenizer = BertTokenizer.from_pretrained(model_name)
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
 
     train_dataloader, dev_dataloader = generate_natq_dataloaders(
         hyper_params['natq_json_file'], hyper_params['cache_folder'],
         hyper_params['max_question_len'], hyper_params['max_paragraph_len'],
         tokenizer, hyper_params['batch_size'])
 
-    bert_question = BertModel.from_pretrained(model_name)
-    bert_paragraph = BertModel.from_pretrained(model_name)
+    bert_question = AutoModel.from_pretrained(model_name)
+    bert_paragraph = AutoModel.from_pretrained(model_name)
 
     bert_question_encoder = BertEncoder(bert_question, hyper_params['max_question_len'],
                                         hyper_params['embedding_dim'], hyper_params['freeze_bert'],
@@ -78,6 +80,13 @@ def main():
 
     early_stopping = EarlyStopping('val_acc', mode='max', patience=hyper_params['patience'])
 
+    if not args.no_model_restoring:
+        ckpt_to_resume = try_to_restore_model_weights(args.output)
+
+    else:
+        ckpt_to_resume = None
+        logger.info('will not try to restore previous models because --no-model-restoring')
+
     trainer = pl.Trainer(
         gpus=args.gpu,
         distributed_backend='dp',
@@ -85,12 +94,14 @@ def main():
         min_epochs=1,
         gradient_clip_val=hyper_params['gradient_clipping'],
         checkpoint_callback=checkpoint_callback,
-        early_stop_callback=early_stopping)
-    pdb.set_trace()
+        early_stop_callback=early_stopping,
+        resume_from_checkpoint=ckpt_to_resume)
+
     ret_trainee = RetrieverTrainer(ret, train_dataloader, dev_dataloader,
                                    hyper_params['embedding_dim'],
                                    hyper_params['loss_type'],
                                    hyper_params['optimizer_type'])
+
     trainer.fit(ret_trainee)
 
 
