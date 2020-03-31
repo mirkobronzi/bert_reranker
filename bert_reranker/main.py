@@ -40,7 +40,7 @@ def main():
     check_and_log_hp(
         ['natq_json_file', 'cache_folder', 'batch_size', 'model_name', 'max_question_len',
          'max_paragraph_len', 'embedding_dim', 'patience', 'gradient_clipping', 'loss_type',
-         'optimizer_type', 'freeze_bert', 'pooling_type'],
+         'optimizer_type', 'freeze_bert', 'pooling_type', 'precision'],
         hyper_params)
 
     os.makedirs(hyper_params['cache_folder'], exist_ok=True)
@@ -77,6 +77,9 @@ def main():
 
     early_stopping = EarlyStopping('val_acc', mode='max', patience=hyper_params['patience'])
 
+    if hyper_params['precision'] not in {16, 32}:
+        raise ValueError('precision should be either 16 or 32')
+
     trainer = pl.Trainer(
         gpus=args.gpu,
         distributed_backend='dp',
@@ -84,7 +87,8 @@ def main():
         min_epochs=1,
         gradient_clip_val=hyper_params['gradient_clipping'],
         checkpoint_callback=checkpoint_callback,
-        early_stop_callback=early_stopping)
+        early_stop_callback=early_stopping,
+        precision=hyper_params['precision'])
     ret_trainee = RetrieverTrainer(ret, train_dataloader, dev_dataloader,
                                    hyper_params['embedding_dim'],
                                    hyper_params['loss_type'],
