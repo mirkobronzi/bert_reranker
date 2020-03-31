@@ -186,7 +186,9 @@ class RetrieverTrainer(pl.LightningModule):
         return {'loss': train_loss, 'log': tensorboard_logs}
 
     def training_step_end(self, outputs):
-        return {'loss': outputs['loss'].mean()}
+        loss_value = outputs['loss'].mean()
+        tensorboard_logs = {'train_loss': loss_value}
+        return {'loss': loss_value, 'log': tensorboard_logs}
 
     def validation_step(self, batch, batch_idx):
         loss, all_prob = self.step_helper(batch)
