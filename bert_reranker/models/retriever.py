@@ -1,4 +1,5 @@
 import hashlib
+import random
 from copy import deepcopy
 from typing import List
 
@@ -152,9 +153,13 @@ class RetrieverTrainer(pl.LightningModule):
                 logits, torch.zeros(logits.size()[0], dtype=torch.long).to(logits.device)
             )
         elif self.loss_type == 'triplet_loss':
-            # FIXME: for now using only one negative paragraph.
+            assert h_paragraphs_batch.shape[1] == 3
+            # picking a random negative example
+            negative_index = random.randint(1, 2)
             triplet_loss = nn.TripletMarginLoss(margin=1.0, p=2)
-            loss = triplet_loss(h_question, h_paragraphs_batch[:, 0, :], h_paragraphs_batch[:, 1, :])
+            loss = triplet_loss(h_question,
+                                h_paragraphs_batch[:, 0, :],
+                                h_paragraphs_batch[:, negative_index, :])
         elif self.loss_type == 'cosine':
             labs = torch.ones(batch_size, num_document)
             labs[:, 1:] *= -1
@@ -180,6 +185,11 @@ class RetrieverTrainer(pl.LightningModule):
         tensorboard_logs = {'train_loss': train_loss}
         return {'loss': train_loss, 'log': tensorboard_logs}
 
+    def training_step_end(self, outputs):
+        loss_value = outputs['loss'].mean()
+        tensorboard_logs = {'train_loss': loss_value}
+        return {'loss': loss_value, 'log': tensorboard_logs}
+
     def validation_step(self, batch, batch_idx):
         loss, all_prob = self.step_helper(batch)
         batch_size = all_prob.size()[0]
@@ -189,19 +199,14 @@ class RetrieverTrainer(pl.LightningModule):
         return {'val_loss': loss, 'val_acc': val_acc}
 
     def validation_epoch_end(self, outputs):
-        try:
-            avg_val_loss = torch.stack([x['val_loss'] for x in outputs]).mean()
-            avg_val_acc = torch.stack([x['val_acc'] for x in outputs]).double().mean()
-        except:
-            avg_val_loss = torch.cat([x['val_loss'] for x in outputs], 0).mean()
-            avg_val_acc = torch.cat([x['val_acc'] for x in outputs], 0).double().mean()
+        avg_val_loss = torch.stack([x['val_loss'] for x in outputs]).mean()
+        avg_val_acc = torch.stack([x['val_acc'] for x in outputs]).double().mean()
 
         tqdm_dict = {'val_acc': avg_val_acc, 'val_loss': avg_val_loss}
 
-        # show val_loss and val_acc in progress bar but only log val_loss
         results = {
             'progress_bar': tqdm_dict,
-            'log': {'val_acc': avg_val_acc, 'val_loss': avg_val_loss}
+            'log': tqdm_dict
         }
         return results
 
