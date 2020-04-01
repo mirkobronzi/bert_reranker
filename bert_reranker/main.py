@@ -34,6 +34,8 @@ def main():
     parser.add_argument('--output', help='where to store models', required=True)
     parser.add_argument('--no-model-restoring', help='will not restore any previous model weights ('
                                                      'even if present)', action='store_true')
+    parser.add_argument('--validation-only', help='will not train - will just evaluate on dev',
+                        action='store_true')
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.INFO)
@@ -101,12 +103,16 @@ def main():
         early_stop_callback=early_stopping,
         resume_from_checkpoint=ckpt_to_resume)
 
-    ret_trainee = RetrieverTrainer(ret, train_dataloader, dev_dataloader,
+    # note we are passing dev_dataloader for both dev and test
+    ret_trainee = RetrieverTrainer(ret, train_dataloader, dev_dataloader, dev_dataloader,
                                    hyper_params['embedding_dim'],
                                    hyper_params['loss_type'],
                                    hyper_params['optimizer_type'])
 
-    trainer.fit(ret_trainee)
+    if not args.validation_only:
+        trainer.fit(ret_trainee)
+    else:
+        trainer.test(ret_trainee)
 
 
 if __name__ == '__main__':
