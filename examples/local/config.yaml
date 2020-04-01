@@ -11,3 +11,4 @@ embedding_dim: 768
 patience: 5
 gradient_clipping: 0
 pooling_type: 'cls'
+precision: 32
