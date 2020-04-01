@@ -36,12 +36,15 @@ def main():
                                                      'even if present)', action='store_true')
     parser.add_argument('--validation-only', help='will not train - will just evaluate on dev',
                         action='store_true')
+    parser.add_argument('--redirect-log', help='will intercept any stdout/err and log it',
+                        action='store_true')
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.INFO)
 
-    sys.stdout = LoggerWriter(logger.info)
-    sys.stderr = LoggerWriter(logger.warning)
+    if args.redirect_log:
+        sys.stdout = LoggerWriter(logger.info)
+        sys.stderr = LoggerWriter(logger.warning)
 
     with open(args.config, 'r') as stream:
         hyper_params = load(stream, Loader=yaml.FullLoader)
