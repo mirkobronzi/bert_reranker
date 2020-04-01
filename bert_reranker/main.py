@@ -4,7 +4,11 @@ import argparse
 import logging
 import os
 import sys
+import random
 
+
+from tqdm import tqdm
+import torch
 import pytorch_lightning as pl
 import yaml
 from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
@@ -12,6 +16,7 @@ from transformers import BertTokenizer, BertModel, AutoTokenizer, AutoModel
 from yaml import load
 
 from bert_reranker.data.data_loader import generate_natq_dataloaders
+from bert_reranker.data.test_data import evaluate_model
 from bert_reranker.models.bert_encoder import BertEncoder
 from bert_reranker.models.pl_model_loader import try_to_restore_model_weights
 from bert_reranker.models.retriever import Retriever, RetrieverTrainer
@@ -34,14 +39,17 @@ def main():
     parser.add_argument('--output', help='where to store models', required=True)
     parser.add_argument('--no-model-restoring', help='will not restore any previous model weights ('
                                                      'even if present)', action='store_true')
-    parser.add_argument('--validation-only', help='will not train - will just evaluate on dev',
+    parser.add_argument('--train', help='will not train - will just evaluate on dev',
                         action='store_true')
+    parser.add_argument('--validation', help='will not train - will just evaluate on dev',
+                        action='store_true')
+    parser.add_argument('--predict', help='will predict on the json file you provide as an arg')
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.INFO)
 
-    sys.stdout = LoggerWriter(logger.info)
-    sys.stderr = LoggerWriter(logger.warning)
+    #  sys.stdout = LoggerWriter(logger.info)
+    #  sys.stderr = LoggerWriter(logger.warning)
 
     with open(args.config, 'r') as stream:
         hyper_params = load(stream, Loader=yaml.FullLoader)
@@ -75,6 +83,8 @@ def main():
     ret = Retriever(bert_question_encoder, bert_paragraph_encoder, tokenizer,
                     hyper_params['max_question_len'], hyper_params['max_paragraph_len'],
                     hyper_params['embedding_dim'])
+
+
     os.makedirs(args.output, exist_ok=True)
     checkpoint_callback = ModelCheckpoint(
         filepath=os.path.join(args.output, '{epoch}-{val_loss:.2f}-{val_acc:.2f}'),
@@ -109,10 +119,16 @@ def main():
                                    hyper_params['loss_type'],
                                    hyper_params['optimizer_type'])
 
-    if not args.validation_only:
+    if args.train:
         trainer.fit(ret_trainee)
-    else:
+    elif args.validation:
         trainer.test(ret_trainee)
+    elif args.predict:
+        model_ckpt = torch.load(
+            ckpt_to_resume, map_location=torch.device("cpu")
+        )
+        ret_trainee.load_state_dict(model_ckpt["state_dict"])
+        evaluate_model(ret_trainee, qa_pairs_json_file=args.predict)
 
 
 if __name__ == '__main__':
