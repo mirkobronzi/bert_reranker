@@ -3,6 +3,7 @@
 import argparse
 import logging
 import os
+import sys
 
 import pytorch_lightning as pl
 import yaml
@@ -15,6 +16,7 @@ from bert_reranker.models.bert_encoder import BertEncoder
 from bert_reranker.models.pl_model_loader import try_to_restore_model_weights
 from bert_reranker.models.retriever import Retriever, RetrieverTrainer
 from bert_reranker.utils.hp_utils import check_and_log_hp
+from bert_reranker.utils.logging_utils import LoggerWriter
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +37,9 @@ def main():
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.INFO)
+
+    sys.stdout = LoggerWriter(logger.info)
+    sys.stderr = LoggerWriter(logger.warning)
 
     with open(args.config, 'r') as stream:
         hyper_params = load(stream, Loader=yaml.FullLoader)
