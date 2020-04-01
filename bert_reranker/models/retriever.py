@@ -57,53 +57,42 @@ class Retriever(nn.Module):
     def predict(self, question_str: str, batch_paragraph_strs: List[str], refresh_cache = False):
         self.eval()
         with torch.no_grad():
-            ## Todo: embed all unique docs, then create ranking for all questions, then find overlap with constrained ranking
-            batch_paragraph_array = np.random.random((len(batch_paragraph_strs), self.emb_dim))
-            hashes = {}
-            uncached_paragraphs = []
-            uncached_hashes = []
-            for ind, i in enumerate(batch_paragraph_strs):
-                hash = self.str2hash(i)
-                hashes[hash] = ind
-                if hash in self.cache_hash2array:
-                    batch_paragraph_array[ind,:] = deepcopy(self.cache_hash2array[hash])
-                else:
-                    uncached_paragraphs.append(i)
-                    uncached_hashes.append(hash)
-                    self.cache_hash2str[hash] = i
-            inputs = self.tokenizer.batch_encode_plus(
-                uncached_paragraphs,
+            ## TODO this is only a single batch
+            ## TODO Add hashing
+
+            paragraph_inputs = self.tokenizer.batch_encode_plus(
+                 batch_paragraph_strs,
                  add_special_tokens=True,
                  pad_to_max_length=True,
                  max_length=self.max_paragraph_len,
                  return_tensors='pt'
              )
-            if len(inputs):
-                tmp_device = next(self.bert_paragraph_encoder.parameters()).device
-                inputs = {i:inputs[i].to(tmp_device) for i in inputs}
-                uncached_paragraph_array = self.bert_paragraph_encoder(
-                    **inputs
-                ).detach().cpu().numpy()
-                for ind, i in enumerate(uncached_paragraph_array):
-                    self.cache_hash2array[uncached_hashes[ind]] = deepcopy(i)
-                    batch_paragraph_array[ind,:] = deepcopy(i)
-            inputs = self.tokenizer.encode_plus(question_str, add_special_tokens=True,
+
+            tmp_device = next(self.bert_paragraph_encoder.parameters()).device
+            p_inputs = {k: v.to(tmp_device).unsqueeze(0) for k,v in paragraph_inputs.items()}
+
+            question_inputs = self.tokenizer.encode_plus(question_str, add_special_tokens=True,
                    max_length=self.max_question_len, pad_to_max_length=True,
                    return_tensors='pt')
             tmp_device = next(self.bert_question_encoder.parameters()).device
-            inputs = {i:inputs[i].to(tmp_device) for i in inputs}
-            question_array = self.bert_question_encoder(
-                **inputs
+            q_inputs = {k: v.to(tmp_device) for k,v in question_inputs.items()}
+
+            q_emb, p_embs = self.forward(
+                q_inputs['input_ids'], q_inputs['attention_mask'], q_inputs['token_type_ids'],
+                p_inputs['input_ids'], p_inputs['attention_mask'], p_inputs['token_type_ids'],
             )
+
             relevance_scores = torch.sigmoid(
-                torch.mm(torch.tensor(batch_paragraph_array, dtype=question_array.dtype).to(question_array.device),
-                         question_array.T)).reshape(-1)
+                torch.matmul(q_emb, p_embs.squeeze(0).T).squeeze(0)
+            )
+
             rerank_index = torch.argsort(-relevance_scores)
             relevance_scores_numpy = relevance_scores.detach().cpu().numpy()
             rerank_index_numpy = rerank_index.detach().cpu().numpy()
             reranked_paragraphs = [batch_paragraph_strs[i] for i in rerank_index_numpy]
             reranked_relevance_scores = relevance_scores_numpy[rerank_index_numpy]
             return reranked_paragraphs, reranked_relevance_scores, rerank_index_numpy
+
 
 
 class RetrieverTrainer(pl.LightningModule):
