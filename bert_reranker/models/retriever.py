@@ -108,11 +108,13 @@ class Retriever(nn.Module):
 
 class RetrieverTrainer(pl.LightningModule):
 
-    def __init__(self, retriever, train_data, dev_data, emb_dim, loss_type, optimizer_type):
+    def __init__(self, retriever, train_data, dev_data, test_data, emb_dim, loss_type,
+                 optimizer_type):
         super(RetrieverTrainer, self).__init__()
         self.retriever = retriever
         self.train_data = train_data
         self.dev_data = dev_data
+        self.test_data = test_data
         self.emb_dim = emb_dim
         self.loss_type = loss_type
         self.optimizer_type = optimizer_type
@@ -210,6 +212,10 @@ class RetrieverTrainer(pl.LightningModule):
         }
         return results
 
+    def test_step(self, batch, batch_idx):
+        # we do the same stuff as in the validation phase
+        return self.validation_step(batch, batch_idx)
+
     def configure_optimizers(self):
         if self.optimizer_type == 'adamw':
             return torch.optim.AdamW([p for p in self.parameters() if p.requires_grad])
@@ -223,3 +229,6 @@ class RetrieverTrainer(pl.LightningModule):
 
     def val_dataloader(self):
         return self.dev_data
+
+    def test_dataloader(self):
+        return self.test_data
