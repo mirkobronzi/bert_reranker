@@ -44,12 +44,15 @@ def main():
     parser.add_argument('--validation', help='will not train - will just evaluate on dev',
                         action='store_true')
     parser.add_argument('--predict', help='will predict on the json file you provide as an arg')
+    parser.add_argument('--redirect-log', help='will intercept any stdout/err and log it',
+                        action='store_true')
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.INFO)
 
-    #  sys.stdout = LoggerWriter(logger.info)
-    #  sys.stderr = LoggerWriter(logger.warning)
+    if args.redirect_log:
+        sys.stdout = LoggerWriter(logger.info)
+        sys.stderr = LoggerWriter(logger.warning)
 
     with open(args.config, 'r') as stream:
         hyper_params = load(stream, Loader=yaml.FullLoader)
@@ -57,7 +60,7 @@ def main():
     check_and_log_hp(
         ['natq_json_file', 'cache_folder', 'batch_size', 'model_name', 'max_question_len',
          'max_paragraph_len', 'embedding_dim', 'patience', 'gradient_clipping', 'loss_type',
-         'optimizer_type', 'freeze_bert', 'pooling_type'],
+         'optimizer_type', 'freeze_bert', 'pooling_type', 'precision'],
         hyper_params)
 
     os.makedirs(hyper_params['cache_folder'], exist_ok=True)
@@ -96,6 +99,9 @@ def main():
 
     early_stopping = EarlyStopping('val_acc', mode='max', patience=hyper_params['patience'])
 
+    if hyper_params['precision'] not in {16, 32}:
+        raise ValueError('precision should be either 16 or 32')
+
     if not args.no_model_restoring:
         ckpt_to_resume = try_to_restore_model_weights(args.output)
 
@@ -111,6 +117,7 @@ def main():
         gradient_clip_val=hyper_params['gradient_clipping'],
         checkpoint_callback=checkpoint_callback,
         early_stop_callback=early_stopping,
+        precision=hyper_params['precision'],
         resume_from_checkpoint=ckpt_to_resume)
 
     # note we are passing dev_dataloader for both dev and test
