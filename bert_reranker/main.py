@@ -15,7 +15,7 @@ from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
 from transformers import AutoTokenizer, AutoModel
 from yaml import load
 
-from bert_reranker.data.data_loader import generate_natq_dataloaders
+from bert_reranker.data.data_loader import generate_dataloaders
 from bert_reranker.data.evaluate import evaluate_model
 from bert_reranker.models.bert_encoder import BertEncoder
 from bert_reranker.models.pl_model_loader import try_to_restore_model_weights
@@ -59,9 +59,9 @@ def main():
         hyper_params = load(stream, Loader=yaml.FullLoader)
 
     check_and_log_hp(
-        ['natq_train_file', 'natq_dev_file', 'cache_folder', 'batch_size', 'model_name', 'max_question_len',
-         'max_paragraph_len', 'embedding_dim', 'patience', 'gradient_clipping', 'loss_type',
-         'optimizer_type', 'freeze_bert', 'pooling_type', 'precision'],
+        ['train_file', 'dev_file', 'cache_folder', 'batch_size', 'model_name',
+         'max_question_len', 'max_paragraph_len', 'embedding_dim', 'patience', 'gradient_clipping',
+         'loss_type', 'optimizer_type', 'freeze_bert', 'pooling_type', 'precision'],
         hyper_params)
 
     os.makedirs(hyper_params['cache_folder'], exist_ok=True)
@@ -69,8 +69,8 @@ def main():
     model_name = hyper_params['model_name']
     tokenizer = AutoTokenizer.from_pretrained(model_name)
 
-    train_dataloader, dev_dataloader = generate_natq_dataloaders(
-        hyper_params['natq_train_file'], hyper_params['natq_dev_file'], hyper_params['cache_folder'],
+    train_dataloader, dev_dataloader = generate_dataloaders(
+        hyper_params['train_file'], hyper_params['dev_file'], hyper_params['cache_folder'],
         hyper_params['max_question_len'], hyper_params['max_paragraph_len'],
         tokenizer, hyper_params['batch_size'])
 
@@ -88,7 +88,6 @@ def main():
     ret = Retriever(bert_question_encoder, bert_paragraph_encoder, tokenizer_for_debug,
                     hyper_params['max_question_len'], hyper_params['max_paragraph_len'],
                     hyper_params['embedding_dim'])
-
 
     os.makedirs(args.output, exist_ok=True)
     checkpoint_callback = ModelCheckpoint(
@@ -138,6 +137,8 @@ def main():
         )
         ret_trainee.load_state_dict(model_ckpt["state_dict"])
         evaluate_model(ret_trainee, qa_pairs_json_file=args.predict)
+    else:
+        logger.warning('please select one between --train / --validate / --test')
 
 
 if __name__ == '__main__':
