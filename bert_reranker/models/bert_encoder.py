@@ -20,8 +20,6 @@ class BertEncoder(nn.Module):
             nn.ReLU(),
             nn.Linear(emb_dim, emb_dim),
         )
-        for param in self.bert.parameters():
-            param.requires_grad = False
 
     def forward(self, input_ids, attention_mask, token_type_ids):
         if self.freeze_bert:
