@@ -58,7 +58,7 @@ def main():
         hyper_params = load(stream, Loader=yaml.FullLoader)
 
     check_and_log_hp(
-        ['natq_json_file', 'cache_folder', 'batch_size', 'model_name', 'max_question_len',
+        ['natq_train_file', 'natq_dev_file', 'cache_folder', 'batch_size', 'model_name', 'max_question_len',
          'max_paragraph_len', 'embedding_dim', 'patience', 'gradient_clipping', 'loss_type',
          'optimizer_type', 'freeze_bert', 'pooling_type', 'precision'],
         hyper_params)
@@ -69,7 +69,7 @@ def main():
     tokenizer = AutoTokenizer.from_pretrained(model_name)
 
     train_dataloader, dev_dataloader = generate_natq_dataloaders(
-        hyper_params['natq_json_file'], hyper_params['cache_folder'],
+        hyper_params['natq_train_file'], hyper_params['natq_dev_file'], hyper_params['cache_folder'],
         hyper_params['max_question_len'], hyper_params['max_paragraph_len'],
         tokenizer, hyper_params['batch_size'])
 
