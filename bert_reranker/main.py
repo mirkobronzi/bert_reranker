@@ -84,10 +84,9 @@ def main():
                                          hyper_params['embedding_dim'], hyper_params['freeze_bert'],
                                          hyper_params['pooling_type'])
 
-    tokenizer_for_debug = tokenizer if args.debug else None
-    ret = Retriever(bert_question_encoder, bert_paragraph_encoder, tokenizer_for_debug,
+    ret = Retriever(bert_question_encoder, bert_paragraph_encoder, tokenizer,
                     hyper_params['max_question_len'], hyper_params['max_paragraph_len'],
-                    hyper_params['embedding_dim'])
+                    hyper_params['embedding_dim'], args.debug)
 
     os.makedirs(args.output, exist_ok=True)
     checkpoint_callback = ModelCheckpoint(

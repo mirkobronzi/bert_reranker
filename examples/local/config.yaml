@@ -1,4 +1,4 @@
-batch_size: 2
+batch_size: 1
 train_file: 'train.json'
 dev_file: 'dev.json'
 cache_folder: 'cached_natq'

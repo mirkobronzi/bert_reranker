@@ -15,11 +15,12 @@ logger = logging.getLogger(__name__)
 
 class Retriever(nn.Module):
     def __init__(self, bert_question_encoder, bert_paragraph_encoder, tokenizer,
-                 max_question_len, max_paragraph_len, emb_dim):
+                 max_question_len, max_paragraph_len, emb_dim, debug):
         super(Retriever, self).__init__()
         self.bert_question_encoder = bert_question_encoder
         self.bert_paragraph_encoder = bert_paragraph_encoder
         self.tokenizer = tokenizer
+        self.debug = debug
         self.max_question_len = max_question_len
         self.max_paragraph_len = max_paragraph_len
         self.emb_dim = emb_dim
@@ -32,7 +33,7 @@ class Retriever(nn.Module):
 
         batch_size, num_document, max_len_size = batch_input_ids_paragraphs.size()
 
-        if self.tokenizer is not None:
+        if self.debug:
             for i in range(batch_size):
                 question = self.tokenizer.convert_ids_to_tokens(
                     input_ids_question.cpu().numpy()[i])
