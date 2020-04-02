@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 
 def make_qa_pairs_faq(faq_path, n_wrong_answers=2, seed=42):
-    with open(faq_path, "r") as fh:
+    with open(faq_path, "r", encoding="utf-8") as fh:
         faq = json.load(fh)
 
     random.seed(seed)
@@ -55,7 +55,7 @@ def main():
         )
 
     with open(args.output, "w", encoding="utf-8") as out_stream:
-        json.dump(qa_pairs, out_stream, indent=4)
+        json.dump(qa_pairs, out_stream, indent=4, ensure_ascii=False)
 
 
 if __name__ == "__main__":
