@@ -23,7 +23,7 @@ def remove_html_toks(s):
     return s
 
 
-def process_natq_clean(natq_json_file, cache_folder, max_question_len, max_paragraph_len,
+def process_natq_clean(natq_train_file, natq_dev_file, cache_folder, max_question_len, max_paragraph_len,
                        tokenizer):
     """
     output format is two datasets (train.dev) - each one with a question ([batch_size, seq_len])
@@ -40,8 +40,10 @@ def process_natq_clean(natq_json_file, cache_folder, max_question_len, max_parag
     :return:
     """
 
-    if not os.path.exists(natq_json_file):
-        raise Exception('{} not found'.format(natq_json_file))
+    if not os.path.exists(natq_train_file):
+        raise Exception('{} not found'.format(natq_train_file))
+    if not os.path.exists(natq_dev_file):
+        raise Exception('{} not found'.format(natq_dev_file))
 
     cached_train = os.path.join(cache_folder, TRAIN_NAME)
     train_exists = os.path.exists(cached_train)
@@ -51,86 +53,62 @@ def process_natq_clean(natq_json_file, cache_folder, max_question_len, max_parag
     if train_exists and dev_exists:
         return
 
-    if not train_exists:
-        train_input_ids_question, train_attention_mask_question, train_token_type_ids_question, \
-        train_batch_input_ids_paragraphs, train_batch_attention_mask_paragraphs, \
-        train_batch_token_type_ids_paragraphs = [], [], [], [], [], []
+    def generate_natq_split(natq_split_file):
+        with open(natq_split_file, 'r', encoding='utf-8', errors='ignore') as in_stream:
+
+            qa_pairs = json.load(in_stream)
+            input_ids_question, attention_mask_question, token_type_ids_question, \
+            batch_input_ids_paragraphs, batch_attention_mask_paragraphs, \
+            batch_token_type_ids_paragraphs = [], [], [], [], [], []
+
+            for question, answers in tqdm(qa_pairs):
+
+                    paras = [remove_html_toks(i) for i in answers]
+
+                    input_question = tokenizer.encode_plus(question, add_special_tokens=True,
+                                                           max_length=max_question_len, pad_to_max_length=True,
+                                                           return_tensors='pt')
+                    inputs_paragraph = tokenizer.batch_encode_plus(paras,
+                                                                   add_special_tokens=True,
+                                                                   pad_to_max_length=True,
+                                                                   max_length=max_paragraph_len,
+                                                                   return_tensors='pt'
+                                                                   )
+
+                    input_ids_question.append(input_question['input_ids'])
+                    attention_mask_question.append(input_question['attention_mask'])
+                    token_type_ids_question.append(input_question['token_type_ids'])
+                    batch_input_ids_paragraphs.append(inputs_paragraph['input_ids'].unsqueeze(0))
+                    batch_attention_mask_paragraphs.append(inputs_paragraph['attention_mask'].unsqueeze(0))
+                    batch_token_type_ids_paragraphs.append(inputs_paragraph['token_type_ids'].unsqueeze(0))
+
+            dataset = TensorDataset(
+                torch.cat(input_ids_question),
+                torch.cat(attention_mask_question),
+                torch.cat(token_type_ids_question),
+                torch.cat(batch_input_ids_paragraphs),
+                torch.cat(batch_attention_mask_paragraphs),
+                torch.cat(batch_token_type_ids_paragraphs),
+            )
+
+        return dataset
+
     if not dev_exists:
-        dev_input_ids_question, dev_attention_mask_question, dev_token_type_ids_question, \
-        dev_batch_input_ids_paragraphs, dev_batch_attention_mask_paragraphs, \
-        dev_batch_token_type_ids_paragraphs = [], [], [], [], [], []
-
-    with open(natq_json_file, 'r', encoding='utf-8', errors='ignore') as in_stream:
-        for line in tqdm(in_stream):
-            data = json.loads(line)
-
-            if data['num_positives'] >= 1 and data['num_negatives'] >= 2:
-
-                if data['dataset'] == 'train' and train_exists:
-                    continue
-                if data['dataset'] == 'dev' and dev_exists:
-                    continue
-
-                question = data['question']
-                paras = data['right_paragraphs'][:1] + data['wrong_paragraphs'][:2]
-                paras = [remove_html_toks(i) for i in paras]
-
-                input_question = tokenizer.encode_plus(question, add_special_tokens=True,
-                                                       max_length=max_question_len, pad_to_max_length=True,
-                                                       return_tensors='pt')
-                inputs_paragraph = tokenizer.batch_encode_plus(paras,
-                                                               add_special_tokens=True,
-                                                               pad_to_max_length=True,
-                                                               max_length=max_paragraph_len,
-                                                               return_tensors='pt'
-                                                               )
-
-                if data['dataset'] == 'train':
-                    train_input_ids_question.append(input_question['input_ids'])
-                    train_attention_mask_question.append(input_question['attention_mask'])
-                    train_token_type_ids_question.append(input_question['token_type_ids'])
-                    train_batch_input_ids_paragraphs.append(inputs_paragraph['input_ids'].unsqueeze(0))
-                    train_batch_attention_mask_paragraphs.append(inputs_paragraph['attention_mask'].unsqueeze(0))
-                    train_batch_token_type_ids_paragraphs.append(inputs_paragraph['token_type_ids'].unsqueeze(0))
-
-                elif data['dataset'] == 'dev':
-                    dev_input_ids_question.append(input_question['input_ids'])
-                    dev_attention_mask_question.append(input_question['attention_mask'])
-                    dev_token_type_ids_question.append(input_question['token_type_ids'])
-                    dev_batch_input_ids_paragraphs.append(inputs_paragraph['input_ids'].unsqueeze(0))
-                    dev_batch_attention_mask_paragraphs.append(inputs_paragraph['attention_mask'].unsqueeze(0))
-                    dev_batch_token_type_ids_paragraphs.append(inputs_paragraph['token_type_ids'].unsqueeze(0))
-    if not dev_exists:
-        dev_set = TensorDataset(
-            torch.cat(dev_input_ids_question),
-            torch.cat(dev_attention_mask_question),
-            torch.cat(dev_token_type_ids_question),
-            torch.cat(dev_batch_input_ids_paragraphs),
-            torch.cat(dev_batch_attention_mask_paragraphs),
-            torch.cat(dev_batch_token_type_ids_paragraphs),
-        )
+        dev_set = generate_natq_split(natq_dev_file)
         torch.save(dev_set, cached_dev)
 
     if not train_exists:
-        train_set = TensorDataset(
-            torch.cat(train_input_ids_question),
-            torch.cat(train_attention_mask_question),
-            torch.cat(train_token_type_ids_question),
-            torch.cat(train_batch_input_ids_paragraphs),
-            torch.cat(train_batch_attention_mask_paragraphs),
-            torch.cat(train_batch_token_type_ids_paragraphs),
-        )
-
+        train_set = generate_natq_split(natq_train_file)
         torch.save(train_set, cached_train)
 
 
-def generate_natq_dataloaders(natq_json_file, cache_folder, max_question_len, max_paragraph_len,
+def generate_natq_dataloaders(natq_train_file, natq_dev_file, cache_folder, max_question_len, max_paragraph_len,
                               tokenizer, batch_size):
 
     cached_train = os.path.join(cache_folder, 'natq_train.pt')
     cached_dev = os.path.join(cache_folder, 'natq_dev.pt')
     if (not os.path.exists(cached_train)) or (not os.path.exists(cached_dev)):
-        process_natq_clean(natq_json_file, cache_folder, max_question_len, max_paragraph_len,
+        process_natq_clean(natq_train_file, natq_dev_file, cache_folder, max_question_len, max_paragraph_len,
                            tokenizer)
 
     train_set = torch.load(cached_train)
