@@ -2,6 +2,7 @@ import json
 
 from tqdm import tqdm
 
+
 def evaluate_model(ret_trainee, qa_pairs_json_file):
 
     # Run the test on samples from natq to sanity check evreything is correct

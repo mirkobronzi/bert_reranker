@@ -40,9 +40,8 @@ def make_qa_pairs_faq(faq_path, n_wrong_answers=2, seed=42):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--input',
-                        help='input json (in natq format)', required=True)
-    parser.add_argument('--output', help='output json', required=True)
+    parser.add_argument("--input", help="input json (in natq format)", required=True)
+    parser.add_argument("--output", help="output json", required=True)
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.INFO)
@@ -59,6 +58,5 @@ def main():
         json.dump(qa_pairs, out_stream, indent=4)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
-
