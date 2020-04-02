@@ -41,7 +41,7 @@ def main():
                                                      'even if present)', action='store_true')
     parser.add_argument('--train', help='will not train - will just evaluate on dev',
                         action='store_true')
-    parser.add_argument('--validation', help='will not train - will just evaluate on dev',
+    parser.add_argument('--validate', help='will not train - will just evaluate on dev',
                         action='store_true')
     parser.add_argument('--predict', help='will predict on the json file you provide as an arg')
     parser.add_argument('--redirect-log', help='will intercept any stdout/err and log it',
@@ -128,7 +128,7 @@ def main():
 
     if args.train:
         trainer.fit(ret_trainee)
-    elif args.validation:
+    elif args.validate:
         trainer.test(ret_trainee)
     elif args.predict:
         model_ckpt = torch.load(
