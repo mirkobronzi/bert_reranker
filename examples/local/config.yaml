@@ -10,5 +10,5 @@ max_paragraph_len: 512
 embedding_dim: 768
 patience: 5
 gradient_clipping: 0
-pooling_type: 'cls'
+pooling_type: 'avg'
 precision: 32

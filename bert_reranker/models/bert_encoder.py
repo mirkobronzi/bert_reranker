@@ -1,6 +1,7 @@
 import torch.nn as nn
 import torch.nn.functional as F
 import torch
+from transformers import DistilBertModel, T5Model
 
 
 class BertEncoder(nn.Module):
@@ -23,11 +24,10 @@ class BertEncoder(nn.Module):
     def forward(self, input_ids, attention_mask, token_type_ids):
         if self.freeze_bert:
             with torch.no_grad():
-                h, _ = self.bert(input_ids=input_ids, attention_mask=attention_mask,
-                                 token_type_ids=token_type_ids)
+                h = self.run_bert(attention_mask, input_ids, token_type_ids)
         else:
-            h, _ = self.bert(input_ids=input_ids, attention_mask=attention_mask,
-                             token_type_ids=token_type_ids)
+            h = self.run_bert(attention_mask, input_ids, token_type_ids)
+
         if self.pooling_type == 'cls':
             result_pooling = h[:, 0, :]
         elif self.pooling_type == 'avg':
@@ -39,4 +39,12 @@ class BertEncoder(nn.Module):
             raise ValueError('pooling {} not supported.'.format(self.pooling_type))
         h_transformed = self.net(result_pooling)
         return F.normalize(h_transformed)
+
+    def run_bert(self, attention_mask, input_ids, token_type_ids):
+        if type(self.bert) in {DistilBertModel, T5Model}:
+            h = self.bert(input_ids=input_ids, attention_mask=attention_mask)
+        else:
+            h = self.bert(input_ids=input_ids, attention_mask=attention_mask,
+                          token_type_ids=token_type_ids)
+        return h[0]
 
