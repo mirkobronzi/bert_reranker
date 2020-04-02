@@ -4,12 +4,9 @@ import argparse
 import logging
 import os
 import sys
-import random
 
-
-from tqdm import tqdm
-import torch
 import pytorch_lightning as pl
+import torch
 import yaml
 from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
 from transformers import AutoTokenizer, AutoModel

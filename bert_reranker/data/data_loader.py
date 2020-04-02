@@ -1,8 +1,12 @@
+import logging
+import ntpath
 import os
 import torch
 from torch.utils.data import TensorDataset, DataLoader
 from tqdm.auto import tqdm
 import json
+
+logger = logging.getLogger(__name__)
 
 
 def remove_html_toks(s):
@@ -79,20 +83,31 @@ def json_to_dataset(json_file, max_question_len, max_paragraph_len, tokenizer):
 def generate_dataloaders(train_file, dev_file, cache_folder, max_question_len,
                          max_paragraph_len, tokenizer, batch_size):
 
-    cached_train = os.path.join(cache_folder, 'natq_train.pt')
-    cached_dev = os.path.join(cache_folder, 'natq_dev.pt')
+    train_file_name = ntpath.basename(train_file)
+    dev_file_name = ntpath.basename(dev_file)
+    cached_train = os.path.join(cache_folder, train_file_name + '.pt')
+    cached_dev = os.path.join(cache_folder, dev_file_name + '.pt')
 
     if not os.path.exists(cached_train):
+        logger.info('cached file {} not found - computing it'.format(cached_train))
         train_dataset = json_to_dataset(train_file, max_question_len, max_paragraph_len,
                                         tokenizer)
         torch.save(train_dataset, cached_train)
+    else:
+        logger.info('cached file {} found - loading'.format(cached_train))
 
     if not os.path.exists(cached_dev):
+        logger.info('cached file {} not found - computing it'.format(cached_dev))
         dev_dataset = json_to_dataset(dev_file, max_question_len, max_paragraph_len,
                                       tokenizer)
         torch.save(dev_dataset, cached_dev)
+    else:
+        logger.info('cached file {} found - loading'.format(cached_dev))
 
     train_set = torch.load(cached_train)
     dev_set = torch.load(cached_dev)
+
+    logger.info('train size {} / dev size {}'.format(len(train_set), len(dev_set)))
+
     return (DataLoader(train_set, batch_size=batch_size),
             DataLoader(dev_set, batch_size=batch_size))
