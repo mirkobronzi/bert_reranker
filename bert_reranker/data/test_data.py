@@ -84,8 +84,9 @@ def evaluate_model(ret_trainee, qa_pairs_json_file):
         if out[2][0] == 0:  # answers[0] is always the correct answer
             correct += 1
 
-    acc = correct / len(qa_pairs_natq) * 100
+    acc = correct / len(qa_pairs) * 100
     print("Accuracy: %", acc)
+
 
 if __name__ == '__main__':
 
