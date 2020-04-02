@@ -1,4 +1,5 @@
 import hashlib
+import logging
 import random
 from copy import deepcopy
 from typing import List
@@ -8,6 +9,8 @@ import pytorch_lightning as pl
 import torch
 import torch.nn as nn
 from sklearn.metrics import accuracy_score
+
+logger = logging.getLogger(__name__)
 
 
 class Retriever(nn.Module):
@@ -28,6 +31,16 @@ class Retriever(nn.Module):
                          batch_token_type_ids_paragraphs):
 
         batch_size, num_document, max_len_size = batch_input_ids_paragraphs.size()
+
+        if self.tokenizer is not None:
+            for i in range(batch_size):
+                question = self.tokenizer.convert_ids_to_tokens(
+                    input_ids_question.cpu().numpy()[i])
+                logger.info('>> {}'.format(question))
+                for j in range(num_document):
+                    answer = self.tokenizer.convert_ids_to_tokens(
+                        batch_input_ids_paragraphs.cpu().numpy()[i][j])
+                    logger.info('>>>> {}'.format(answer))
 
         h_question = self.bert_question_encoder(
             input_ids=input_ids_question, attention_mask=attention_mask_question,

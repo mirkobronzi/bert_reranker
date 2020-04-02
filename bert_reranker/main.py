@@ -12,7 +12,7 @@ import torch
 import pytorch_lightning as pl
 import yaml
 from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
-from transformers import BertTokenizer, BertModel, AutoTokenizer, AutoModel
+from transformers import AutoTokenizer, AutoModel
 from yaml import load
 
 from bert_reranker.data.data_loader import generate_natq_dataloaders
@@ -46,6 +46,7 @@ def main():
     parser.add_argument('--predict', help='will predict on the json file you provide as an arg')
     parser.add_argument('--redirect-log', help='will intercept any stdout/err and log it',
                         action='store_true')
+    parser.add_argument('--debug', help='will log more info', action='store_true')
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.INFO)
@@ -83,7 +84,8 @@ def main():
                                          hyper_params['embedding_dim'], hyper_params['freeze_bert'],
                                          hyper_params['pooling_type'])
 
-    ret = Retriever(bert_question_encoder, bert_paragraph_encoder, tokenizer,
+    tokenizer_for_debug = tokenizer if args.debug else None
+    ret = Retriever(bert_question_encoder, bert_paragraph_encoder, tokenizer_for_debug,
                     hyper_params['max_question_len'], hyper_params['max_paragraph_len'],
                     hyper_params['embedding_dim'])
 
