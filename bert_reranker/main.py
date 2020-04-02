@@ -16,7 +16,7 @@ from transformers import BertTokenizer, BertModel, AutoTokenizer, AutoModel
 from yaml import load
 
 from bert_reranker.data.data_loader import generate_natq_dataloaders
-from bert_reranker.data.test_data import evaluate_model
+from bert_reranker.data.evaluate import evaluate_model
 from bert_reranker.models.bert_encoder import BertEncoder
 from bert_reranker.models.pl_model_loader import try_to_restore_model_weights
 from bert_reranker.models.retriever import Retriever, RetrieverTrainer
