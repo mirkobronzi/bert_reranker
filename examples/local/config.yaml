@@ -12,3 +12,4 @@ patience: 5
 gradient_clipping: 0
 pooling_type: 'cls'
 precision: 32
+dropout: 0.0
