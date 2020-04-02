@@ -11,7 +11,7 @@ setup(
         'torch', 'transformers', 'pytorch-lightning', 'sklearn'],
     entry_points={
         'console_scripts': [
-            'train=bert_reranker.main:main'
+            'main=bert_reranker.main:main'
         ],
     }
 )

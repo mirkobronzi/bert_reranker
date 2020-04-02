@@ -7,6 +7,7 @@ class BertEncoder(nn.Module):
 
     def __init__(self, bert, max_seq_len, emb_dim, freeze_bert, pooling_type):
         super(BertEncoder, self).__init__()
+
         self.pooling_type = pooling_type
         self.max_seq_len = max_seq_len
         self.emb_dim = emb_dim

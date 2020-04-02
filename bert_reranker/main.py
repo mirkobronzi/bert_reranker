@@ -6,12 +6,14 @@ import os
 import sys
 
 import pytorch_lightning as pl
+import torch
 import yaml
 from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
 from transformers import AutoTokenizer, AutoModel
 from yaml import load
 
-from bert_reranker.data.data_loader import generate_natq_dataloaders
+from bert_reranker.data.data_loader import generate_dataloaders
+from bert_reranker.data.evaluate import evaluate_model
 from bert_reranker.models.bert_encoder import BertEncoder
 from bert_reranker.models.pl_model_loader import try_to_restore_model_weights
 from bert_reranker.models.retriever import Retriever, RetrieverTrainer
@@ -34,8 +36,11 @@ def main():
     parser.add_argument('--output', help='where to store models', required=True)
     parser.add_argument('--no-model-restoring', help='will not restore any previous model weights ('
                                                      'even if present)', action='store_true')
-    parser.add_argument('--validation-only', help='will not train - will just evaluate on dev',
+    parser.add_argument('--train', help='will not train - will just evaluate on dev',
                         action='store_true')
+    parser.add_argument('--validate', help='will not train - will just evaluate on dev',
+                        action='store_true')
+    parser.add_argument('--predict', help='will predict on the json file you provide as an arg')
     parser.add_argument('--redirect-log', help='will intercept any stdout/err and log it',
                         action='store_true')
     parser.add_argument('--debug', help='will log more info', action='store_true')
@@ -51,9 +56,9 @@ def main():
         hyper_params = load(stream, Loader=yaml.FullLoader)
 
     check_and_log_hp(
-        ['natq_json_file', 'cache_folder', 'batch_size', 'model_name', 'max_question_len',
-         'max_paragraph_len', 'embedding_dim', 'patience', 'gradient_clipping', 'loss_type',
-         'optimizer_type', 'freeze_bert', 'pooling_type', 'precision'],
+        ['train_file', 'dev_file', 'cache_folder', 'batch_size', 'model_name',
+         'max_question_len', 'max_paragraph_len', 'embedding_dim', 'patience', 'gradient_clipping',
+         'loss_type', 'optimizer_type', 'freeze_bert', 'pooling_type', 'precision'],
         hyper_params)
 
     os.makedirs(hyper_params['cache_folder'], exist_ok=True)
@@ -61,8 +66,8 @@ def main():
     model_name = hyper_params['model_name']
     tokenizer = AutoTokenizer.from_pretrained(model_name)
 
-    train_dataloader, dev_dataloader = generate_natq_dataloaders(
-        hyper_params['natq_json_file'], hyper_params['cache_folder'],
+    train_dataloader, dev_dataloader = generate_dataloaders(
+        hyper_params['train_file'], hyper_params['dev_file'], hyper_params['cache_folder'],
         hyper_params['max_question_len'], hyper_params['max_paragraph_len'],
         tokenizer, hyper_params['batch_size'])
 
@@ -76,10 +81,10 @@ def main():
                                          hyper_params['embedding_dim'], hyper_params['freeze_bert'],
                                          hyper_params['pooling_type'])
 
-    tokenizer_for_debug = tokenizer if args.debug else None
-    ret = Retriever(bert_question_encoder, bert_paragraph_encoder, tokenizer_for_debug,
+    ret = Retriever(bert_question_encoder, bert_paragraph_encoder, tokenizer,
                     hyper_params['max_question_len'], hyper_params['max_paragraph_len'],
-                    hyper_params['embedding_dim'])
+                    hyper_params['embedding_dim'], args.debug)
+
     os.makedirs(args.output, exist_ok=True)
     checkpoint_callback = ModelCheckpoint(
         filepath=os.path.join(args.output, '{epoch}-{val_loss:.2f}-{val_acc:.2f}'),
@@ -118,10 +123,18 @@ def main():
                                    hyper_params['loss_type'],
                                    hyper_params['optimizer_type'])
 
-    if not args.validation_only:
+    if args.train:
         trainer.fit(ret_trainee)
-    else:
+    elif args.validate:
         trainer.test(ret_trainee)
+    elif args.predict:
+        model_ckpt = torch.load(
+            ckpt_to_resume, map_location=torch.device("cpu")
+        )
+        ret_trainee.load_state_dict(model_ckpt["state_dict"])
+        evaluate_model(ret_trainee, qa_pairs_json_file=args.predict)
+    else:
+        logger.warning('please select one between --train / --validate / --test')
 
 
 if __name__ == '__main__':
