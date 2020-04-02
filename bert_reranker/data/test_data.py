@@ -4,6 +4,7 @@ import random
 
 from tqdm import tqdm
 
+
 def remove_html_tags(data):
     p = re.compile(r"<.*?>")
     return p.sub("", data)
@@ -88,7 +89,7 @@ def evaluate_model(ret_trainee, qa_pairs_json_file):
     print("Accuracy: %", acc)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
 
     # Code to generate the faq question-answer pairs
     faq_path = "quebec-en-faq.json"
@@ -99,9 +100,7 @@ if __name__ == '__main__':
     # Generate 10 rounds of FAQ and correct and wrong answer pairs
     for seed in range(10):
         qa_pairs.extend(
-            make_qa_pairs_faq(
-                faq_path, n_wrong_answers=n_wrong_answers, seed=seed
-            )
+            make_qa_pairs_faq(faq_path, n_wrong_answers=n_wrong_answers, seed=seed)
         )
-    with open('faq_evaluation_set.json', "w", encoding="utf-8") as fp:
+    with open("faq_evaluation_set.json", "w", encoding="utf-8") as fp:
         json.dump(qa_pairs, fp, indent=4, ensure_ascii=False)
