@@ -18,8 +18,8 @@ class BertEncoder(nn.Module):
         prev_hidden_size = bert.config.hidden_size
         for i, size in enumerate(top_layer_sizes):
             seq.append(nn.Linear(prev_hidden_size, size))
-            seq.append(nn.ReLU())
             if i < len(top_layer_sizes) - 1:
+                seq.append(nn.ReLU())
                 seq.append(nn.Dropout(p=dropout, inplace=False))
             prev_hidden_size = size
         self.net = nn.Sequential(*seq)
