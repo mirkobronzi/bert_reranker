@@ -127,7 +127,7 @@ class RetrieverTrainer(pl.LightningModule):
     def step_helper(self, batch):
         input_ids_question, attention_mask_question, token_type_ids_question, \
         batch_input_ids_paragraphs, batch_attention_mask_paragraphs, \
-        batch_token_type_ids_paragraphs = batch
+        batch_token_type_ids_paragraphs, targets = batch
 
         inputs = {
             'input_ids_question': input_ids_question,
@@ -144,15 +144,15 @@ class RetrieverTrainer(pl.LightningModule):
         all_prob = torch.sigmoid(all_dots)
 
         if self.loss_type == 'negative_sampling':
+            raise ValueError('need to fix now that we have target that is not always 0')
             pos_loss = - torch.log(all_prob[:, 0]).sum()
             neg_loss = - torch.log(1 - all_prob[:, 1:]).sum()
             loss = pos_loss + neg_loss
         elif self.loss_type == 'classification':
             # all_dots are the logits
-            loss = self.cross_entropy(
-                all_dots, torch.zeros(all_dots.size()[0], dtype=torch.long).to(all_dots.device)
-            )
+            loss = self.cross_entropy(all_dots, targets)
         elif self.loss_type == 'triplet_loss':
+            raise ValueError('need to fix now that we have target that is not always 0')
             assert p_embs.shape[1] == 3
             # picking a random negative example
             negative_index = random.randint(1, 2)
@@ -161,6 +161,7 @@ class RetrieverTrainer(pl.LightningModule):
                                 p_embs[:, 0, :],
                                 p_embs[:, negative_index, :])
         elif self.loss_type == 'cosine':
+            raise ValueError('need to fix now that we have target that is not always 0')
             targets = torch.ones(batch_size, num_document)
             # first target stays as 1 (we want those vectors to be similar)
             # other targets -1 (we want them to be far away)
@@ -196,7 +197,7 @@ class RetrieverTrainer(pl.LightningModule):
         loss, all_prob = self.step_helper(batch)
         batch_size = all_prob.size()[0]
         _, y_hat = torch.max(all_prob, 1)
-        y_true = torch.zeros(batch_size, dtype=y_hat.dtype).type_as(y_hat)
+        y_true = batch[-1]  #torch.zeros(batch_size, dtype=y_hat.dtype).type_as(y_hat)
         val_acc = torch.tensor(accuracy_score(y_true.cpu(), y_hat.cpu())).to(y_true.device)
         return {'val_loss': loss, 'val_acc': val_acc}
 
