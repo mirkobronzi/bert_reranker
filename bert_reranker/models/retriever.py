@@ -162,13 +162,12 @@ class RetrieverTrainer(pl.LightningModule):
                                 p_embs[:, 0, :],
                                 p_embs[:, negative_index, :])
         elif self.loss_type == 'cosine':
-            # every target is set to -1 = ecept for the correct answer (which is 1)
+            # every target is set to -1 = except for the correct answer (which is 1)
             sin_targets = [[-1] * num_document for _ in range(batch_size)]
             for i, target in enumerate(targets):
                 sin_targets[i][target.cpu().item()] = 1
-            sin_targets = torch.ones(batch_size, num_document) * -1
 
-            sin_targets = sin_targets.reshape(-1).to(q_emb.device)
+            sin_targets = torch.tensor(sin_targets).reshape(-1).to(q_emb.device)
             q_emb.repeat(num_document, 1), p_embs.reshape(-1, emb_dim)
             loss = self.cosine_loss(
                 q_emb.repeat(num_document, 1), p_embs.reshape(-1, emb_dim),
