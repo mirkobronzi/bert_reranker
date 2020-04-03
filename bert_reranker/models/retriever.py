@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 class Retriever(nn.Module):
     def __init__(self, bert_question_encoder, bert_paragraph_encoder, tokenizer,
-                 max_question_len, max_paragraph_len, emb_dim, debug):
+                 max_question_len, max_paragraph_len, debug):
         super(Retriever, self).__init__()
         self.bert_question_encoder = bert_question_encoder
         self.bert_paragraph_encoder = bert_paragraph_encoder
@@ -23,7 +23,6 @@ class Retriever(nn.Module):
         self.debug = debug
         self.max_question_len = max_question_len
         self.max_paragraph_len = max_paragraph_len
-        self.emb_dim = emb_dim
         self.cache_hash2str = {}
         self.cache_hash2array = {}
 
@@ -108,17 +107,15 @@ class Retriever(nn.Module):
             return reranked_paragraphs, reranked_relevance_scores, rerank_index_numpy
 
 
-
 class RetrieverTrainer(pl.LightningModule):
 
-    def __init__(self, retriever, train_data, dev_data, test_data, emb_dim, loss_type,
+    def __init__(self, retriever, train_data, dev_data, test_data, loss_type,
                  optimizer_type):
         super(RetrieverTrainer, self).__init__()
         self.retriever = retriever
         self.train_data = train_data
         self.dev_data = dev_data
         self.test_data = test_data
-        self.emb_dim = emb_dim
         self.loss_type = loss_type
         self.optimizer_type = optimizer_type
 
@@ -141,11 +138,9 @@ class RetrieverTrainer(pl.LightningModule):
             'batch_token_type_ids_paragraphs': batch_token_type_ids_paragraphs
         }
 
-        h_question, h_paragraphs_batch = self(**inputs)
-        batch_size, num_document, emb_dim = batch_input_ids_paragraphs.size()
-
-        all_dots = torch.bmm(h_question.repeat(num_document, 1).unsqueeze(1),
-            h_paragraphs_batch.reshape(-1, self.emb_dim).unsqueeze(2)).reshape(batch_size, num_document)
+        q_emb, p_embs = self(**inputs)
+        batch_size, num_document, emb_dim = p_embs.size()
+        all_dots = torch.bmm(q_emb.unsqueeze(1), p_embs.transpose(2, 1)).squeeze(1)
         all_prob = torch.sigmoid(all_dots)
 
         if self.loss_type == 'negative_sampling':
@@ -153,26 +148,28 @@ class RetrieverTrainer(pl.LightningModule):
             neg_loss = - torch.log(1 - all_prob[:, 1:]).sum()
             loss = pos_loss + neg_loss
         elif self.loss_type == 'classification':
-            logits = all_dots
+            # all_dots are the logits
             loss = self.cross_entropy(
-                logits, torch.zeros(logits.size()[0], dtype=torch.long).to(logits.device)
+                all_dots, torch.zeros(all_dots.size()[0], dtype=torch.long).to(all_dots.device)
             )
         elif self.loss_type == 'triplet_loss':
-            assert h_paragraphs_batch.shape[1] == 3
+            assert p_embs.shape[1] == 3
             # picking a random negative example
             negative_index = random.randint(1, 2)
             triplet_loss = nn.TripletMarginLoss(margin=1.0, p=2)
-            loss = triplet_loss(h_question,
-                                h_paragraphs_batch[:, 0, :],
-                                h_paragraphs_batch[:, negative_index, :])
+            loss = triplet_loss(q_emb,
+                                p_embs[:, 0, :],
+                                p_embs[:, negative_index, :])
         elif self.loss_type == 'cosine':
-            labs = torch.ones(batch_size, num_document)
-            labs[:, 1:] *= -1
-            labs = labs.reshape(-1).to(h_question.device)
-            h_question.repeat(num_document, 1), h_paragraphs_batch.reshape(-1, self.emb_dim)
+            targets = torch.ones(batch_size, num_document)
+            # first target stays as 1 (we want those vectors to be similar)
+            # other targets -1 (we want them to be far away)
+            targets[:, 1:] *= -1
+            targets = targets.reshape(-1).to(q_emb.device)
+            q_emb.repeat(num_document, 1), p_embs.reshape(-1, emb_dim)
             loss = torch.nn.CosineEmbeddingLoss()(
-                h_question.repeat(num_document, 1), h_paragraphs_batch.reshape(-1, self.emb_dim),
-                labs
+                q_emb.repeat(num_document, 1), p_embs.reshape(-1, emb_dim),
+                targets
             )
         else:
             raise ValueError('loss_type {} not supported. Please choose between negative_sampling,'
