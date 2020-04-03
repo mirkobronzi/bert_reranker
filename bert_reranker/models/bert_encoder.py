@@ -5,7 +5,7 @@ import torch
 
 class BertEncoder(nn.Module):
 
-    def __init__(self, bert, max_seq_len, freeze_bert, pooling_type, top_layer_sizes):
+    def __init__(self, bert, max_seq_len, freeze_bert, pooling_type, top_layer_sizes, dropout):
         super(BertEncoder, self).__init__()
 
         self.pooling_type = pooling_type
@@ -14,9 +14,11 @@ class BertEncoder(nn.Module):
         self.freeze_bert = freeze_bert
         seq = []
         prev_hidden_size = bert.config.hidden_size
-        for size in top_layer_sizes:
+        for i, size in enumerate(top_layer_sizes):
             seq.append(nn.Linear(prev_hidden_size, size))
-            seq.append(nn.ReLU())
+            if i < len(top_layer_sizes) - 1:
+                seq.append(nn.ReLU())
+                seq.append(nn.Dropout(p=dropout, inplace=False))
             prev_hidden_size = size
         self.net = nn.Sequential(*seq)
 
