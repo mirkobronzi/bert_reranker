@@ -57,8 +57,9 @@ def main():
 
     check_and_log_hp(
         ['train_file', 'dev_file', 'cache_folder', 'batch_size', 'model_name',
-         'max_question_len', 'max_paragraph_len', 'embedding_dim', 'patience', 'gradient_clipping',
-         'loss_type', 'optimizer_type', 'freeze_bert', 'pooling_type', 'precision'],
+         'max_question_len', 'max_paragraph_len', 'patience', 'gradient_clipping',
+         'loss_type', 'optimizer_type', 'freeze_bert', 'pooling_type', 'precision',
+         'top_layer_sizes'],
         hyper_params)
 
     os.makedirs(hyper_params['cache_folder'], exist_ok=True)
@@ -75,15 +76,14 @@ def main():
     bert_paragraph = AutoModel.from_pretrained(model_name)
 
     bert_question_encoder = BertEncoder(bert_question, hyper_params['max_question_len'],
-                                        hyper_params['embedding_dim'], hyper_params['freeze_bert'],
-                                        hyper_params['pooling_type'])
+                                        hyper_params['freeze_bert'], hyper_params['pooling_type'],
+                                        hyper_params['top_layer_sizes'])
     bert_paragraph_encoder = BertEncoder(bert_paragraph, hyper_params['max_paragraph_len'],
-                                         hyper_params['embedding_dim'], hyper_params['freeze_bert'],
-                                         hyper_params['pooling_type'])
+                                         hyper_params['freeze_bert'], hyper_params['pooling_type'],
+                                         hyper_params['top_layer_sizes'])
 
     ret = Retriever(bert_question_encoder, bert_paragraph_encoder, tokenizer,
-                    hyper_params['max_question_len'], hyper_params['max_paragraph_len'],
-                    hyper_params['embedding_dim'], args.debug)
+                    hyper_params['max_question_len'], hyper_params['max_paragraph_len'], args.debug)
 
     os.makedirs(args.output, exist_ok=True)
     checkpoint_callback = ModelCheckpoint(
@@ -119,9 +119,7 @@ def main():
 
     # note we are passing dev_dataloader for both dev and test
     ret_trainee = RetrieverTrainer(ret, train_dataloader, dev_dataloader, dev_dataloader,
-                                   hyper_params['embedding_dim'],
-                                   hyper_params['loss_type'],
-                                   hyper_params['optimizer_type'])
+                                   hyper_params['loss_type'], hyper_params['optimizer_type'])
 
     if args.train:
         trainer.fit(ret_trainee)

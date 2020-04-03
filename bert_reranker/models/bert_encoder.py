@@ -5,21 +5,20 @@ import torch
 
 class BertEncoder(nn.Module):
 
-    def __init__(self, bert, max_seq_len, emb_dim, freeze_bert, pooling_type):
+    def __init__(self, bert, max_seq_len, freeze_bert, pooling_type, top_layer_sizes):
         super(BertEncoder, self).__init__()
 
         self.pooling_type = pooling_type
         self.max_seq_len = max_seq_len
-        self.emb_dim = emb_dim
         self.bert = bert
         self.freeze_bert = freeze_bert
-        self.net = nn.Sequential(
-            nn.Linear(emb_dim, emb_dim),
-            nn.ReLU(),
-            nn.Linear(emb_dim, emb_dim),
-            nn.ReLU(),
-            nn.Linear(emb_dim, emb_dim),
-        )
+        seq = []
+        prev_hidden_size = bert.config.hidden_size
+        for size in top_layer_sizes:
+            seq.append(nn.Linear(prev_hidden_size, size))
+            seq.append(nn.ReLU())
+            prev_hidden_size = size
+        self.net = nn.Sequential(*seq)
 
     def forward(self, input_ids, attention_mask, token_type_ids):
         if self.freeze_bert:
