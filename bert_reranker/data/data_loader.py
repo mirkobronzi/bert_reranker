@@ -26,8 +26,8 @@ def remove_html_toks(s):
 
 
 def shuffle_paragraphs(paragraphs):
-    assert len(paragraphs) == 3
-    random_indices = list(range(3))
+    n_paragraph = len(paragraphs)
+    random_indices = list(range(n_paragraph))
     random.shuffle(random_indices)
     shuffled_paragraphs = [paragraphs[i] for i in random_indices]
     target = random_indices.index(0)
