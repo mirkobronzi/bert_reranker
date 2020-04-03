@@ -144,9 +144,14 @@ class RetrieverTrainer(pl.LightningModule):
         all_prob = torch.sigmoid(all_dots)
 
         if self.loss_type == 'negative_sampling':
-            raise ValueError('need to fix now that we have target that is not always 0')
-            pos_loss = - torch.log(all_prob[:, 0]).sum()
-            neg_loss = - torch.log(1 - all_prob[:, 1:]).sum()
+            pos_preds = []
+            neg_preds = all_prob.clone()
+            for count, target in enumerate(targets):
+                pos_preds.append(neg_preds[count][target].clone())
+                neg_preds[count][target] = 0
+            pos_preds = torch.tensor(pos_preds).to(q_emb.device)
+            pos_loss = - torch.log(pos_preds).sum()
+            neg_loss = - torch.log(1 - neg_preds).sum()
             loss = pos_loss + neg_loss
         elif self.loss_type == 'classification':
             # all_dots are the logits
