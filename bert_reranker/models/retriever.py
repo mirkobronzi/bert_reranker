@@ -161,13 +161,15 @@ class RetrieverTrainer(pl.LightningModule):
                                 p_embs[:, 0, :],
                                 p_embs[:, negative_index, :])
         elif self.loss_type == 'cosine':
-            labs = torch.ones(batch_size, num_document)
-            labs[:, 1:] *= -1
-            labs = labs.reshape(-1).to(q_emb.device)
+            targets = torch.ones(batch_size, num_document)
+            # first target stays as 1 (we want those vectors to be similar)
+            # other targets -1 (we want them to be far away)
+            targets[:, 1:] *= -1
+            targets = targets.reshape(-1).to(q_emb.device)
             q_emb.repeat(num_document, 1), p_embs.reshape(-1, emb_dim)
             loss = torch.nn.CosineEmbeddingLoss()(
                 q_emb.repeat(num_document, 1), p_embs.reshape(-1, emb_dim),
-                labs
+                targets
             )
         else:
             raise ValueError('loss_type {} not supported. Please choose between negative_sampling,'
