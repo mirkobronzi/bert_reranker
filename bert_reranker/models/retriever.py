@@ -120,6 +120,7 @@ class RetrieverTrainer(pl.LightningModule):
         self.optimizer_type = optimizer_type
 
         self.cross_entropy = nn.CrossEntropyLoss()
+        self.cosine_loss = torch.nn.CosineEmbeddingLoss()
 
     def forward(self, **kwargs):
         return self.retriever(**kwargs)
@@ -161,16 +162,17 @@ class RetrieverTrainer(pl.LightningModule):
                                 p_embs[:, 0, :],
                                 p_embs[:, negative_index, :])
         elif self.loss_type == 'cosine':
-            raise ValueError('need to fix now that we have target that is not always 0')
-            targets = torch.ones(batch_size, num_document)
-            # first target stays as 1 (we want those vectors to be similar)
-            # other targets -1 (we want them to be far away)
-            targets[:, 1:] *= -1
-            targets = targets.reshape(-1).to(q_emb.device)
+            # every target is set to -1 = ecept for the correct answer (which is 1)
+            sin_targets = [[-1] * num_document for _ in range(batch_size)]
+            for i, target in enumerate(targets):
+                sin_targets[i][target.cpu().item()] = 1
+            sin_targets = torch.ones(batch_size, num_document) * -1
+
+            sin_targets = sin_targets.reshape(-1).to(q_emb.device)
             q_emb.repeat(num_document, 1), p_embs.reshape(-1, emb_dim)
-            loss = torch.nn.CosineEmbeddingLoss()(
+            loss = self.cosine_loss(
                 q_emb.repeat(num_document, 1), p_embs.reshape(-1, emb_dim),
-                targets
+                sin_targets
             )
         else:
             raise ValueError('loss_type {} not supported. Please choose between negative_sampling,'
@@ -178,11 +180,6 @@ class RetrieverTrainer(pl.LightningModule):
         return loss, all_prob
 
     def training_step(self, batch, batch_idx):
-        """
-        batch comes in the order of question, 1 positive paragraph,
-        K negative paragraphs
-        """
-
         train_loss, _ = self.step_helper(batch)
         # logs
         tensorboard_logs = {'train_loss': train_loss}
