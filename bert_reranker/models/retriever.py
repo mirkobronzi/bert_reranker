@@ -158,7 +158,6 @@ class RetrieverTrainer(pl.LightningModule):
             # all_dots are the logits
             loss = self.cross_entropy(all_dots, targets)
         elif self.loss_type == 'triplet_loss':
-
             # draw random wrong targets
             wrong_targs = []
             for target in targets:
@@ -167,16 +166,13 @@ class RetrieverTrainer(pl.LightningModule):
                 random.shuffle(wrong_targ)
                 wrong_targs.extend([wrong_targ[0]])
 
+            pos_pembs = torch.stack(
+                [p_embs[idx, target] for (idx, target) in enumerate(targets)])
+            neg_pembs = torch.stack(
+                [p_embs[idx, wrong_targ] for (idx, wrong_targ) in enumerate(wrong_targs)])
 
-            pos_pembs = torch.stack([p_embs[idx, target] for (idx, target) in enumerate(targets)])
-            neg_pembs = torch.stack([p_embs[idx, wrong_targ] for (idx, wrong_targ) in enumerate(wrong_targs)])
-
-            negative_index = random.randint(1, 2)
             triplet_loss = nn.TripletMarginLoss(margin=1.0, p=2)
-            loss = triplet_loss(q_emb,
-                                pos_pembs,
-                                neg_pembs,
-                                )
+            loss = triplet_loss(q_emb, pos_pembs, neg_pembs)
         elif self.loss_type == 'cosine':
             # every target is set to -1 = except for the correct answer (which is 1)
             sin_targets = [[-1] * num_document for _ in range(batch_size)]
