@@ -1,6 +1,8 @@
 import logging
 import ntpath
 import os
+import random
+
 import torch
 from torch.utils.data import TensorDataset, DataLoader
 from tqdm.auto import tqdm
@@ -21,6 +23,15 @@ def remove_html_toks(s):
     for i in html_toks:
         s = s.replace(i, '')
     return s
+
+
+def shuffle_paragraphs(paragraphs):
+    n_paragraph = len(paragraphs)
+    random_indices = list(range(n_paragraph))
+    random.shuffle(random_indices)
+    shuffled_paragraphs = [paragraphs[i] for i in random_indices]
+    target = random_indices.index(0)
+    return shuffled_paragraphs, target
 
 
 def json_to_dataset(json_file, max_question_len, max_paragraph_len, tokenizer):
@@ -45,17 +56,24 @@ def json_to_dataset(json_file, max_question_len, max_paragraph_len, tokenizer):
     with open(json_file, 'r', encoding='utf-8', errors='ignore') as in_stream:
 
         qa_pairs = json.load(in_stream)
-        input_ids_question, attention_mask_question, token_type_ids_question, \
-            batch_input_ids_paragraphs, batch_attention_mask_paragraphs, \
-            batch_token_type_ids_paragraphs = [], [], [], [], [], []
+        input_ids_question = []
+        attention_mask_question = []
+        token_type_ids_question = []
+        batch_input_ids_paragraphs = []
+        batch_attention_mask_paragraphs = []
+        batch_token_type_ids_paragraphs = []
+        targets = []
 
         for question, answers in tqdm(qa_pairs):
 
-                paras = [remove_html_toks(i) for i in answers]
+                paragraphs = [remove_html_toks(i) for i in answers]
+
+                shuffled_paragraphs, target = shuffle_paragraphs(paragraphs)
+
                 input_question = tokenizer.encode_plus(question, add_special_tokens=True,
                                                        max_length=max_question_len, pad_to_max_length=True,
                                                        return_tensors='pt')
-                inputs_paragraph = tokenizer.batch_encode_plus(paras,
+                inputs_paragraph = tokenizer.batch_encode_plus(shuffled_paragraphs,
                                                                add_special_tokens=True,
                                                                pad_to_max_length=True,
                                                                max_length=max_paragraph_len,
@@ -67,6 +85,7 @@ def json_to_dataset(json_file, max_question_len, max_paragraph_len, tokenizer):
                 batch_input_ids_paragraphs.append(inputs_paragraph['input_ids'].unsqueeze(0))
                 batch_attention_mask_paragraphs.append(inputs_paragraph['attention_mask'].unsqueeze(0))
                 batch_token_type_ids_paragraphs.append(inputs_paragraph['token_type_ids'].unsqueeze(0))
+                targets.append(target)
 
         dataset = TensorDataset(
             torch.cat(input_ids_question),
@@ -75,6 +94,7 @@ def json_to_dataset(json_file, max_question_len, max_paragraph_len, tokenizer):
             torch.cat(batch_input_ids_paragraphs),
             torch.cat(batch_attention_mask_paragraphs),
             torch.cat(batch_token_type_ids_paragraphs),
+            torch.tensor(targets)
         )
 
     return dataset
