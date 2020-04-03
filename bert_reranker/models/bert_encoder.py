@@ -5,13 +5,15 @@ import torch
 
 class BertEncoder(nn.Module):
 
-    def __init__(self, bert, max_seq_len, freeze_bert, pooling_type, top_layer_sizes, dropout):
+    def __init__(self, bert, max_seq_len, freeze_bert, pooling_type, top_layer_sizes, dropout,
+                 normalize_bert_encoder_result):
         super(BertEncoder, self).__init__()
 
         self.pooling_type = pooling_type
         self.max_seq_len = max_seq_len
         self.bert = bert
         self.freeze_bert = freeze_bert
+        self.normalize_bert_encoder_result = normalize_bert_encoder_result
         seq = []
         prev_hidden_size = bert.config.hidden_size
         for i, size in enumerate(top_layer_sizes):
@@ -40,5 +42,8 @@ class BertEncoder(nn.Module):
         else:
             raise ValueError('pooling {} not supported.'.format(self.pooling_type))
         h_transformed = self.net(result_pooling)
-        return F.normalize(h_transformed)
+        if self.normalize_bert_encoder_result:
+            return F.normalize(h_transformed)
+        else:
+            return h_transformed
 

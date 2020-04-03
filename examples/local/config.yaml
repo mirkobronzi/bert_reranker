@@ -14,3 +14,4 @@ gradient_clipping: 0
 pooling_type: 'avg'
 precision: 32
 dropout: 0.0
+normalize_bert_encoder_result: true
