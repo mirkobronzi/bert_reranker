@@ -1,17 +1,28 @@
+import logging
+
 import torch.nn as nn
 import torch.nn.functional as F
 import torch
+
+logger = logging.getLogger(__name__)
 
 
 class BertEncoder(nn.Module):
 
     def __init__(self, bert, max_seq_len, freeze_bert, pooling_type, top_layer_sizes, dropout,
-                 normalize_bert_encoder_result):
+                 normalize_bert_encoder_result, bert_dropout=None):
         super(BertEncoder, self).__init__()
 
         self.pooling_type = pooling_type
         self.max_seq_len = max_seq_len
         self.bert = bert
+        if bert_dropout is not None:
+            logger.info('setting bert dropout to {}'.format(bert_dropout))
+            bert.config.attention_probs_dropout_prob = bert_dropout
+            bert.config.hidden_dropout_prob = bert_dropout
+        else:
+            logger.info('using the original bert model dropout')
+
         self.freeze_bert = freeze_bert
         self.normalize_bert_encoder_result = normalize_bert_encoder_result
         seq = []
