@@ -2,6 +2,7 @@ batch_size: 2
 train_file: 'train.json'
 dev_file: 'dev.json'
 cache_folder: 'cached_natq'
+encoder_type: 'ffw' # or use 'bert' for BERT
 model_name: 'bert-base-uncased'
 loss_type: 'classification'
 freeze_bert: true
@@ -15,4 +16,4 @@ pooling_type: 'avg'
 precision: 32
 dropout: 0.0
 normalize_bert_encoder_result: true
-dropout_bert: null  # null means use the bert dropout sued during pre-training
+dropout_bert: null  # null means use the bert dropout used during pre-training
