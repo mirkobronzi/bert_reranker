@@ -1,13 +1,16 @@
 batch_size: 2
-natq_json_file: 'natq.json'
+train_file: 'train.json'
+dev_file: 'dev.json'
 cache_folder: 'cached_natq'
 model_name: 'bert-base-uncased'
 loss_type: 'classification'
 freeze_bert: true
-optimizer_type: 'adam'
+optimizer_type: 'adamw'
 max_question_len: 30
 max_paragraph_len: 512
-embedding_dim: 768
+top_layer_sizes: [5, 4]
 patience: 5
 gradient_clipping: 0
-pooling_type: 'cls'
+pooling_type: 'avg'
+precision: 32
+dropout: 0.0
