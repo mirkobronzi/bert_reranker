@@ -45,20 +45,21 @@ class BertEncoder(nn.Module):
     def forward(self, input_ids, attention_mask, token_type_ids):
         if self.freeze_bert:
             with torch.no_grad():
-                h, _ = self.bert(input_ids=input_ids, attention_mask=attention_mask,
-                                 token_type_ids=token_type_ids)
+                bert_hs, _ = self.bert(input_ids=input_ids, attention_mask=attention_mask,
+                                       token_type_ids=token_type_ids)
         else:
-            h, _ = self.bert(input_ids=input_ids, attention_mask=attention_mask,
-                             token_type_ids=token_type_ids)
+            bert_hs, _ = self.bert(input_ids=input_ids, attention_mask=attention_mask,
+                                   token_type_ids=token_type_ids)
+        final_hs = self.net(bert_hs)
         if self.pooling_type == 'cls':
-            result_pooling = h[:, 0, :]
+            result_pooling = final_hs[:, 0, :]
         elif self.pooling_type == 'avg':
-            result_pooling = compute_average_with_padding(h, attention_mask)
+            result_pooling = compute_average_with_padding(final_hs, attention_mask)
         else:
             raise ValueError('pooling {} not supported.'.format(self.pooling_type))
-        h_transformed = self.net(result_pooling)
+
         if self.normalize_bert_encoder_result:
-            return F.normalize(h_transformed)
+            return F.normalize(result_pooling)
         else:
-            return h_transformed
+            return result_pooling
 
