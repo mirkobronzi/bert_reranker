@@ -58,7 +58,7 @@ def main():
     check_and_log_hp(
         ['train_file', 'dev_file', 'cache_folder', 'batch_size', 'model_name',
          'max_question_len', 'max_paragraph_len', 'patience', 'gradient_clipping',
-         'loss_type', 'optimizer_type', 'freeze_bert', 'pooling_type', 'precision',
+         'loss_type', 'optimizer', 'freeze_bert', 'pooling_type', 'precision',
          'top_layer_sizes', 'dropout', 'normalize_bert_encoder_result', 'dropout_bert'],
         hyper_params)
 
@@ -123,7 +123,7 @@ def main():
 
     # note we are passing dev_dataloader for both dev and test
     ret_trainee = RetrieverTrainer(ret, train_dataloader, dev_dataloader, dev_dataloader,
-                                   hyper_params['loss_type'], hyper_params['optimizer_type'])
+                                   hyper_params['loss_type'], hyper_params['optimizer'])
 
     if args.train:
         trainer.fit(ret_trainee)

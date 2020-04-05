@@ -226,7 +226,7 @@ class RetrieverTrainer(pl.LightningModule):
         return self.validation_step(batch, batch_idx)
 
     def configure_optimizers(self):
-        return get_optimizer(self.optimizer_type, self)
+        return get_optimizer(self.optimizer_type, self.retriever)
 
     def train_dataloader(self):
         return self.train_data
