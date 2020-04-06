@@ -203,7 +203,6 @@ class RetrieverTrainer(pl.LightningModule):
 
     def validation_step(self, batch, batch_idx):
         loss, all_prob = self.step_helper(batch)
-        batch_size = all_prob.size()[0]
         _, predictions = torch.max(all_prob, 1)
         targets = batch[-1]
         val_acc = torch.tensor(accuracy_score(targets.cpu(), predictions.cpu())).to(targets.device)
