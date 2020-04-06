@@ -6,10 +6,15 @@ from bert_reranker.utils.hp_utils import check_and_log_hp
 
 
 def load_model(hyper_params, tokenizer, debug):
-    question_encoder, paragraph_encoder = load_bert_encoder_model(hyper_params)
-    result = Retriever(question_encoder, paragraph_encoder, tokenizer,
-                    hyper_params['max_question_len'], hyper_params['max_paragraph_len'], debug)
-    return result
+    check_and_log_hp(['name'], hyper_params['model'])
+    if hyper_params['model']['name'] == 'bert_encoder':
+        question_encoder, paragraph_encoder = load_bert_encoder_model(hyper_params)
+        model = Retriever(question_encoder, paragraph_encoder, tokenizer,
+                          hyper_params['max_question_len'], hyper_params['max_paragraph_len'],
+                          debug)
+    else:
+        raise ValueError('model name {} not supported'.format(hyper_params['model']['name']))
+    return model
 
 
 def load_bert_encoder_model(hyper_params):
