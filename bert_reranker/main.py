@@ -9,15 +9,14 @@ import pytorch_lightning as pl
 import torch
 import yaml
 from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
-from transformers import AutoTokenizer, AutoModel
+from transformers import AutoTokenizer
 from yaml import load
 
 from bert_reranker.data.data_loader import generate_dataloaders
 from bert_reranker.data.evaluate import evaluate_model
-from bert_reranker.models.bert_encoder import BertEncoder
 from bert_reranker.models.load_model import load_model
 from bert_reranker.models.pl_model_loader import try_to_restore_model_weights
-from bert_reranker.models.retriever import Retriever, RetrieverTrainer
+from bert_reranker.models.retriever import RetrieverTrainer
 from bert_reranker.utils.hp_utils import check_and_log_hp
 from bert_reranker.utils.logging_utils import LoggerWriter
 
