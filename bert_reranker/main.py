@@ -12,7 +12,7 @@ from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
 from transformers import AutoTokenizer, AutoModel
 from yaml import load
 
-from bert_reranker.data.data_loader import generate_dataloaders
+from bert_reranker.data.data_loader import generate_dataloader
 from bert_reranker.data.evaluate import evaluate_model
 from bert_reranker.models.bert_encoder import BertEncoder
 from bert_reranker.models.pl_model_loader import try_to_restore_model_weights
@@ -67,10 +67,17 @@ def main():
     model_name = hyper_params['model_name']
     tokenizer = AutoTokenizer.from_pretrained(model_name)
 
-    train_dataloader, dev_dataloader = generate_dataloaders(
-        hyper_params['train_file'], hyper_params['dev_file'], hyper_params['cache_folder'],
+    train_dataloader = generate_dataloader(
+        hyper_params['train_file'], hyper_params['cache_folder'],
         hyper_params['max_question_len'], hyper_params['max_paragraph_len'],
         tokenizer, hyper_params['batch_size'])
+
+    dev_dataloader = generate_dataloader(
+        hyper_params['dev_file'], hyper_params['cache_folder'],
+        hyper_params['max_question_len'], hyper_params['max_paragraph_len'],
+        tokenizer, hyper_params['batch_size'])
+
+    #  dev_dataloader = [dev_dataloader, dev_dataloader]
 
     bert_question = AutoModel.from_pretrained(model_name)
     bert_paragraph = AutoModel.from_pretrained(model_name)

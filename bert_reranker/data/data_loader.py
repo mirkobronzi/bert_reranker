@@ -100,34 +100,20 @@ def json_to_dataset(json_file, max_question_len, max_paragraph_len, tokenizer):
     return dataset
 
 
-def generate_dataloaders(train_file, dev_file, cache_folder, max_question_len,
+def generate_dataloader(data_file, cache_folder, max_question_len,
                          max_paragraph_len, tokenizer, batch_size):
 
-    train_file_name = ntpath.basename(train_file)
-    dev_file_name = ntpath.basename(dev_file)
-    cached_train = os.path.join(cache_folder, train_file_name + '.pt')
-    cached_dev = os.path.join(cache_folder, dev_file_name + '.pt')
+    data_file_name = ntpath.basename(data_file)
+    cached_data = os.path.join(cache_folder, data_file_name + '.pt')
 
-    if not os.path.exists(cached_train):
-        logger.info('cached file {} not found - computing it'.format(cached_train))
-        train_dataset = json_to_dataset(train_file, max_question_len, max_paragraph_len,
-                                        tokenizer)
-        torch.save(train_dataset, cached_train)
+    if not os.path.exists(cached_data):
+        logger.info('cached file {} not found - computing it'.format(cached_data))
+        dataset = json_to_dataset(data_file, max_question_len, max_paragraph_len, tokenizer)
+        torch.save(dataset, cached_data)
     else:
-        logger.info('cached file {} found - loading'.format(cached_train))
+        logger.info('cached file {} found - loading'.format(cached_data))
 
-    if not os.path.exists(cached_dev):
-        logger.info('cached file {} not found - computing it'.format(cached_dev))
-        dev_dataset = json_to_dataset(dev_file, max_question_len, max_paragraph_len,
-                                      tokenizer)
-        torch.save(dev_dataset, cached_dev)
-    else:
-        logger.info('cached file {} found - loading'.format(cached_dev))
+    dataset = torch.load(cached_data)
+    logger.info('{} dataset size:  {}'.format(data_file_name, len(dataset)))
 
-    train_set = torch.load(cached_train)
-    dev_set = torch.load(cached_dev)
-
-    logger.info('train size {} / dev size {}'.format(len(train_set), len(dev_set)))
-
-    return (DataLoader(train_set, batch_size=batch_size),
-            DataLoader(dev_set, batch_size=batch_size))
+    return DataLoader(dataset, batch_size=batch_size)
