@@ -1,25 +1,28 @@
 import hashlib
+import logging
 import random
-from copy import deepcopy
 from typing import List
 
-import numpy as np
 import pytorch_lightning as pl
 import torch
 import torch.nn as nn
 from sklearn.metrics import accuracy_score
 
+from bert_reranker.models.optimizer import get_optimizer
+
+logger = logging.getLogger(__name__)
+
 
 class Retriever(nn.Module):
     def __init__(self, bert_question_encoder, bert_paragraph_encoder, tokenizer,
-                 max_question_len, max_paragraph_len, emb_dim):
+                 max_question_len, max_paragraph_len, debug):
         super(Retriever, self).__init__()
         self.bert_question_encoder = bert_question_encoder
         self.bert_paragraph_encoder = bert_paragraph_encoder
         self.tokenizer = tokenizer
+        self.debug = debug
         self.max_question_len = max_question_len
         self.max_paragraph_len = max_paragraph_len
-        self.emb_dim = emb_dim
         self.cache_hash2str = {}
         self.cache_hash2array = {}
 
@@ -28,6 +31,16 @@ class Retriever(nn.Module):
                          batch_token_type_ids_paragraphs):
 
         batch_size, num_document, max_len_size = batch_input_ids_paragraphs.size()
+
+        if self.debug:
+            for i in range(batch_size):
+                question = self.tokenizer.convert_ids_to_tokens(
+                    input_ids_question.cpu().numpy()[i])
+                logger.info('>> {}'.format(question))
+                for j in range(num_document):
+                    answer = self.tokenizer.convert_ids_to_tokens(
+                        batch_input_ids_paragraphs.cpu().numpy()[i][j])
+                    logger.info('>>>> {}'.format(answer))
 
         h_question = self.bert_question_encoder(
             input_ids=input_ids_question, attention_mask=attention_mask_question,
@@ -57,47 +70,35 @@ class Retriever(nn.Module):
     def predict(self, question_str: str, batch_paragraph_strs: List[str], refresh_cache = False):
         self.eval()
         with torch.no_grad():
-            ## Todo: embed all unique docs, then create ranking for all questions, then find overlap with constrained ranking
-            batch_paragraph_array = np.random.random((len(batch_paragraph_strs), self.emb_dim))
-            hashes = {}
-            uncached_paragraphs = []
-            uncached_hashes = []
-            for ind, i in enumerate(batch_paragraph_strs):
-                hash = self.str2hash(i)
-                hashes[hash] = ind
-                if hash in self.cache_hash2array:
-                    batch_paragraph_array[ind,:] = deepcopy(self.cache_hash2array[hash])
-                else:
-                    uncached_paragraphs.append(i)
-                    uncached_hashes.append(hash)
-                    self.cache_hash2str[hash] = i
-            inputs = self.tokenizer.batch_encode_plus(
-                uncached_paragraphs,
+            ## TODO this is only a single batch
+            ## TODO Add hashing
+
+            paragraph_inputs = self.tokenizer.batch_encode_plus(
+                 batch_paragraph_strs,
                  add_special_tokens=True,
                  pad_to_max_length=True,
                  max_length=self.max_paragraph_len,
                  return_tensors='pt'
              )
-            if len(inputs):
-                tmp_device = next(self.bert_paragraph_encoder.parameters()).device
-                inputs = {i:inputs[i].to(tmp_device) for i in inputs}
-                uncached_paragraph_array = self.bert_paragraph_encoder(
-                    **inputs
-                ).detach().cpu().numpy()
-                for ind, i in enumerate(uncached_paragraph_array):
-                    self.cache_hash2array[uncached_hashes[ind]] = deepcopy(i)
-                    batch_paragraph_array[ind,:] = deepcopy(i)
-            inputs = self.tokenizer.encode_plus(question_str, add_special_tokens=True,
+
+            tmp_device = next(self.bert_paragraph_encoder.parameters()).device
+            p_inputs = {k: v.to(tmp_device).unsqueeze(0) for k,v in paragraph_inputs.items()}
+
+            question_inputs = self.tokenizer.encode_plus(question_str, add_special_tokens=True,
                    max_length=self.max_question_len, pad_to_max_length=True,
                    return_tensors='pt')
             tmp_device = next(self.bert_question_encoder.parameters()).device
-            inputs = {i:inputs[i].to(tmp_device) for i in inputs}
-            question_array = self.bert_question_encoder(
-                **inputs
+            q_inputs = {k: v.to(tmp_device) for k,v in question_inputs.items()}
+
+            q_emb, p_embs = self.forward(
+                q_inputs['input_ids'], q_inputs['attention_mask'], q_inputs['token_type_ids'],
+                p_inputs['input_ids'], p_inputs['attention_mask'], p_inputs['token_type_ids'],
             )
+
             relevance_scores = torch.sigmoid(
-                torch.mm(torch.tensor(batch_paragraph_array, dtype=question_array.dtype).to(question_array.device),
-                         question_array.T)).reshape(-1)
+                torch.matmul(q_emb, p_embs.squeeze(0).T).squeeze(0)
+            )
+
             rerank_index = torch.argsort(-relevance_scores)
             relevance_scores_numpy = relevance_scores.detach().cpu().numpy()
             rerank_index_numpy = rerank_index.detach().cpu().numpy()
@@ -108,18 +109,18 @@ class Retriever(nn.Module):
 
 class RetrieverTrainer(pl.LightningModule):
 
-    def __init__(self, retriever, train_data, dev_data, test_data, emb_dim, loss_type,
+    def __init__(self, retriever, train_data, dev_data, test_data, loss_type,
                  optimizer_type):
         super(RetrieverTrainer, self).__init__()
         self.retriever = retriever
         self.train_data = train_data
         self.dev_data = dev_data
         self.test_data = test_data
-        self.emb_dim = emb_dim
         self.loss_type = loss_type
         self.optimizer_type = optimizer_type
 
         self.cross_entropy = nn.CrossEntropyLoss()
+        self.cosine_loss = torch.nn.CosineEmbeddingLoss()
 
     def forward(self, **kwargs):
         return self.retriever(**kwargs)
@@ -127,7 +128,7 @@ class RetrieverTrainer(pl.LightningModule):
     def step_helper(self, batch):
         input_ids_question, attention_mask_question, token_type_ids_question, \
         batch_input_ids_paragraphs, batch_attention_mask_paragraphs, \
-        batch_token_type_ids_paragraphs = batch
+        batch_token_type_ids_paragraphs, targets = batch
 
         inputs = {
             'input_ids_question': input_ids_question,
@@ -138,38 +139,51 @@ class RetrieverTrainer(pl.LightningModule):
             'batch_token_type_ids_paragraphs': batch_token_type_ids_paragraphs
         }
 
-        h_question, h_paragraphs_batch = self(**inputs)
-        batch_size, num_document, emb_dim = batch_input_ids_paragraphs.size()
-
-        all_dots = torch.bmm(h_question.repeat(num_document, 1).unsqueeze(1),
-            h_paragraphs_batch.reshape(-1, self.emb_dim).unsqueeze(2)).reshape(batch_size, num_document)
+        q_emb, p_embs = self(**inputs)
+        batch_size, num_document, emb_dim = p_embs.size()
+        all_dots = torch.bmm(q_emb.unsqueeze(1), p_embs.transpose(2, 1)).squeeze(1)
         all_prob = torch.sigmoid(all_dots)
 
         if self.loss_type == 'negative_sampling':
-            pos_loss = - torch.log(all_prob[:, 0]).sum()
-            neg_loss = - torch.log(1 - all_prob[:, 1:]).sum()
+            pos_preds = []
+            neg_preds = all_prob.clone()
+            for count, target in enumerate(targets):
+                pos_preds.append(neg_preds[count][target].clone())
+                neg_preds[count][target] = 0
+            pos_preds = torch.tensor(pos_preds).to(q_emb.device)
+            pos_loss = - torch.log(pos_preds).sum()
+            neg_loss = - torch.log(1 - neg_preds).sum()
             loss = pos_loss + neg_loss
         elif self.loss_type == 'classification':
-            logits = all_dots
-            loss = self.cross_entropy(
-                logits, torch.zeros(logits.size()[0], dtype=torch.long).to(logits.device)
-            )
+            # all_dots are the logits
+            loss = self.cross_entropy(all_dots, targets)
         elif self.loss_type == 'triplet_loss':
-            assert h_paragraphs_batch.shape[1] == 3
-            # picking a random negative example
-            negative_index = random.randint(1, 2)
+            # draw random wrong targets
+            wrong_targs = []
+            for target in targets:
+                wrong_targ = list(range(0, p_embs.shape[1]))
+                wrong_targ.remove(target)
+                random.shuffle(wrong_targ)
+                wrong_targs.extend([wrong_targ[0]])
+
+            pos_pembs = torch.stack(
+                [p_embs[idx, target] for (idx, target) in enumerate(targets)])
+            neg_pembs = torch.stack(
+                [p_embs[idx, wrong_targ] for (idx, wrong_targ) in enumerate(wrong_targs)])
+
             triplet_loss = nn.TripletMarginLoss(margin=1.0, p=2)
-            loss = triplet_loss(h_question,
-                                h_paragraphs_batch[:, 0, :],
-                                h_paragraphs_batch[:, negative_index, :])
+            loss = triplet_loss(q_emb, pos_pembs, neg_pembs)
         elif self.loss_type == 'cosine':
-            labs = torch.ones(batch_size, num_document)
-            labs[:, 1:] *= -1
-            labs = labs.reshape(-1).to(h_question.device)
-            h_question.repeat(num_document, 1), h_paragraphs_batch.reshape(-1, self.emb_dim)
-            loss = torch.nn.CosineEmbeddingLoss()(
-                h_question.repeat(num_document, 1), h_paragraphs_batch.reshape(-1, self.emb_dim),
-                labs
+            # every target is set to -1 = except for the correct answer (which is 1)
+            sin_targets = [[-1] * num_document for _ in range(batch_size)]
+            for i, target in enumerate(targets):
+                sin_targets[i][target.cpu().item()] = 1
+
+            sin_targets = torch.tensor(sin_targets).reshape(-1).to(q_emb.device)
+            q_emb.repeat(num_document, 1), p_embs.reshape(-1, emb_dim)
+            loss = self.cosine_loss(
+                q_emb.repeat(num_document, 1), p_embs.reshape(-1, emb_dim),
+                sin_targets
             )
         else:
             raise ValueError('loss_type {} not supported. Please choose between negative_sampling,'
@@ -177,11 +191,6 @@ class RetrieverTrainer(pl.LightningModule):
         return loss, all_prob
 
     def training_step(self, batch, batch_idx):
-        """
-        batch comes in the order of question, 1 positive paragraph,
-        K negative paragraphs
-        """
-
         train_loss, _ = self.step_helper(batch)
         # logs
         tensorboard_logs = {'train_loss': train_loss}
@@ -194,10 +203,9 @@ class RetrieverTrainer(pl.LightningModule):
 
     def validation_step(self, batch, batch_idx):
         loss, all_prob = self.step_helper(batch)
-        batch_size = all_prob.size()[0]
-        _, y_hat = torch.max(all_prob, 1)
-        y_true = torch.zeros(batch_size, dtype=y_hat.dtype).type_as(y_hat)
-        val_acc = torch.tensor(accuracy_score(y_true.cpu(), y_hat.cpu())).to(y_true.device)
+        _, predictions = torch.max(all_prob, 1)
+        targets = batch[-1]
+        val_acc = torch.tensor(accuracy_score(targets.cpu(), predictions.cpu())).to(targets.device)
         return {'val_loss': loss, 'val_acc': val_acc}
 
     def validation_epoch_end(self, outputs):
@@ -217,12 +225,7 @@ class RetrieverTrainer(pl.LightningModule):
         return self.validation_step(batch, batch_idx)
 
     def configure_optimizers(self):
-        if self.optimizer_type == 'adamw':
-            return torch.optim.AdamW([p for p in self.parameters() if p.requires_grad])
-        elif self.optimizer_type == 'adam':
-            return torch.optim.Adam([p for p in self.parameters() if p.requires_grad], lr=0.0001)
-        else:
-            raise ValueError('optimizer {} not supported'.format(self.optimizer_type))
+        return get_optimizer(self.optimizer_type, self.retriever)
 
     def train_dataloader(self):
         return self.train_data
