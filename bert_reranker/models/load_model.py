@@ -20,20 +20,25 @@ def load_model(hyper_params, tokenizer, debug):
 def load_bert_encoder_model(hyper_params):
     model_hparams = hyper_params['model']
     check_and_log_hp(
-        ['bert_base', 'top_layer_sizes', 'dropout', 'normalize_bert_encoder_result',
-         'dropout_bert', 'freeze_bert', 'pooling_type'],
+        ['bert_base', 'layers_pre_pooling', 'layers_post_pooling', 'dropout',
+         'normalize_bert_encoder_result', 'dropout_bert', 'freeze_bert', 'pooling_type'],
         model_hparams)
     bert_question = AutoModel.from_pretrained(model_hparams['bert_base'])
     bert_paragraph = AutoModel.from_pretrained(model_hparams['bert_base'])
 
     bert_question_encoder = BertEncoder(bert_question, hyper_params['max_question_len'],
                                         model_hparams['freeze_bert'], model_hparams['pooling_type'],
-                                        model_hparams['top_layer_sizes'], model_hparams['dropout'],
+                                        model_hparams['layers_pre_pooling'],
+                                        model_hparams['layers_post_pooling'],
+                                        model_hparams['dropout'],
                                         model_hparams['normalize_bert_encoder_result'],
                                         model_hparams['dropout_bert'])
     bert_paragraph_encoder = BertEncoder(bert_paragraph, hyper_params['max_paragraph_len'],
-                                         model_hparams['freeze_bert'], model_hparams['pooling_type'],
-                                         model_hparams['top_layer_sizes'], model_hparams['dropout'],
+                                         model_hparams['freeze_bert'],
+                                         model_hparams['pooling_type'],
+                                         model_hparams['layers_pre_pooling'],
+                                         model_hparams['layers_post_pooling'],
+                                         model_hparams['dropout'],
                                          model_hparams['normalize_bert_encoder_result'],
                                          model_hparams['dropout_bert'])
 

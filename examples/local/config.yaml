@@ -8,9 +8,8 @@ model:
   name: 'bert_encoder'
   bert_base: 'bert-base-uncased'
   freeze_bert: true
-  top_layer_sizes: [5, 4]
-#  layers_pre_pooling: [5, 4]
-#  layers_post_pooling: [4]
+  layers_pre_pooling: [5, 4]
+  layers_post_pooling: [4]
   pooling_type: 'avg'
   dropout: 0.0
   normalize_bert_encoder_result: true
