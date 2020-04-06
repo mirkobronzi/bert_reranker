@@ -1,18 +1,18 @@
-batch_size: 2
-train_file: 'train.json'
-dev_file: 'dev.json'
-cache_folder: 'cached_natq'
+batch_size: 32
+train_file: '/network/data2/tech-transfer/mirko_bronzi/covid/natq/data/faq_dev.json'
+dev_file: '/network/data2/tech-transfer/mirko_bronzi/covid/natq/data/faq_dev.json'
+cache_folder: '/network/data2/tech-transfer/mirko_bronzi/covid/natq/data/cached_natq'
 model_name: 'bert-base-uncased'
 loss_type: 'classification'
 freeze_bert: true
 optimizer_type: 'adamw'
 max_question_len: 30
 max_paragraph_len: 512
-top_layer_sizes: [5, 4]
-patience: 5
+top_layer_sizes: [768, 768]
+dropout: 0.0
+patience: 15
 gradient_clipping: 0
 pooling_type: 'avg'
 precision: 32
-dropout: 0.0
-normalize_bert_encoder_result: true
-dropout_bert: null  # null means use the bert dropout sued during pre-training
+normalize_bert_encoder_result: false
+dropout_bert: 0.0
