@@ -1,14 +1,13 @@
 batch_size: 2
 train_file: 'train.json'
-dev_file: 'dev.json'
+dev_files:
+  dev_file_1: 'dev.json'
+  dev_file_2: 'dev.json'
+test_file: 'dev.json'
 cache_folder: 'cached_natq'
 tokenizer_name: 'bert-base-uncased'
 
-train_file: 'train.json'
-dev_files: 
-  dev_file_1: 'dev.json'
-  dev_file_2: 'dev.json' 
-test_file: 'dev.json'
+
 
 model:
   name: 'bert_encoder'
