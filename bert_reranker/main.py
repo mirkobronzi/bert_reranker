@@ -81,8 +81,6 @@ def main():
         hyper_params['max_question_len'], hyper_params['max_paragraph_len'],
         tokenizer, hyper_params['batch_size'])
 
-    dev_dataloaders = [dev_dataloader, faq_dataloader]
-
     ret = load_model(hyper_params, tokenizer, args.debug)
 
     os.makedirs(args.output, exist_ok=True)
@@ -118,8 +116,8 @@ def main():
         resume_from_checkpoint=ckpt_to_resume)
 
     # note we are passing dev_dataloader for both dev and test
-    ret_trainee = RetrieverTrainer(ret, train_dataloader, dev_dataloaders, dev_dataloader,
-                                   hyper_params['loss_type'], hyper_params['optimizer_type'])
+    ret_trainee = RetrieverTrainer(ret, train_dataloader, [dev_dataloader, faq_dataloader], dev_dataloader,
+                                   hyper_params['loss_type'], hyper_params['optimizer'])
 
     if args.train:
         trainer.fit(ret_trainee)
