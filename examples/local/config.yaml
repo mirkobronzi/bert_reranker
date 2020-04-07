@@ -2,17 +2,42 @@ batch_size: 2
 train_file: 'train.json'
 dev_file: 'dev.json'
 cache_folder: 'cached_natq'
-model_name: 'bert-base-uncased'
+tokenizer_name: 'bert-base-uncased'
+
+model:
+  name: 'bert_encoder'
+  bert_base: 'bert-base-uncased'
+  freeze_bert: true
+  layers_pre_pooling: [5, 4]
+  layers_post_pooling: [4]
+  pooling_type: 'avg'
+  dropout: 0.0
+  normalize_model_result: true
+  dropout_bert: null  # null means use the bert dropout used during pre-training
+
+# cnn example - still not working
+#  name: 'cnn'
+#  cnn_layer_sizes: [24]
+#  emb_size: 300
+#  layers_pre_pooling: []
+#  layers_post_pooling: [4]
+#  pooling_type: 'avg'
+#  dropout: 0.0
+#  normalize_model_result: true
+
 loss_type: 'classification'
-freeze_bert: true
-optimizer_type: 'adamw'
+
+# this is mostly used when freezing the bert model
+optimizer:
+  name: 'adamw'
+# the following allow to specify a different lr for every bert layer
+#optimizer:
+#  name: 'adam_diff_lr'
+#  ffw_lr: 0.0
+#  bert_lrs: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.001]
+
 max_question_len: 30
 max_paragraph_len: 512
-top_layer_sizes: [5, 4]
 patience: 5
 gradient_clipping: 0
-pooling_type: 'avg'
 precision: 32
-dropout: 0.0
-normalize_bert_encoder_result: true
-dropout_bert: null  # null means use the bert dropout sued during pre-training

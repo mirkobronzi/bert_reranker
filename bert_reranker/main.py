@@ -9,14 +9,14 @@ import pytorch_lightning as pl
 import torch
 import yaml
 from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
-from transformers import AutoTokenizer, AutoModel
+from transformers import AutoTokenizer
 from yaml import load
 
 from bert_reranker.data.data_loader import generate_dataloader
 from bert_reranker.data.evaluate import evaluate_model
-from bert_reranker.models.bert_encoder import BertEncoder
+from bert_reranker.models.load_model import load_model
 from bert_reranker.models.pl_model_loader import try_to_restore_model_weights
-from bert_reranker.models.retriever import Retriever, RetrieverTrainer
+from bert_reranker.models.retriever import RetrieverTrainer
 from bert_reranker.utils.hp_utils import check_and_log_hp
 from bert_reranker.utils.logging_utils import LoggerWriter
 
@@ -56,16 +56,15 @@ def main():
         hyper_params = load(stream, Loader=yaml.FullLoader)
 
     check_and_log_hp(
-        ['train_file', 'dev_file', 'cache_folder', 'batch_size', 'model_name',
+        ['train_file', 'dev_file', 'cache_folder', 'batch_size', 'tokenizer_name', 'model',
          'max_question_len', 'max_paragraph_len', 'patience', 'gradient_clipping',
-         'loss_type', 'optimizer_type', 'freeze_bert', 'pooling_type', 'precision',
-         'top_layer_sizes', 'dropout', 'normalize_bert_encoder_result', 'dropout_bert'],
+         'loss_type', 'optimizer',  'precision'],
         hyper_params)
 
     os.makedirs(hyper_params['cache_folder'], exist_ok=True)
 
-    model_name = hyper_params['model_name']
-    tokenizer = AutoTokenizer.from_pretrained(model_name)
+    tokenizer_name = hyper_params['tokenizer_name']
+    tokenizer = AutoTokenizer.from_pretrained(tokenizer_name)
 
     train_dataloader = generate_dataloader(
         hyper_params['train_file'], hyper_params['cache_folder'],
@@ -84,22 +83,7 @@ def main():
 
     dev_dataloaders = [dev_dataloader, faq_dataloader]
 
-    bert_question = AutoModel.from_pretrained(model_name)
-    bert_paragraph = AutoModel.from_pretrained(model_name)
-
-    bert_question_encoder = BertEncoder(bert_question, hyper_params['max_question_len'],
-                                        hyper_params['freeze_bert'], hyper_params['pooling_type'],
-                                        hyper_params['top_layer_sizes'], hyper_params['dropout'],
-                                        hyper_params['normalize_bert_encoder_result'],
-                                        hyper_params['dropout_bert'])
-    bert_paragraph_encoder = BertEncoder(bert_paragraph, hyper_params['max_paragraph_len'],
-                                         hyper_params['freeze_bert'], hyper_params['pooling_type'],
-                                         hyper_params['top_layer_sizes'], hyper_params['dropout'],
-                                         hyper_params['normalize_bert_encoder_result'],
-                                         hyper_params['dropout_bert'])
-
-    ret = Retriever(bert_question_encoder, bert_paragraph_encoder, tokenizer,
-                    hyper_params['max_question_len'], hyper_params['max_paragraph_len'], args.debug)
+    ret = load_model(hyper_params, tokenizer, args.debug)
 
     os.makedirs(args.output, exist_ok=True)
     checkpoint_callback = ModelCheckpoint(

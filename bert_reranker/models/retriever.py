@@ -1,14 +1,14 @@
 import hashlib
 import logging
 import random
-from copy import deepcopy
 from typing import List
 
-import numpy as np
 import pytorch_lightning as pl
 import torch
 import torch.nn as nn
 from sklearn.metrics import accuracy_score
+
+from bert_reranker.models.optimizer import get_optimizer
 
 logger = logging.getLogger(__name__)
 
@@ -207,7 +207,6 @@ class RetrieverTrainer(pl.LightningModule):
         # if self.dev_data is a dataloader, there is no provided
         # dataset_number, hence the default value at 0
         loss, all_prob = self.step_helper(batch)
-        batch_size = all_prob.size()[0]
         _, predictions = torch.max(all_prob, 1)
         targets = batch[-1]
         val_acc = torch.tensor(accuracy_score(targets.cpu(), predictions.cpu())).to(targets.device)
@@ -245,12 +244,7 @@ class RetrieverTrainer(pl.LightningModule):
         return self.validation_step(batch, batch_idx)
 
     def configure_optimizers(self):
-        if self.optimizer_type == 'adamw':
-            return torch.optim.AdamW([p for p in self.parameters() if p.requires_grad])
-        elif self.optimizer_type == 'adam':
-            return torch.optim.Adam([p for p in self.parameters() if p.requires_grad], lr=0.0001)
-        else:
-            raise ValueError('optimizer {} not supported'.format(self.optimizer_type))
+        return get_optimizer(self.optimizer_type, self.retriever)
 
     def train_dataloader(self):
         return self.train_data
