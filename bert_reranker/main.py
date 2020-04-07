@@ -56,7 +56,7 @@ def main():
         hyper_params = load(stream, Loader=yaml.FullLoader)
 
     check_and_log_hp(
-        ['train_file', 'dev_file', 'cache_folder', 'batch_size', 'tokenizer_name', 'model',
+        ['train_file', 'dev_files', 'test_file', 'cache_folder', 'batch_size', 'tokenizer_name', 'model',
          'max_question_len', 'max_paragraph_len', 'patience', 'gradient_clipping',
          'loss_type', 'optimizer',  'precision'],
         hyper_params)
@@ -71,13 +71,20 @@ def main():
         hyper_params['max_question_len'], hyper_params['max_paragraph_len'],
         tokenizer, hyper_params['batch_size'])
 
-    dev_dataloader = generate_dataloader(
-        hyper_params['dev_file'], hyper_params['cache_folder'],
-        hyper_params['max_question_len'], hyper_params['max_paragraph_len'],
-        tokenizer, hyper_params['batch_size'])
+    dev_dataloaders = []
+    for dev_file in hyper_params['dev_files'].values():
+        dev_dataloaders.append(
+            generate_dataloader(
+                dev_file,
+                hyper_params['cache_folder'],
+                hyper_params['max_question_len'],
+                hyper_params['max_paragraph_len'],
+                tokenizer, hyper_params['batch_size']
+            )
+        )
 
-    faq_dataloader = generate_dataloader(
-        hyper_params['faq_file'], hyper_params['cache_folder'],
+    test_dataloader = generate_dataloader(
+        hyper_params['test_file'], hyper_params['cache_folder'],
         hyper_params['max_question_len'], hyper_params['max_paragraph_len'],
         tokenizer, hyper_params['batch_size'])
 
@@ -115,8 +122,7 @@ def main():
         precision=hyper_params['precision'],
         resume_from_checkpoint=ckpt_to_resume)
 
-    # note we are passing dev_dataloader for both dev and test
-    ret_trainee = RetrieverTrainer(ret, train_dataloader, [dev_dataloader, faq_dataloader], dev_dataloader,
+    ret_trainee = RetrieverTrainer(ret, train_dataloader, dev_dataloaders, test_dataloader,
                                    hyper_params['loss_type'], hyper_params['optimizer'])
 
     if args.train:
