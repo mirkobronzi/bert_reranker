@@ -122,6 +122,8 @@ class RetrieverTrainer(pl.LightningModule):
         self.cross_entropy = nn.CrossEntropyLoss()
         self.cosine_loss = torch.nn.CosineEmbeddingLoss()
 
+        self.val_metrics = {}
+
     def forward(self, **kwargs):
         return self.retriever(**kwargs)
 
@@ -201,23 +203,40 @@ class RetrieverTrainer(pl.LightningModule):
         tensorboard_logs = {'train_loss': loss_value}
         return {'loss': loss_value, 'log': tensorboard_logs}
 
-    def validation_step(self, batch, batch_idx):
+    def validation_step(self, batch, batch_idx, dataset_number=0):
+        # if self.dev_data is a dataloader, there is no provided
+        # dataset_number, hence the default value at 0
         loss, all_prob = self.step_helper(batch)
         batch_size = all_prob.size()[0]
         _, predictions = torch.max(all_prob, 1)
         targets = batch[-1]
         val_acc = torch.tensor(accuracy_score(targets.cpu(), predictions.cpu())).to(targets.device)
-        return {'val_loss': loss, 'val_acc': val_acc}
+
+        return {'val_loss_' + str(dataset_number) : loss, 'val_acc_' + str(dataset_number) : val_acc}
 
     def validation_epoch_end(self, outputs):
-        avg_val_loss = torch.stack([x['val_loss'] for x in outputs]).mean()
-        avg_val_acc = torch.stack([x['val_acc'] for x in outputs]).double().mean()
 
-        tqdm_dict = {'val_acc': avg_val_acc, 'val_loss': avg_val_loss}
+        if type(self.dev_data) is list:
+            # Evaluate all validation sets (if there are more than 1)
+            val_metrics = {}
+            for idx in range(len(self.dev_data)):
+                avg_val_loss = torch.stack([x['val_loss_' + str(idx)] for x in outputs[idx] if x.get('val_loss_' + str(idx))]).mean()
+                avg_val_acc = torch.stack([x['val_acc_' + str(idx)] for x in outputs[idx] if x.get('val_acc_' + str(idx))]).double().mean()
+
+                val_metrics['val_acc_' + str(idx)] = avg_val_acc
+                val_metrics['val_loss_' + str(idx)] = avg_val_loss
+
+        else:
+            avg_val_loss = torch.stack(
+                [x['val_loss_0'] for x in outputs if x.get('val_loss_0')]).mean()
+            avg_val_acc = torch.stack(
+                [x['val_acc_0'] for x in outputs if x.get('val_acc_0')]).double().mean()
+
+            val_metrics = {'val_acc_0': avg_val_acc, 'val_loss_0': avg_val_loss}
 
         results = {
-            'progress_bar': tqdm_dict,
-            'log': tqdm_dict
+            'progress_bar': val_metrics,
+            'log': val_metrics
         }
         return results
 

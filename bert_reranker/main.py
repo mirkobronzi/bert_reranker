@@ -77,7 +77,12 @@ def main():
         hyper_params['max_question_len'], hyper_params['max_paragraph_len'],
         tokenizer, hyper_params['batch_size'])
 
-    #  dev_dataloader = [dev_dataloader, dev_dataloader]
+    faq_dataloader = generate_dataloader(
+        hyper_params['faq_file'], hyper_params['cache_folder'],
+        hyper_params['max_question_len'], hyper_params['max_paragraph_len'],
+        tokenizer, hyper_params['batch_size'])
+
+    dev_dataloaders = [dev_dataloader, faq_dataloader]
 
     bert_question = AutoModel.from_pretrained(model_name)
     bert_paragraph = AutoModel.from_pretrained(model_name)
@@ -101,11 +106,11 @@ def main():
         filepath=os.path.join(args.output, '{epoch}-{val_loss:.2f}-{val_acc:.2f}'),
         save_top_k=1,
         verbose=True,
-        monitor='val_acc',
+        monitor='val_acc_0',
         mode='max'
     )
 
-    early_stopping = EarlyStopping('val_acc', mode='max', patience=hyper_params['patience'])
+    early_stopping = EarlyStopping('val_acc_0', mode='max', patience=hyper_params['patience'])
 
     if hyper_params['precision'] not in {16, 32}:
         raise ValueError('precision should be either 16 or 32')
@@ -129,7 +134,7 @@ def main():
         resume_from_checkpoint=ckpt_to_resume)
 
     # note we are passing dev_dataloader for both dev and test
-    ret_trainee = RetrieverTrainer(ret, train_dataloader, dev_dataloader, dev_dataloader,
+    ret_trainee = RetrieverTrainer(ret, train_dataloader, dev_dataloaders, dev_dataloader,
                                    hyper_params['loss_type'], hyper_params['optimizer_type'])
 
     if args.train:
