@@ -1,64 +1,52 @@
 import logging
 
-import torch.nn as nn
-import torch.nn.functional as F
 import torch
+import torch.nn as nn
+from transformers import AutoModel
+
+from bert_reranker.models.general_encoder import GeneralEncoder
+from bert_reranker.utils.hp_utils import check_and_log_hp
 
 logger = logging.getLogger(__name__)
 
 
-def compute_average_with_padding(tensor, padding):
-    batch_size, seq_length, emb_size = tensor.shape
-    expanded_padding = padding.unsqueeze(-1).repeat(1, 1, emb_size)
-    padded_tensor = tensor * expanded_padding
-    return torch.sum(padded_tensor, axis=1) / torch.sum(padding, axis=1).unsqueeze(1).repeat(1, emb_size)
+def _get_layers(prev_hidden_size, dropout, layer_sizes, append_relu_and_dropout_after_last_layer):
+    result = []
+    for i, size in enumerate(layer_sizes):
+        result.append(nn.Linear(prev_hidden_size, size))
+        if i < len(layer_sizes) - 1 or append_relu_and_dropout_after_last_layer:
+            result.append(nn.ReLU())
+            result.append(nn.Dropout(p=dropout, inplace=False))
+        prev_hidden_size = size
+    return result
 
 
-class BertEncoder(nn.Module):
+class BertEncoder(GeneralEncoder):
 
-    def __init__(self, bert, max_seq_len, freeze_bert, pooling_type, top_layer_sizes, dropout,
-                 normalize_bert_encoder_result, bert_dropout=None):
-        super(BertEncoder, self).__init__()
-
-        self.pooling_type = pooling_type
-        self.max_seq_len = max_seq_len
+    def __init__(self, hyper_params):
+        model_hparams = hyper_params['model']
+        check_and_log_hp(
+            ['bert_base', 'dropout_bert', 'freeze_bert'],
+            model_hparams)
+        bert = AutoModel.from_pretrained(model_hparams['bert_base'])
+        super(BertEncoder, self).__init__(hyper_params, bert.config.hidden_size)
         self.bert = bert
+        bert_dropout = model_hparams['dropout_bert']
         if bert_dropout is not None:
             logger.info('setting bert dropout to {}'.format(bert_dropout))
-            bert.config.attention_probs_dropout_prob = bert_dropout
-            bert.config.hidden_dropout_prob = bert_dropout
+            self.bert.config.attention_probs_dropout_prob = bert_dropout
+            self.bert.config.hidden_dropout_prob = bert_dropout
         else:
             logger.info('using the original bert model dropout')
 
-        self.freeze_bert = freeze_bert
-        self.normalize_bert_encoder_result = normalize_bert_encoder_result
-        seq = []
-        prev_hidden_size = bert.config.hidden_size
-        for i, size in enumerate(top_layer_sizes):
-            seq.append(nn.Linear(prev_hidden_size, size))
-            if i < len(top_layer_sizes) - 1:
-                seq.append(nn.ReLU())
-                seq.append(nn.Dropout(p=dropout, inplace=False))
-            prev_hidden_size = size
-        self.net = nn.Sequential(*seq)
+        self.freeze_bert = model_hparams['freeze_bert']
 
-    def forward(self, input_ids, attention_mask, token_type_ids):
+    def get_encoder_hidden_states(self, input_ids, attention_mask, token_type_ids):
         if self.freeze_bert:
             with torch.no_grad():
-                h, _ = self.bert(input_ids=input_ids, attention_mask=attention_mask,
-                                 token_type_ids=token_type_ids)
+                bert_hs, _ = self.bert(input_ids=input_ids, attention_mask=attention_mask,
+                                       token_type_ids=token_type_ids)
         else:
-            h, _ = self.bert(input_ids=input_ids, attention_mask=attention_mask,
-                             token_type_ids=token_type_ids)
-        if self.pooling_type == 'cls':
-            result_pooling = h[:, 0, :]
-        elif self.pooling_type == 'avg':
-            result_pooling = compute_average_with_padding(h, attention_mask)
-        else:
-            raise ValueError('pooling {} not supported.'.format(self.pooling_type))
-        h_transformed = self.net(result_pooling)
-        if self.normalize_bert_encoder_result:
-            return F.normalize(h_transformed)
-        else:
-            return h_transformed
-
+            bert_hs, _ = self.bert(input_ids=input_ids, attention_mask=attention_mask,
+                                   token_type_ids=token_type_ids)
+        return bert_hs
