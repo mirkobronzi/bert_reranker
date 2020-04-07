@@ -216,7 +216,7 @@ class RetrieverTrainer(pl.LightningModule):
 
     def validation_epoch_end(self, outputs):
 
-        if type(self.dev_data) is list:
+        if len(self.dev_data) > 1:
             # Evaluate all validation sets (if there are more than 1)
             val_metrics = {}
             for idx in range(len(self.dev_data)):
