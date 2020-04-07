@@ -12,7 +12,7 @@ from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
 from transformers import AutoTokenizer
 from yaml import load
 
-from bert_reranker.data.data_loader import generate_dataloaders
+from bert_reranker.data.data_loader import generate_dataloader
 from bert_reranker.data.evaluate import evaluate_model
 from bert_reranker.models.load_model import load_model
 from bert_reranker.models.pl_model_loader import try_to_restore_model_weights
@@ -56,7 +56,7 @@ def main():
         hyper_params = load(stream, Loader=yaml.FullLoader)
 
     check_and_log_hp(
-        ['train_file', 'dev_file', 'cache_folder', 'batch_size', 'tokenizer_name', 'model',
+        ['train_file', 'dev_files', 'test_file', 'cache_folder', 'batch_size', 'tokenizer_name', 'model',
          'max_question_len', 'max_paragraph_len', 'patience', 'gradient_clipping',
          'loss_type', 'optimizer',  'precision'],
         hyper_params)
@@ -66,8 +66,25 @@ def main():
     tokenizer_name = hyper_params['tokenizer_name']
     tokenizer = AutoTokenizer.from_pretrained(tokenizer_name)
 
-    train_dataloader, dev_dataloader = generate_dataloaders(
-        hyper_params['train_file'], hyper_params['dev_file'], hyper_params['cache_folder'],
+    train_dataloader = generate_dataloader(
+        hyper_params['train_file'], hyper_params['cache_folder'],
+        hyper_params['max_question_len'], hyper_params['max_paragraph_len'],
+        tokenizer, hyper_params['batch_size'])
+
+    dev_dataloaders = []
+    for dev_file in hyper_params['dev_files'].values():
+        dev_dataloaders.append(
+            generate_dataloader(
+                dev_file,
+                hyper_params['cache_folder'],
+                hyper_params['max_question_len'],
+                hyper_params['max_paragraph_len'],
+                tokenizer, hyper_params['batch_size']
+            )
+        )
+
+    test_dataloader = generate_dataloader(
+        hyper_params['test_file'], hyper_params['cache_folder'],
         hyper_params['max_question_len'], hyper_params['max_paragraph_len'],
         tokenizer, hyper_params['batch_size'])
 
@@ -78,11 +95,11 @@ def main():
         filepath=os.path.join(args.output, '{epoch}-{val_loss:.2f}-{val_acc:.2f}'),
         save_top_k=1,
         verbose=True,
-        monitor='val_acc',
+        monitor='val_acc_0',
         mode='max'
     )
 
-    early_stopping = EarlyStopping('val_acc', mode='max', patience=hyper_params['patience'])
+    early_stopping = EarlyStopping('val_acc_0', mode='max', patience=hyper_params['patience'])
 
     if hyper_params['precision'] not in {16, 32}:
         raise ValueError('precision should be either 16 or 32')
@@ -105,8 +122,7 @@ def main():
         precision=hyper_params['precision'],
         resume_from_checkpoint=ckpt_to_resume)
 
-    # note we are passing dev_dataloader for both dev and test
-    ret_trainee = RetrieverTrainer(ret, train_dataloader, dev_dataloader, dev_dataloader,
+    ret_trainee = RetrieverTrainer(ret, train_dataloader, dev_dataloaders, test_dataloader,
                                    hyper_params['loss_type'], hyper_params['optimizer'])
 
     if args.train:
