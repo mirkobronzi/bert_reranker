@@ -77,6 +77,9 @@ def main():
     with open(args.output + 'healthtap_train_small.json', "w", encoding="utf-8") as out_stream:
         json.dump(qa_pairs_train[0:int(1e5)], out_stream, indent=4, ensure_ascii=False)
 
+    with open(args.output + 'healthtap_train_medium.json', "w", encoding="utf-8") as out_stream:
+        json.dump(qa_pairs_train[0:int(5e5)], out_stream, indent=4, ensure_ascii=False)
+
     with open(args.output + 'healthtap_dev.json', "w", encoding="utf-8") as out_stream:
         json.dump(qa_pairs_dev, out_stream, indent=4, ensure_ascii=False)
 
