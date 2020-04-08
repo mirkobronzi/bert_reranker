@@ -92,7 +92,7 @@ def main():
 
     os.makedirs(args.output, exist_ok=True)
     checkpoint_callback = ModelCheckpoint(
-        filepath=os.path.join(args.output, 'epoch={epoch}-{val_acc_0:.2f}'),
+        filepath=os.path.join(args.output, '{epoch}-{val_acc_0:.2f}-{val_loss:.2f}'),
         save_top_k=1,
         verbose=True,
         monitor='val_acc_0',
