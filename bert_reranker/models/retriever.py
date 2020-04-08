@@ -211,7 +211,7 @@ class RetrieverTrainer(pl.LightningModule):
         targets = batch[-1]
         val_acc = torch.tensor(accuracy_score(targets.cpu(), predictions.cpu())).to(targets.device)
 
-        return {'val_loss_' + str(dataset_number) : loss, 'val_acc_' + str(dataset_number) : val_acc}
+        return {'val_loss_' + str(dataset_number): loss, 'val_acc_' + str(dataset_number): val_acc}
 
     def validation_epoch_end(self, outputs):
 
@@ -222,17 +222,17 @@ class RetrieverTrainer(pl.LightningModule):
             # Evaluate all validation sets (if there are more than 1)
             val_metrics = {}
             for idx in range(len(self.dev_data)):
-                avg_val_loss = torch.stack([x['val_loss_' + str(idx)] for x in outputs[idx] if x.get('val_loss_' + str(idx))]).mean()
-                avg_val_acc = torch.stack([x['val_acc_' + str(idx)] for x in outputs[idx] if x.get('val_acc_' + str(idx))]).double().mean()
+                avg_val_loss = torch.stack([x['val_loss_' + str(idx)] for x in outputs[idx]]).mean()
+                avg_val_acc = torch.stack([x['val_acc_' + str(idx)] for x in outputs[idx]]).double().mean()
 
                 val_metrics['val_acc_' + str(idx)] = avg_val_acc
                 val_metrics['val_loss_' + str(idx)] = avg_val_loss
 
         else:
             avg_val_loss = torch.stack(
-                [x['val_loss_0'] for x in outputs if x.get('val_loss_0')]).mean()
+                [x['val_loss_0'] for x in outputs]).mean()
             avg_val_acc = torch.stack(
-                [x['val_acc_0'] for x in outputs if x.get('val_acc_0')]).double().mean()
+                [x['val_acc_0'] for x in outputs]).double().mean()
 
             val_metrics = {'val_acc_0': avg_val_acc, 'val_loss_0': avg_val_loss}
 
