@@ -214,6 +214,19 @@ class RetrieverTrainer(pl.LightningModule):
         return {'val_loss_' + str(dataset_number): loss, 'val_acc_' + str(dataset_number): val_acc}
 
     def validation_epoch_end(self, outputs):
+        """
+
+        :param outputs: if dev is a single dataloader, then this is an object with 2 dimensions:
+                        validation_point, metric_name
+                        and it contains N datapoint (tensor with N elements), where N
+                        is the number of GPUs.
+
+                        if dev is multiple dataloader, then this is an object with 3 dimensions:
+                        dataset, validation_point, metric_name
+                        and it contains N datapoint (tensor with N elements), where N
+                        is the number of GPUs.
+        :return:
+        """
 
         #  dev_data can be either a single dataloader, or a list of dataloaders
         #  for evaluation on many test sets
