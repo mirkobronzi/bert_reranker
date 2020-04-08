@@ -5,7 +5,7 @@ import re
 
 logger = logging.getLogger(__name__)
 
-VAL_ACC_EXTRACTOR = re.compile('val_acc=\d+.\d+')
+VAL_ACC_EXTRACTOR = re.compile('val_acc_0=\d+.\d+')
 
 
 def _get_accuracy_from_name(model_file):
