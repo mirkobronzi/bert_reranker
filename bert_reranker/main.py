@@ -58,7 +58,7 @@ def main():
     check_and_log_hp(
         ['train_file', 'dev_files', 'test_file', 'cache_folder', 'batch_size', 'tokenizer_name', 'model',
          'max_question_len', 'max_paragraph_len', 'patience', 'gradient_clipping',
-         'loss_type', 'optimizer',  'precision'],
+         'loss_type', 'optimizer',  'precision', 'accumulate_grad_batches'],
         hyper_params)
 
     os.makedirs(hyper_params['cache_folder'], exist_ok=True)
@@ -119,7 +119,8 @@ def main():
         checkpoint_callback=checkpoint_callback,
         early_stop_callback=early_stopping,
         precision=hyper_params['precision'],
-        resume_from_checkpoint=ckpt_to_resume)
+        resume_from_checkpoint=ckpt_to_resume,
+        accumulate_grad_batches=hyper_params['accumulate_grad_batches'])
 
     ret_trainee = RetrieverTrainer(ret, train_dataloader, dev_dataloaders, test_dataloader,
                                    hyper_params['loss_type'], hyper_params['optimizer'])
