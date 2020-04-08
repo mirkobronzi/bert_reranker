@@ -106,7 +106,6 @@ def main():
 
     if not args.no_model_restoring:
         ckpt_to_resume = try_to_restore_model_weights(args.output)
-
     else:
         ckpt_to_resume = None
         logger.info('will not try to restore previous models because --no-model-restoring')

@@ -60,14 +60,7 @@ class Retriever(nn.Module):
         h_paragraphs_batch = h_paragraphs_batch_reshape.reshape(batch_size, num_document, -1)
         return h_question, h_paragraphs_batch
 
-    def str2hash(drlf, str):
-        return hashlib.sha224(str.encode('utf-8')).hexdigest()
-
-    def refresh_cache(self):
-        self.cache_hash2array = {}
-        self.cache_hash2str = {}
-
-    def predict(self, question_str: str, batch_paragraph_strs: List[str], refresh_cache = False):
+    def predict(self, question_str: str, batch_paragraph_strs: List[str]):
         self.eval()
         with torch.no_grad():
             ## TODO this is only a single batch
