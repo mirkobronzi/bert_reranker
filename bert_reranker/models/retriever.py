@@ -60,14 +60,7 @@ class Retriever(nn.Module):
         h_paragraphs_batch = h_paragraphs_batch_reshape.reshape(batch_size, num_document, -1)
         return h_question, h_paragraphs_batch
 
-    def str2hash(drlf, str):
-        return hashlib.sha224(str.encode('utf-8')).hexdigest()
-
-    def refresh_cache(self):
-        self.cache_hash2array = {}
-        self.cache_hash2str = {}
-
-    def predict(self, question_str: str, batch_paragraph_strs: List[str], refresh_cache = False):
+    def predict(self, question_str: str, batch_paragraph_strs: List[str]):
         self.eval()
         with torch.no_grad():
             ## TODO this is only a single batch
@@ -214,6 +207,19 @@ class RetrieverTrainer(pl.LightningModule):
         return {'val_loss_' + str(dataset_number): loss, 'val_acc_' + str(dataset_number): val_acc}
 
     def validation_epoch_end(self, outputs):
+        """
+
+        :param outputs: if dev is a single dataloader, then this is an object with 2 dimensions:
+                        validation_point, metric_name
+                        and it contains N datapoint (tensor with N elements), where N
+                        is the number of GPUs.
+
+                        if dev is multiple dataloader, then this is an object with 3 dimensions:
+                        dataset, validation_point, metric_name
+                        and it contains N datapoint (tensor with N elements), where N
+                        is the number of GPUs.
+        :return:
+        """
 
         #  dev_data can be either a single dataloader, or a list of dataloaders
         #  for evaluation on many test sets
