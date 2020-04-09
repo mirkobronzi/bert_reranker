@@ -20,10 +20,15 @@ def get_optimizer(optimizer, model):
         bert_lrs = optimizer['bert_lrs']
         logger.info('ffw lr={} / bert layer lrs={}'.format(ffw_lr, bert_lrs))
         lsr = [
-            {'params': _get_grad_params(model.bert_question_encoder.net.parameters()),
+            {'params': _get_grad_params(model.bert_question_encoder.pre_pooling_net.parameters()),
              'lr': ffw_lr},
-            {'params': _get_grad_params(model.bert_paragraph_encoder.net.parameters()),
-             'lr': ffw_lr}]
+            {'params': _get_grad_params(model.bert_paragraph_encoder.pre_pooling_net.parameters()),
+             'lr': ffw_lr},
+            {'params': _get_grad_params(model.bert_question_encoder.post_pooling_net.parameters()),
+             'lr': ffw_lr},
+            {'params': _get_grad_params(model.bert_paragraph_encoder.post_pooling_net.parameters()),
+             'lr': ffw_lr}
+        ]
         for i in range(12):
             layer_lr = bert_lrs[i]
             lsr.append(
