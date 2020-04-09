@@ -11,31 +11,45 @@ def get_optimizer(optimizer, model):
 
     if optimizer_name == 'adamw':
         return torch.optim.AdamW([p for p in model.parameters() if p.requires_grad])
+    elif optimizer_name == 'adamw_diff_lr':
+        lsr = get_leraning_rates(model, optimizer)
+        return torch.optim.AdamW(lsr)
     elif optimizer_name == 'adam':
         layer_lr = optimizer['lr']
         logger.info('using adam with lr={}'.format(layer_lr))
         return torch.optim.Adam([p for p in model.parameters() if p.requires_grad], lr=layer_lr)
     elif optimizer_name == 'adam_diff_lr':
-        ffw_lr = optimizer['ffw_lr']
-        bert_lrs = optimizer['bert_lrs']
-        logger.info('ffw lr={} / bert layer lrs={}'.format(ffw_lr, bert_lrs))
-        lsr = [
-            {'params': _get_grad_params(model.bert_question_encoder.net.parameters()),
-             'lr': ffw_lr},
-            {'params': _get_grad_params(model.bert_paragraph_encoder.net.parameters()),
-             'lr': ffw_lr}]
-        for i in range(12):
-            layer_lr = bert_lrs[i]
-            lsr.append(
-                {'params':_get_grad_params(model.bert_question_encoder.bert.encoder.layer[i].parameters()),
-                 'lr': layer_lr})
-            lsr.append(
-                {'params': _get_grad_params(model.bert_paragraph_encoder.bert.encoder.layer[i].parameters()),
-                 'lr': layer_lr})
-        opt = torch.optim.Adam(lsr)
-        return opt
+        lsr = get_leraning_rates(model, optimizer)
+        return torch.optim.Adam(lsr)
     else:
         raise ValueError('optimizer {} not supported'.format(optimizer_name))
+
+
+def get_leraning_rates(model, optimizer):
+    ffw_lr = optimizer['ffw_lr']
+    bert_lrs = optimizer['bert_lrs']
+    logger.info('ffw lr={} / bert layer lrs={}'.format(ffw_lr, bert_lrs))
+    lsr = [
+        {'params': _get_grad_params(model.bert_question_encoder.pre_pooling_net.parameters()),
+         'lr': ffw_lr},
+        {'params': _get_grad_params(model.bert_paragraph_encoder.pre_pooling_net.parameters()),
+         'lr': ffw_lr},
+        {'params': _get_grad_params(model.bert_question_encoder.post_pooling_net.parameters()),
+         'lr': ffw_lr},
+        {'params': _get_grad_params(model.bert_paragraph_encoder.post_pooling_net.parameters()),
+         'lr': ffw_lr}
+    ]
+    for i in range(12):
+        layer_lr = bert_lrs[i]
+        lsr.append(
+            {'params': _get_grad_params(
+                model.bert_question_encoder.bert.encoder.layer[i].parameters()),
+             'lr': layer_lr})
+        lsr.append(
+            {'params': _get_grad_params(
+                model.bert_paragraph_encoder.bert.encoder.layer[i].parameters()),
+             'lr': layer_lr})
+    return lsr
 
 
 def _get_grad_params(model_params):
