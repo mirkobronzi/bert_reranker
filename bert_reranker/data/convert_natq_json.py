@@ -26,16 +26,16 @@ def main():
             data = json.loads(line)
 
             if data['num_positives'] >= 1 and data['num_negatives'] >= 2:
-                    question = data['question']
-                    paras = data['right_paragraphs'][:1] + data['wrong_paragraphs'][:2]
-                    paras = [remove_html_toks(i) for i in paras]
-                    new_example = [question] + [paras]
+                question = data['question']
+                paras = data['right_paragraphs'][:1] + data['wrong_paragraphs'][:2]
+                paras = [remove_html_toks(i) for i in paras]
+                new_example = [question] + [paras]
 
-                    if data['dataset'] == 'train':
-                        data_train.append(new_example)
+                if data['dataset'] == 'train':
+                    data_train.append(new_example)
 
-                    elif data['dataset'] == 'dev':
-                        data_dev.append(new_example)
+                elif data['dataset'] == 'dev':
+                    data_dev.append(new_example)
 
     with open(args.output_train, 'w') as out_stream:
         json.dump(data_train, out_stream, indent=4)
@@ -46,4 +46,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-

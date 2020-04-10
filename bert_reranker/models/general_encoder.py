@@ -19,7 +19,8 @@ def compute_average_with_padding(tensor, padding):
     batch_size, seq_length, emb_size = tensor.shape
     expanded_padding = padding.unsqueeze(-1).repeat(1, 1, emb_size)
     padded_tensor = tensor * expanded_padding
-    return torch.sum(padded_tensor, axis=1) / torch.sum(padding, axis=1).unsqueeze(1).repeat(1, emb_size)
+    entry_sizes = torch.sum(padding, axis=1).unsqueeze(1).repeat(1, emb_size)
+    return torch.sum(padded_tensor, axis=1) / entry_sizes
 
 
 def _get_layers(prev_hidden_size, dropout, layer_sizes, append_relu_and_dropout_after_last_layer):
@@ -81,4 +82,3 @@ class GeneralEncoder(nn.Module):
             return F.normalize(post_pooling_hs)
         else:
             return post_pooling_hs
-

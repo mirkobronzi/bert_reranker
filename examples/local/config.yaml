@@ -36,6 +36,7 @@ loss_type: 'classification'
 # this is mostly used when freezing the bert model
 optimizer:
   name: 'adamw'
+  lr: 0.001
 # the following allow to specify a different lr for every bert layer
 #optimizer:
 #  name: 'adam_diff_lr'

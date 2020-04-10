@@ -1,4 +1,3 @@
-import hashlib
 import logging
 import random
 from typing import List
@@ -27,8 +26,8 @@ class Retriever(nn.Module):
         self.cache_hash2array = {}
 
     def forward(self, input_ids_question, attention_mask_question, token_type_ids_question,
-                         batch_input_ids_paragraphs, batch_attention_mask_paragraphs,
-                         batch_token_type_ids_paragraphs):
+                batch_input_ids_paragraphs, batch_attention_mask_paragraphs,
+                batch_token_type_ids_paragraphs):
 
         batch_size, num_document, max_len_size = batch_input_ids_paragraphs.size()
 
@@ -63,8 +62,7 @@ class Retriever(nn.Module):
     def predict(self, question_str: str, batch_paragraph_strs: List[str]):
         self.eval()
         with torch.no_grad():
-            ## TODO this is only a single batch
-            ## TODO Add hashing
+            # TODO this is only a single batch
 
             paragraph_inputs = self.tokenizer.batch_encode_plus(
                  batch_paragraph_strs,
@@ -75,13 +73,13 @@ class Retriever(nn.Module):
              )
 
             tmp_device = next(self.bert_paragraph_encoder.parameters()).device
-            p_inputs = {k: v.to(tmp_device).unsqueeze(0) for k,v in paragraph_inputs.items()}
+            p_inputs = {k: v.to(tmp_device).unsqueeze(0) for k, v in paragraph_inputs.items()}
 
-            question_inputs = self.tokenizer.encode_plus(question_str, add_special_tokens=True,
-                   max_length=self.max_question_len, pad_to_max_length=True,
-                   return_tensors='pt')
+            question_inputs = self.tokenizer.encode_plus(
+                question_str, add_special_tokens=True, max_length=self.max_question_len,
+                pad_to_max_length=True, return_tensors='pt')
             tmp_device = next(self.bert_question_encoder.parameters()).device
-            q_inputs = {k: v.to(tmp_device) for k,v in question_inputs.items()}
+            q_inputs = {k: v.to(tmp_device) for k, v in question_inputs.items()}
 
             q_emb, p_embs = self.forward(
                 q_inputs['input_ids'], q_inputs['attention_mask'], q_inputs['token_type_ids'],
@@ -122,8 +120,8 @@ class RetrieverTrainer(pl.LightningModule):
 
     def step_helper(self, batch):
         input_ids_question, attention_mask_question, token_type_ids_question, \
-        batch_input_ids_paragraphs, batch_attention_mask_paragraphs, \
-        batch_token_type_ids_paragraphs, targets = batch
+            batch_input_ids_paragraphs, batch_attention_mask_paragraphs, \
+            batch_token_type_ids_paragraphs, targets = batch
 
         inputs = {
             'input_ids_question': input_ids_question,
@@ -228,8 +226,10 @@ class RetrieverTrainer(pl.LightningModule):
             # Evaluate all validation sets (if there are more than 1)
             val_metrics = {}
             for idx in range(len(self.dev_data)):
-                avg_val_loss = torch.stack([x['val_loss_' + str(idx)] for x in outputs[idx]]).mean()
-                avg_val_acc = torch.stack([x['val_acc_' + str(idx)] for x in outputs[idx]]).double().mean()
+                val_losses = torch.stack([x['val_loss_' + str(idx)] for x in outputs[idx]])
+                avg_val_loss = val_losses.mean()
+                val_accs = torch.stack([x['val_acc_' + str(idx)] for x in outputs[idx]])
+                avg_val_acc = val_accs.double().mean()
 
                 val_metrics['val_acc_' + str(idx)] = avg_val_acc
                 val_metrics['val_loss_' + str(idx)] = avg_val_loss

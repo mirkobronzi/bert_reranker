@@ -10,22 +10,24 @@ def get_optimizer(optimizer, model):
     optimizer_name = optimizer['name']
 
     if optimizer_name == 'adamw':
-        return torch.optim.AdamW([p for p in model.parameters() if p.requires_grad])
+        lr = optimizer['lr']
+        logger.info('using adamw with lr={}'.format(lr))
+        return torch.optim.AdamW([p for p in model.parameters() if p.requires_grad], lr=lr)
     elif optimizer_name == 'adamw_diff_lr':
-        lsr = get_leraning_rates(model, optimizer)
+        lsr = get_learning_rates(model, optimizer)
         return torch.optim.AdamW(lsr)
     elif optimizer_name == 'adam':
-        layer_lr = optimizer['lr']
-        logger.info('using adam with lr={}'.format(layer_lr))
-        return torch.optim.Adam([p for p in model.parameters() if p.requires_grad], lr=layer_lr)
+        lr = optimizer['lr']
+        logger.info('using adam with lr={}'.format(lr))
+        return torch.optim.Adam([p for p in model.parameters() if p.requires_grad], lr=lr)
     elif optimizer_name == 'adam_diff_lr':
-        lsr = get_leraning_rates(model, optimizer)
+        lsr = get_learning_rates(model, optimizer)
         return torch.optim.Adam(lsr)
     else:
         raise ValueError('optimizer {} not supported'.format(optimizer_name))
 
 
-def get_leraning_rates(model, optimizer):
+def get_learning_rates(model, optimizer):
     ffw_lr = optimizer['ffw_lr']
     bert_lrs = optimizer['bert_lrs']
     logger.info('ffw lr={} / bert layer lrs={}'.format(ffw_lr, bert_lrs))
