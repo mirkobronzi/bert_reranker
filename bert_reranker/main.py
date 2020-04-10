@@ -22,6 +22,7 @@ from bert_reranker.utils.logging_utils import LoggerWriter
 
 logger = logging.getLogger(__name__)
 
+import numpy as np
 
 def main():
     parser = argparse.ArgumentParser()
@@ -49,6 +50,7 @@ def main():
 
     logging.basicConfig(level=logging.INFO)
 
+    
     if args.redirect_log:
         sys.stdout = LoggerWriter(logger.info)
         sys.stderr = LoggerWriter(logger.warning)
@@ -57,10 +59,17 @@ def main():
         hyper_params = load(stream, Loader=yaml.FullLoader)
 
     check_and_log_hp(
-        ['train_file', 'dev_files', 'test_file', 'cache_folder', 'batch_size', 'tokenizer_name',
-         'model', 'max_question_len', 'max_paragraph_len', 'patience', 'gradient_clipping',
-         'loss_type', 'optimizer',  'precision', 'accumulate_grad_batches'],
+        ['train_file', 'dev_files', 'test_file', 'cache_folder', 'batch_size', 'tokenizer_name', 'model',
+         'max_question_len', 'max_paragraph_len', 'patience', 'gradient_clipping',
+         'loss_type', 'optimizer',  'precision', 'accumulate_grad_batches', 'seed'],
         hyper_params)
+    
+    if hyper_params['seed'] is not None:
+        # fix the seed
+        torch.manual_seed(hyper_params['seed'])
+        np.random.seed(hyper_params['seed'])
+        torch.backends.cudnn.deterministic = True
+        torch.backends.cudnn.benchmark = False
 
     os.makedirs(hyper_params['cache_folder'], exist_ok=True)
 
