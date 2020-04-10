@@ -1,1 +1,1 @@
-train --config config.yaml --output output
+main --config config.yaml --output output --no-model-restoring --train
