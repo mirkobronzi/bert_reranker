@@ -21,5 +21,3 @@ def load_model(hyper_params, tokenizer, debug):
     else:
         raise ValueError('model name {} not supported'.format(hyper_params['model']['name']))
     return model
-
-

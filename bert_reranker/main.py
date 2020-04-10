@@ -56,8 +56,8 @@ def main():
         hyper_params = load(stream, Loader=yaml.FullLoader)
 
     check_and_log_hp(
-        ['train_file', 'dev_files', 'test_file', 'cache_folder', 'batch_size', 'tokenizer_name', 'model',
-         'max_question_len', 'max_paragraph_len', 'patience', 'gradient_clipping',
+        ['train_file', 'dev_files', 'test_file', 'cache_folder', 'batch_size', 'tokenizer_name',
+         'model', 'max_question_len', 'max_paragraph_len', 'patience', 'gradient_clipping',
          'loss_type', 'optimizer',  'precision', 'accumulate_grad_batches'],
         hyper_params)
 
