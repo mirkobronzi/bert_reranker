@@ -22,7 +22,6 @@ from bert_reranker.utils.logging_utils import LoggerWriter
 
 logger = logging.getLogger(__name__)
 
-import pdb
 import numpy as np
 
 def main():
@@ -64,11 +63,12 @@ def main():
          'loss_type', 'optimizer',  'precision', 'accumulate_grad_batches', 'seed'],
         hyper_params)
     
-    # fix the seed
-    torch.manual_seed(hyper_params['seed'])
-    np.random.seed(hyper_params['seed'])
-    torch.backends.cudnn.deterministic = True
-    torch.backends.cudnn.benchmark = False
+    if hyper_params['seed'] is not None:
+        # fix the seed
+        torch.manual_seed(hyper_params['seed'])
+        np.random.seed(hyper_params['seed'])
+        torch.backends.cudnn.deterministic = True
+        torch.backends.cudnn.benchmark = False
 
     os.makedirs(hyper_params['cache_folder'], exist_ok=True)
 
