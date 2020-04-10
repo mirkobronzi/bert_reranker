@@ -1,6 +1,9 @@
 import json
+import logging
 
 from tqdm import tqdm
+
+logger = logging.getLogger(__name__)
 
 
 def get_batched_pairs(qa_pairs, batch_size):
@@ -30,6 +33,6 @@ def evaluate_model(ret_trainee, qa_pairs_json_file, predict_to):
             out_stream.write('\t' + '\n\t'.join(answers) + '\n\n')
 
     acc = correct / len(qa_pairs) * 100
-    print("Accuracy: %", acc)
+    logger.info("correct {} over {} - accuracy is {}".format(correct, len(qa_pairs), acc))
     if out_stream:
         out_stream.close()
