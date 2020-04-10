@@ -4,6 +4,8 @@ from typing import List
 import torch
 import torch.nn as nn
 
+from bert_reranker.models.bert_encoder import get_ffw_layers
+
 logger = logging.getLogger(__name__)
 
 
@@ -109,6 +111,26 @@ class EmbeddingRetriever(Retriever):
                 batch_input_ids_paragraphs, batch_attention_mask_paragraphs,
                 batch_token_type_ids_paragraphs):
         return self.compute_emebeddings(
+            input_ids_question, attention_mask_question, token_type_ids_question,
+            batch_input_ids_paragraphs, batch_attention_mask_paragraphs,
+            batch_token_type_ids_paragraphs)
+
+
+class FeedForwardRetriever(Retriever):
+
+    def __init__(self, bert_question_encoder, bert_paragraph_encoder, tokenizer,
+                 max_question_len, max_paragraph_len, debug):
+        super(FeedForwardRetriever, self).__init__(
+            bert_question_encoder, bert_paragraph_encoder, tokenizer, max_question_len,
+            max_paragraph_len, debug)
+        ffw_layers = get_ffw_layers()
+        self.ffw_net = nn.Sequential(ffw_layers)
+
+
+    def forward(self, input_ids_question, attention_mask_question, token_type_ids_question,
+                batch_input_ids_paragraphs, batch_attention_mask_paragraphs,
+                batch_token_type_ids_paragraphs):
+        q_emb, p_embs = self.compute_emebeddings(
             input_ids_question, attention_mask_question, token_type_ids_question,
             batch_input_ids_paragraphs, batch_attention_mask_paragraphs,
             batch_token_type_ids_paragraphs)

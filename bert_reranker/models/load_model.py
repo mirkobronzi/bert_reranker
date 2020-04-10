@@ -12,6 +12,12 @@ def load_model(hyper_params, tokenizer, debug):
         model = EmbeddingRetriever(
             bert_question_encoder, bert_paragraph_encoder, tokenizer,
             hyper_params['max_question_len'], hyper_params['max_paragraph_len'], debug)
+    elif hyper_params['model']['name'] == 'bert_ffw':
+        bert_question_encoder = BertEncoder(hyper_params)
+        bert_paragraph_encoder = BertEncoder(hyper_params)
+        model = FeedForwardRetriever(
+            bert_question_encoder, bert_paragraph_encoder, tokenizer,
+            hyper_params['max_question_len'], hyper_params['max_paragraph_len'], debug)
     elif hyper_params['model']['name'] == 'cnn':
         cnn_question_encoder = CNNEncoder(hyper_params, tokenizer.vocab_size)
         cnn_paragraph_encoder = CNNEncoder(hyper_params, tokenizer.vocab_size)
