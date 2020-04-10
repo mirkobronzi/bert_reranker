@@ -13,7 +13,7 @@ from transformers import AutoTokenizer
 from yaml import load
 
 from bert_reranker.data.data_loader import generate_dataloader
-from bert_reranker.data.evaluate import evaluate_model
+from bert_reranker.data.predict import evaluate_model
 from bert_reranker.models.load_model import load_model
 from bert_reranker.models.pl_model_loader import try_to_restore_model_weights
 from bert_reranker.models.retriever import RetrieverTrainer
@@ -42,6 +42,7 @@ def main():
     parser.add_argument('--validate', help='will not train - will just evaluate on dev',
                         action='store_true')
     parser.add_argument('--predict', help='will predict on the json file you provide as an arg')
+    parser.add_argument('--predict-to', help='(optiona) write predictions here)')
     parser.add_argument('--redirect-log', help='will intercept any stdout/err and log it',
                         action='store_true')
     parser.add_argument('--debug', help='will log more info', action='store_true')
@@ -143,7 +144,7 @@ def main():
             ckpt_to_resume, map_location=torch.device("cpu")
         )
         ret_trainee.load_state_dict(model_ckpt["state_dict"])
-        evaluate_model(ret_trainee, qa_pairs_json_file=args.predict)
+        evaluate_model(ret_trainee, qa_pairs_json_file=args.predict, predict_to=args.predict_to)
     else:
         logger.warning('please select one between --train / --validate / --test')
 
