@@ -22,7 +22,6 @@ from bert_reranker.utils.logging_utils import LoggerWriter
 
 logger = logging.getLogger(__name__)
 
-import pdb
 import numpy as np
 
 def main():
