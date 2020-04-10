@@ -7,13 +7,11 @@ import random
 from tqdm import tqdm
 import pandas as pd
 
-from bert_reranker.data.data_loader import remove_html_toks
-
 logger = logging.getLogger(__name__)
+
 
 def generate_dataset(data, seed):
 
-    n_wrong_answers = 2
     random.seed(seed)
 
     all_questions = []
@@ -24,7 +22,7 @@ def generate_dataset(data, seed):
             if answer_format != "[]":
                 all_answers.append(ast.literal_eval(answer_format)[0]["answer"])
                 all_questions.append(question)
-        except:
+        except:    # noqa: E722
             continue
 
     qa_pairs = []

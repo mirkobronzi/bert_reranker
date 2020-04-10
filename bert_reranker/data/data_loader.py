@@ -66,26 +66,25 @@ def json_to_dataset(json_file, max_question_len, max_paragraph_len, tokenizer):
 
         for question, answers in tqdm(qa_pairs):
 
-                paragraphs = [remove_html_toks(i) for i in answers]
+            paragraphs = [remove_html_toks(i) for i in answers]
+            shuffled_paragraphs, target = shuffle_paragraphs(paragraphs)
+            input_question = tokenizer.encode_plus(question, add_special_tokens=True,
+                                                   max_length=max_question_len,
+                                                   pad_to_max_length=True,
+                                                   return_tensors='pt')
+            inputs_paragraph = tokenizer.batch_encode_plus(shuffled_paragraphs,
+                                                           add_special_tokens=True,
+                                                           pad_to_max_length=True,
+                                                           max_length=max_paragraph_len,
+                                                           return_tensors='pt')
 
-                shuffled_paragraphs, target = shuffle_paragraphs(paragraphs)
-
-                input_question = tokenizer.encode_plus(question, add_special_tokens=True,
-                                                       max_length=max_question_len, pad_to_max_length=True,
-                                                       return_tensors='pt')
-                inputs_paragraph = tokenizer.batch_encode_plus(shuffled_paragraphs,
-                                                               add_special_tokens=True,
-                                                               pad_to_max_length=True,
-                                                               max_length=max_paragraph_len,
-                                                               return_tensors='pt'
-                                                               )
-                input_ids_question.append(input_question['input_ids'])
-                attention_mask_question.append(input_question['attention_mask'])
-                token_type_ids_question.append(input_question['token_type_ids'])
-                batch_input_ids_paragraphs.append(inputs_paragraph['input_ids'].unsqueeze(0))
-                batch_attention_mask_paragraphs.append(inputs_paragraph['attention_mask'].unsqueeze(0))
-                batch_token_type_ids_paragraphs.append(inputs_paragraph['token_type_ids'].unsqueeze(0))
-                targets.append(target)
+            input_ids_question.append(input_question['input_ids'])
+            attention_mask_question.append(input_question['attention_mask'])
+            token_type_ids_question.append(input_question['token_type_ids'])
+            batch_input_ids_paragraphs.append(inputs_paragraph['input_ids'].unsqueeze(0))
+            batch_attention_mask_paragraphs.append(inputs_paragraph['attention_mask'].unsqueeze(0))
+            batch_token_type_ids_paragraphs.append(inputs_paragraph['token_type_ids'].unsqueeze(0))
+            targets.append(target)
 
         dataset = TensorDataset(
             torch.cat(input_ids_question),
@@ -100,8 +99,8 @@ def json_to_dataset(json_file, max_question_len, max_paragraph_len, tokenizer):
     return dataset
 
 
-def generate_dataloader(data_file, cache_folder, max_question_len,
-                         max_paragraph_len, tokenizer, batch_size):
+def generate_dataloader(data_file, cache_folder, max_question_len, max_paragraph_len,
+                        tokenizer, batch_size):
 
     data_file_name = ntpath.basename(data_file)
     cached_data = os.path.join(cache_folder, data_file_name + '.pt')

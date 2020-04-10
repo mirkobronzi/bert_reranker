@@ -3,10 +3,6 @@ import json
 import logging
 import random
 
-from tqdm import tqdm
-
-from bert_reranker.data.data_loader import remove_html_toks
-
 logger = logging.getLogger(__name__)
 
 
