@@ -11,6 +11,7 @@ import yaml
 from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
 from transformers import AutoTokenizer
 from yaml import load
+from torch.utils.tensorboard import SummaryWriter
 
 from bert_reranker.data.data_loader import generate_dataloader
 from bert_reranker.data.evaluate import evaluate_model
@@ -23,6 +24,7 @@ from bert_reranker.utils.logging_utils import LoggerWriter
 logger = logging.getLogger(__name__)
 
 import numpy as np
+writer = SummaryWriter()
 
 def main():
     parser = argparse.ArgumentParser()
@@ -63,6 +65,8 @@ def main():
          'loss_type', 'optimizer',  'precision', 'accumulate_grad_batches', 'seed'],
         hyper_params)
     
+    writer.add_text('seed', str(hyper_params['seed']))
+
     if hyper_params['seed'] is not None:
         # fix the seed
         torch.manual_seed(hyper_params['seed'])
