@@ -11,7 +11,6 @@ import yaml
 from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
 from transformers import AutoTokenizer
 from yaml import load
-from torch.utils.tensorboard import SummaryWriter
 
 from bert_reranker.data.data_loader import generate_dataloader
 from bert_reranker.data.predict import evaluate_model
@@ -22,9 +21,9 @@ from bert_reranker.utils.hp_utils import check_and_log_hp
 from bert_reranker.utils.logging_utils import LoggerWriter
 
 logger = logging.getLogger(__name__)
+from pytorch_lightning import loggers
 
 import numpy as np
-writer = SummaryWriter()
 
 def main():
     parser = argparse.ArgumentParser()
@@ -66,8 +65,6 @@ def main():
          'loss_type', 'optimizer',  'precision', 'accumulate_grad_batches', 'seed'],
         hyper_params)
     
-    writer.add_text('seed', str(hyper_params['seed']))
-
     if hyper_params['seed'] is not None:
         # fix the seed
         torch.manual_seed(hyper_params['seed'])
@@ -124,7 +121,12 @@ def main():
         ckpt_to_resume = None
         logger.info('will not try to restore previous models because --no-model-restoring')
 
+    tb_logger = loggers.TensorBoardLogger('logs')
+    for hparam in list(hyper_params):
+        tb_logger.experiment.add_text(hparam, str(hyper_params[hparam]))
+
     trainer = pl.Trainer(
+        logger=tb_logger,
         gpus=args.gpu,
         distributed_backend='dp',
         val_check_interval=args.validation_interval,
