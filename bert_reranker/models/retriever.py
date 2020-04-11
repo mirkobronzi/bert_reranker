@@ -219,26 +219,17 @@ class RetrieverTrainer(pl.LightningModule):
         :return:
         """
 
-        #  dev_data can be either a single dataloader, or a list of dataloaders
-        #  for evaluation on many test sets
-
         if len(self.dev_data) > 1 and type(self.dev_data) is list:
             # Evaluate all validation sets (if there are more than 1)
             val_metrics = {}
-            for idx in range(len(self.dev_data)):
-                val_losses = torch.stack([x['val_loss_' + str(idx)] for x in outputs[idx]])
-                avg_val_loss = val_losses.mean()
-                val_accs = torch.stack([x['val_acc_' + str(idx)] for x in outputs[idx]])
-                avg_val_acc = val_accs.double().mean()
-
-                val_metrics['val_acc_' + str(idx)] = avg_val_acc
-                val_metrics['val_loss_' + str(idx)] = avg_val_loss
-
-        else:
-            avg_val_loss = torch.stack(
-                [x['val_loss_0'] for x in outputs]).mean()
-            avg_val_acc = torch.stack(
-                [x['val_acc_0'] for x in outputs]).double().mean()
+            for dataset_index in range(len(self.dev_data)):
+                avg_val_loss = self._comput_mean_for_metric(dataset_index, 'val_loss_', outputs)
+                avg_val_acc = self._comput_mean_for_metric(dataset_index, 'val_acc_', outputs)
+                val_metrics['val_acc_' + str(dataset_index)] = avg_val_acc
+                val_metrics['val_loss_' + str(dataset_index)] = avg_val_loss
+        else:  # only one dev set provided
+            avg_val_loss = self._comput_mean_for_metric(None, 'val_loss_', outputs)
+            avg_val_acc = self._comput_mean_for_metric(None, 'val_acc_', outputs)
 
             val_metrics = {'val_acc_0': avg_val_acc, 'val_loss_0': avg_val_loss}
 
@@ -247,6 +238,21 @@ class RetrieverTrainer(pl.LightningModule):
             'log': val_metrics
         }
         return results
+
+    def _comput_mean_for_metric(self, dataset_index, metric_name, outputs):
+        if dataset_index is not None:
+            outputs = outputs[dataset_index]
+            metric_index = dataset_index
+        else:
+            metric_index = 0
+
+        datapoints = [x[metric_name + str(metric_index)] for x in outputs]
+        if len(datapoints[0].shape) == 0:
+            # if just a scalar, create a fake empty dimension for the cat
+            datapoints = [dp.unsqueeze(0) for dp in datapoints]
+        val_losses = torch.cat(datapoints)
+        avg_val_loss = val_losses.mean()
+        return avg_val_loss
 
     def test_step(self, batch, batch_idx):
         # we do the same stuff as in the validation phase
