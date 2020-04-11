@@ -121,7 +121,7 @@ def main():
         ckpt_to_resume = None
         logger.info('will not try to restore previous models because --no-model-restoring')
 
-    tb_logger = loggers.TensorBoardLogger('logs')
+    tb_logger = loggers.TensorBoardLogger('experiment_logs')
     for hparam in list(hyper_params):
         tb_logger.experiment.add_text(hparam, str(hyper_params[hparam]))
 
