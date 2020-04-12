@@ -117,6 +117,25 @@ class EmbeddingRetriever(Retriever):
             batch_input_ids_paragraphs, batch_attention_mask_paragraphs,
             batch_token_type_ids_paragraphs)
 
+    def _comput_mean_for_metric(self, dataset_index, metric_name, outputs):
+        if dataset_index is not None:
+            outputs = outputs[dataset_index]
+            metric_index = dataset_index
+        else:
+            metric_index = 0
+
+        datapoints = [x[metric_name + str(metric_index)] for x in outputs]
+        if len(datapoints[0].shape) == 0:
+            # if just a scalar, create a fake empty dimension for the cat
+            datapoints = [dp.unsqueeze(0) for dp in datapoints]
+        val_losses = torch.cat(datapoints)
+        avg_val_loss = val_losses.mean()
+        return avg_val_loss
+
+    def test_step(self, batch, batch_idx):
+        # we do the same stuff as in the validation phase
+        return self.validation_step(batch, batch_idx)
+
 
 class FeedForwardRetriever(Retriever):
 
