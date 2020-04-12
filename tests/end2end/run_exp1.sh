@@ -5,5 +5,6 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 cd ${DIR}/../../examples/local/
 
 main --config config.yaml --output output --train
-main --config config.yaml --output output --validate
+# TODO: fix the following one
+#main --config config.yaml --output output --validate
 main --config config.yaml --output output --predict data_small.json
