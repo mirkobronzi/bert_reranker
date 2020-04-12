@@ -22,7 +22,7 @@ def load_model(hyper_params, tokenizer, debug):
         model = FeedForwardRetriever(
             bert_question_encoder, bert_paragraph_encoder, tokenizer,
             hyper_params['max_question_len'], hyper_params['max_paragraph_len'], debug,
-            hyper_params, previous_hidden_size=previous_hidden_size)
+            hyper_params['model'], previous_hidden_size=previous_hidden_size)
     elif hyper_params['model']['name'] == 'cnn':
         cnn_question_encoder = CNNEncoder(hyper_params, tokenizer.vocab_size)
         cnn_paragraph_encoder = CNNEncoder(hyper_params, tokenizer.vocab_size)
