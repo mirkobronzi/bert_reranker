@@ -15,10 +15,14 @@ def load_model(hyper_params, tokenizer, debug):
     elif hyper_params['model']['name'] == 'bert_ffw':
         bert_question_encoder = BertEncoder(hyper_params)
         bert_paragraph_encoder = BertEncoder(hyper_params)
+        if bert_question_encoder.post_pooling_last_hidden_size != \
+                bert_paragraph_encoder.post_pooling_last_hidden_size:
+            raise ValueError("question/paragraph encoder should have the same output hidden size")
+        previous_hidden_size = bert_question_encoder.post_pooling_last_hidden_size
         model = FeedForwardRetriever(
             bert_question_encoder, bert_paragraph_encoder, tokenizer,
             hyper_params['max_question_len'], hyper_params['max_paragraph_len'], debug,
-            hyper_params)
+            hyper_params, previous_hidden_size=previous_hidden_size)
     elif hyper_params['model']['name'] == 'cnn':
         cnn_question_encoder = CNNEncoder(hyper_params, tokenizer.vocab_size)
         cnn_paragraph_encoder = CNNEncoder(hyper_params, tokenizer.vocab_size)

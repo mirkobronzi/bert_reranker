@@ -120,16 +120,15 @@ class EmbeddingRetriever(Retriever):
 class FeedForwardRetriever(Retriever):
 
     def __init__(self, bert_question_encoder, bert_paragraph_encoder, tokenizer, max_question_len,
-                 max_paragraph_len, debug, hyper_params):
+                 max_paragraph_len, debug, hyper_params, previous_hidden_size):
         super(FeedForwardRetriever, self).__init__(
             bert_question_encoder, bert_paragraph_encoder, tokenizer, max_question_len,
             max_paragraph_len, debug)
         self.returns_embeddings = False
 
-        prev_hidden_size = 4
         layer_sizes = []
         ffw_layers = get_ffw_layers(
-            prev_hidden_size * 2, hyper_params['model']['dropout'], layer_sizes + [1], False)
+            previous_hidden_size * 2, hyper_params['model']['dropout'], layer_sizes + [1], False)
         self.ffw_net = nn.Sequential(*ffw_layers)
 
     def forward(self, input_ids_question, attention_mask_question, token_type_ids_question,
