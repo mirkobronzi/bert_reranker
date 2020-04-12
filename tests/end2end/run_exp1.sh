@@ -4,4 +4,4 @@ set -e
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 cd ${DIR}/../../examples/local
 
-main --config config.yaml --output output --no-model-restoring --train
+main --config config.yaml --output output --train
