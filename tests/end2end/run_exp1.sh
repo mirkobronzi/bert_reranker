@@ -6,4 +6,4 @@ cd ${DIR}/../../examples/local/
 
 main --config config.yaml --output output --train
 main --config config.yaml --output output --validate
-main --config config.yaml --output output --predict train_small.json
+main --config config.yaml --output output --predict data_small.json
