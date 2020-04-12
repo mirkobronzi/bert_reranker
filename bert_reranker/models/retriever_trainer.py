@@ -45,25 +45,36 @@ class RetrieverTrainer(pl.LightningModule):
             'batch_token_type_ids_paragraphs': batch_token_type_ids_paragraphs
         }
 
-        q_emb, p_embs = self.retriever(**inputs)
-        batch_size, num_document, emb_dim = p_embs.size()
-        all_dots = torch.bmm(q_emb.unsqueeze(1), p_embs.transpose(2, 1)).squeeze(1)
-        all_prob = torch.sigmoid(all_dots)
-
         if self.loss_type == 'negative_sampling':
+            if self.retriever.returns_embeddings:
+                q_emb, p_embs = self.retriever(**inputs)
+                logits = torch.bmm(q_emb.unsqueeze(1), p_embs.transpose(2, 1)).squeeze(1)
+            else:
+                logits = self.retriever(**inputs)
+            all_prob = torch.sigmoid(logits)
+
             pos_preds = []
             neg_preds = all_prob.clone()
             for count, target in enumerate(targets):
                 pos_preds.append(neg_preds[count][target].clone())
                 neg_preds[count][target] = 0
-            pos_preds = torch.tensor(pos_preds).to(q_emb.device)
+            pos_preds = torch.tensor(pos_preds).to(all_prob.device)
             pos_loss = - torch.log(pos_preds).sum()
             neg_loss = - torch.log(1 - neg_preds).sum()
             loss = pos_loss + neg_loss
         elif self.loss_type == 'classification':
-            # all_dots are the logits
-            loss = self.cross_entropy(all_dots, targets)
+            if self.retriever.returns_embeddings:
+                q_emb, p_embs = self.retriever(**inputs)
+                logits = torch.bmm(q_emb.unsqueeze(1), p_embs.transpose(2, 1)).squeeze(1)
+            else:
+                logits = self.retriever(**inputs)
+
+            loss = self.cross_entropy(logits, targets)
         elif self.loss_type == 'triplet_loss':
+            if not self.retriever.returns_embeddings:
+                raise ValueError('triples_loss is compatible only with models returning embeddings')
+            q_emb, p_embs = self.retriever(**inputs)
+
             # draw random wrong targets
             wrong_targs = []
             for target in targets:
@@ -79,7 +90,14 @@ class RetrieverTrainer(pl.LightningModule):
 
             triplet_loss = nn.TripletMarginLoss(margin=1.0, p=2)
             loss = triplet_loss(q_emb, pos_pembs, neg_pembs)
+            # to compute final probabilities
+            logits = torch.bmm(q_emb.unsqueeze(1), p_embs.transpose(2, 1)).squeeze(1)
         elif self.loss_type == 'cosine':
+            if not self.retriever.returns_embeddings:
+                raise ValueError('triples_loss is compatible only with models returning embeddings')
+            q_emb, p_embs = self.retriever(**inputs)
+            batch_size, num_document, emb_dim = p_embs.size()
+
             # every target is set to -1 = except for the correct answer (which is 1)
             sin_targets = [[-1] * num_document for _ in range(batch_size)]
             for i, target in enumerate(targets):
@@ -91,9 +109,12 @@ class RetrieverTrainer(pl.LightningModule):
                 q_emb.repeat(num_document, 1), p_embs.reshape(-1, emb_dim),
                 sin_targets
             )
+            # to compute final probabilities
+            logits = torch.bmm(q_emb.unsqueeze(1), p_embs.transpose(2, 1)).squeeze(1)
         else:
             raise ValueError('loss_type {} not supported. Please choose between negative_sampling,'
                              ' classification, cosine, triplet_loss')
+        all_prob = torch.sigmoid(logits)
         return loss, all_prob
 
     def training_step(self, batch, batch_idx):

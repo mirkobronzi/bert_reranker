@@ -106,6 +106,7 @@ class EmbeddingRetriever(Retriever):
         super(EmbeddingRetriever, self).__init__(
             bert_question_encoder, bert_paragraph_encoder, tokenizer, max_question_len,
             max_paragraph_len, debug)
+        self.returns_embeddings = True
 
     def forward(self, input_ids_question, attention_mask_question, token_type_ids_question,
                 batch_input_ids_paragraphs, batch_attention_mask_paragraphs,
@@ -118,14 +119,18 @@ class EmbeddingRetriever(Retriever):
 
 class FeedForwardRetriever(Retriever):
 
-    def __init__(self, bert_question_encoder, bert_paragraph_encoder, tokenizer,
-                 max_question_len, max_paragraph_len, debug):
+    def __init__(self, bert_question_encoder, bert_paragraph_encoder, tokenizer, max_question_len,
+                 max_paragraph_len, debug, hyper_params):
         super(FeedForwardRetriever, self).__init__(
             bert_question_encoder, bert_paragraph_encoder, tokenizer, max_question_len,
             max_paragraph_len, debug)
-        ffw_layers = get_ffw_layers()
-        self.ffw_net = nn.Sequential(ffw_layers)
+        self.returns_embeddings = False
 
+        prev_hidden_size = 4
+        layer_sizes = []
+        ffw_layers = get_ffw_layers(
+            prev_hidden_size * 2, hyper_params['model']['dropout'], layer_sizes + [1], False)
+        self.ffw_net = nn.Sequential(*ffw_layers)
 
     def forward(self, input_ids_question, attention_mask_question, token_type_ids_question,
                 batch_input_ids_paragraphs, batch_attention_mask_paragraphs,
@@ -134,3 +139,7 @@ class FeedForwardRetriever(Retriever):
             input_ids_question, attention_mask_question, token_type_ids_question,
             batch_input_ids_paragraphs, batch_attention_mask_paragraphs,
             batch_token_type_ids_paragraphs)
+        _, n_paragraph, _ = p_embs.shape
+        concatenated_embs = torch.cat((q_emb.unsqueeze(1).repeat(1, n_paragraph, 1), p_embs), dim=2)
+        logits = self.ffw_net(concatenated_embs)
+        return logits.squeeze(dim=2)
