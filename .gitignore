@@ -3,7 +3,6 @@ mlruns
 lightning_logs
 cached_natq
 predictions.txt
-experiment_logs
 
 # Ignore example outputs
 examples/*/output/

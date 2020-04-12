@@ -1,0 +1,36 @@
+train_file: '../../examples/local/train.json'
+dev_files:
+  dev_file_1: '../../examples/local/dev.json'
+  dev_file_2: '../../examples/local/dev.json'
+test_file: '../../examples/local/dev.json'
+cache_folder: 'cached_natq'
+tokenizer_name: 'bert-base-uncased'
+
+batch_size: 2
+accumulate_grad_batches: 1
+
+model:
+  name: 'bert_ffw'
+  bert_base: 'bert-base-uncased'
+  freeze_bert: true
+  layers_pre_pooling: [5]
+  layers_post_pooling: [5]
+  pooling_type: 'avg'
+  dropout: 0.0
+  normalize_model_result: true
+  retriever_layer_sizes: [6]
+  dropout_bert: null  # null means use the bert dropout used during pre-training
+
+loss_type: 'classification'
+
+optimizer:
+  name: 'adamw'
+  lr: 0.001
+
+max_question_len: 30
+max_paragraph_len: 512
+patience: 5
+gradient_clipping: 0
+precision: 32
+seed: null
+max_epochs: 1
