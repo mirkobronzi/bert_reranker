@@ -33,3 +33,4 @@ patience: 5
 gradient_clipping: 0
 precision: 32
 seed: null
+max_epochs: 1
