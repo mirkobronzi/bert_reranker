@@ -7,7 +7,7 @@ setup(
     packages=find_packages(include=['bert_reranker', 'bert_reranker.*']),
     python_requires='>=3.7',
     install_requires=[
-        'flake8', 'tqdm', 'pyyaml>=5.3', 'pytest', 'numpy', 'pytest',
+        'flake8', 'tqdm', 'pyyaml>=5.3', 'pytest', 'numpy>=1.16.4', 'pytest',
         'torch', 'transformers', 'pytorch-lightning', 'sklearn', 'pandas'],
     entry_points={
         'console_scripts': [
