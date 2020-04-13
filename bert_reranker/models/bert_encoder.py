@@ -64,7 +64,7 @@ class BertEncoder(GeneralEncoder):
         for i in range(input_ids.shape[0]):
             ids_hash = hashable(input_ids[i])
             if ids_hash in self.cache:
-                results.append(self.cache[ids_hash])
+                results.append(self.cache[ids_hash].to(input_ids.device))
             else:
                 results.append(None)
                 still_to_compute_iids.append(input_ids[i])
@@ -79,7 +79,7 @@ class BertEncoder(GeneralEncoder):
             if cache_result is None:
                 non_cached_result = bert_hs[non_cached_result_index]
                 final_results.append(non_cached_result)
-                self.cache[hashable(still_to_compute_iids[non_cached_result_index])] = non_cached_result
+                self.cache[hashable(still_to_compute_iids[non_cached_result_index])] = non_cached_result.cpu()
                 non_cached_result_index += 1
             else:
                 final_results.append(cache_result)
