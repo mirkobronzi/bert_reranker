@@ -23,7 +23,7 @@ def get_ffw_layers(
 
 
 def hashable(input_id):
-    return tuple(input_id.numpy())
+    return tuple(input_id.cpu().numpy())
 
 
 class BertEncoder(GeneralEncoder):
