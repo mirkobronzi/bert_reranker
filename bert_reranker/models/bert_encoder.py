@@ -22,8 +22,8 @@ def get_ffw_layers(
     return result
 
 
-def _compute_hash(input_ids):
-    pass
+def hashable(input_id):
+    return tuple(input_id.numpy())
 
 
 class BertEncoder(GeneralEncoder):
@@ -41,6 +41,8 @@ class BertEncoder(GeneralEncoder):
             if not model_hparams['freeze_bert'] or not model_hparams['dropout_bert'] == 0.0:
                 raise ValueError('to cache results, set freeze_bert=True and dropout_bert=0.0')
             self.cache = {}
+            self.cache_hit = 0
+            self.cache_miss = 0
         else:
             self.cache = None
 
@@ -54,12 +56,50 @@ class BertEncoder(GeneralEncoder):
 
         self.freeze_bert = model_hparams['freeze_bert']
 
+    def _search_in_cache(self, input_ids, attention_mask, token_type_ids):
+        results = []
+        still_to_compute_iids = []
+        still_to_compute_am = []
+        still_to_compute_tti = []
+        for i in range(input_ids.shape[0]):
+            ids_hash = hashable(input_ids[i])
+            if ids_hash in self.cache:
+                results.append(self.cache[ids_hash])
+            else:
+                results.append(None)
+                still_to_compute_iids.append(input_ids[i])
+                still_to_compute_am.append(attention_mask[i])
+                still_to_compute_tti.append(token_type_ids[i])
+        return results, still_to_compute_iids, still_to_compute_am, still_to_compute_tti
+
+    def _store_in_cache_and_get_results(self, cache_results, bert_hs, still_to_compute_iids):
+        final_results = []
+        non_cached_result_index = 0
+        for cache_result in cache_results:
+            if cache_result is None:
+                non_cached_result = bert_hs[non_cached_result_index]
+                final_results.append(non_cached_result)
+                self.cache[hashable(still_to_compute_iids[non_cached_result_index])] = non_cached_result
+                non_cached_result_index += 1
+            else:
+                final_results.append(cache_result)
+        assert non_cached_result_index == bert_hs.shape[0]
+        return torch.stack(final_results, dim=0)
+
     def get_encoder_hidden_states(self, input_ids, attention_mask, token_type_ids):
 
         if self.cache is not None:
-            input_hash = _compute_hash(input_ids)
-            if input_hash in self.cache:
-                return self.cache[input_hash]
+            cache_results, still_to_compute_iids, still_to_compute_am, still_to_compute_tti = self._search_in_cache(
+                input_ids, attention_mask, token_type_ids)
+            self.cache_hit += input_ids.shape[0] - len(still_to_compute_iids)
+            self.cache_miss += len(still_to_compute_iids)
+            logger.info('hit: {} / miss: {}'.format(self.cache_hit, self.cache_miss))
+            if len(still_to_compute_iids) == 0:
+                return torch.stack(cache_results, dim=0)
+
+            input_ids = torch.stack(still_to_compute_iids, dim=0)
+            attention_mask = torch.stack(still_to_compute_am, dim=0)
+            token_type_ids = torch.stack(still_to_compute_tti, dim=0)
 
         if self.freeze_bert:
             with torch.no_grad():
@@ -70,6 +110,7 @@ class BertEncoder(GeneralEncoder):
                                    token_type_ids=token_type_ids)
 
         if self.cache is not None:
-            self.cache[input_hash] = bert_hs
+            bert_hs = self._store_in_cache_and_get_results(
+                cache_results, bert_hs, still_to_compute_iids)
 
         return bert_hs
