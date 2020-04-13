@@ -5,9 +5,11 @@ import logging
 import os
 import sys
 
+import numpy as np
 import pytorch_lightning as pl
 import torch
 import yaml
+from pytorch_lightning import loggers
 from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
 from transformers import AutoTokenizer
 from yaml import load
@@ -22,9 +24,7 @@ from bert_reranker.utils.hp_utils import check_and_log_hp
 from bert_reranker.utils.logging_utils import LoggerWriter
 
 logger = logging.getLogger(__name__)
-from pytorch_lightning import loggers
 
-import numpy as np
 
 def main():
     parser = argparse.ArgumentParser()
@@ -52,7 +52,6 @@ def main():
 
     logging.basicConfig(level=logging.INFO)
 
-    
     if args.redirect_log:
         sys.stdout = LoggerWriter(logger.info)
         sys.stderr = LoggerWriter(logger.warning)
@@ -61,11 +60,11 @@ def main():
         hyper_params = load(stream, Loader=yaml.FullLoader)
 
     check_and_log_hp(
-        ['train_file', 'dev_files', 'test_file', 'cache_folder', 'batch_size', 'tokenizer_name', 'model',
-         'max_question_len', 'max_paragraph_len', 'patience', 'gradient_clipping', 'max_epochs',
-         'loss_type', 'optimizer',  'precision', 'accumulate_grad_batches', 'seed'],
+        ['train_file', 'dev_files', 'test_file', 'cache_folder', 'batch_size', 'tokenizer_name',
+         'model', 'max_question_len', 'max_paragraph_len', 'patience', 'gradient_clipping',
+         'max_epochs', 'loss_type', 'optimizer',  'precision', 'accumulate_grad_batches', 'seed'],
         hyper_params)
-    
+
     if hyper_params['seed'] is not None:
         # fix the seed
         torch.manual_seed(hyper_params['seed'])

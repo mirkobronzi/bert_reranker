@@ -1,6 +1,6 @@
 from bert_reranker.models.bert_encoder import BertEncoder
 from bert_reranker.models.cnn_model import CNNEncoder
-from bert_reranker.models.retriever import Retriever, EmbeddingRetriever, FeedForwardRetriever
+from bert_reranker.models.retriever import EmbeddingRetriever, FeedForwardRetriever
 from bert_reranker.utils.hp_utils import check_and_log_hp
 
 

@@ -91,12 +91,10 @@ class BertEncoder(GeneralEncoder):
     def get_encoder_hidden_states(self, input_ids, attention_mask, token_type_ids):
 
         if self.cache is not None:
-            cache_results, still_to_compute_iids, still_to_compute_am, still_to_compute_tti = self._search_in_cache(
-                input_ids, attention_mask, token_type_ids)
+            cache_results, still_to_compute_iids, still_to_compute_am, still_to_compute_tti = \
+                self._search_in_cache(input_ids, attention_mask, token_type_ids)
             self.cache_hit += input_ids.shape[0] - len(still_to_compute_iids)
             self.cache_miss += len(still_to_compute_iids)
-            logger.info('{} => hit: {} / miss: {}'.format(
-                self.name, self.cache_hit, self.cache_miss))
             if len(still_to_compute_iids) == 0:
                 return torch.stack(cache_results, dim=0)
 
@@ -126,3 +124,7 @@ class BertEncoder(GeneralEncoder):
         with open(load_from, "rb") as in_stream:
             self.cache = pickle.load(in_stream)
         return len(self.cache)
+
+    def print_stats_to(self, print_function):
+        print_function('{}: cache size {} / cache hits {} / cache misses {}'.format(
+            self.name, len(self.cache), self.cache_hit, self.cache_miss))

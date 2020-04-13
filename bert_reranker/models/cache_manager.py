@@ -29,4 +29,5 @@ class CacheManagerCallback(Callback):
     def on_epoch_end(self, trainer, pl_module):
         self.q_encoder.save_cache(os.path.join(self.output_folder, 'qcache.pkl'))
         self.p_encoder.save_cache(os.path.join(self.output_folder, 'pcache.pkl'))
-        logger.info('epoch done!')
+        self.q_encoder.print_stats_to(logger.info)
+        self.p_encoder.print_stats_to(logger.info)

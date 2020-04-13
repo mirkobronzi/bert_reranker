@@ -195,10 +195,6 @@ class RetrieverTrainer(pl.LightningModule):
         # we do the same stuff as in the validation phase
         return self.validation_step(batch, batch_idx)
 
-    def test_step(self, batch, batch_idx):
-        # we do the same stuff as in the validation phase
-        return self.validation_step(batch, batch_idx)
-
     def configure_optimizers(self):
         return get_optimizer(self.optimizer_type, self.retriever)
 
