@@ -22,16 +22,28 @@ def get_ffw_layers(
     return result
 
 
+def _compute_hash(input_ids):
+    pass
+
+
 class BertEncoder(GeneralEncoder):
 
     def __init__(self, hyper_params):
         model_hparams = hyper_params['model']
         check_and_log_hp(
-            ['bert_base', 'dropout_bert', 'freeze_bert'],
+            ['bert_base', 'dropout_bert', 'freeze_bert', 'cache_results'],
             model_hparams)
         bert = AutoModel.from_pretrained(model_hparams['bert_base'])
         super(BertEncoder, self).__init__(hyper_params, bert.config.hidden_size)
         self.bert = bert
+
+        if model_hparams['cache_results']:
+            if not model_hparams['freeze_bert'] or not model_hparams['dropout_bert'] == 0.0:
+                raise ValueError('to cache results, set freeze_bert=True and dropout_bert=0.0')
+            self.cache = {}
+        else:
+            self.cache = None
+
         bert_dropout = model_hparams['dropout_bert']
         if bert_dropout is not None:
             logger.info('setting bert dropout to {}'.format(bert_dropout))
@@ -43,6 +55,12 @@ class BertEncoder(GeneralEncoder):
         self.freeze_bert = model_hparams['freeze_bert']
 
     def get_encoder_hidden_states(self, input_ids, attention_mask, token_type_ids):
+
+        if self.cache is not None:
+            input_hash = _compute_hash(input_ids)
+            if input_hash in self.cache:
+                return self.cache[input_hash]
+
         if self.freeze_bert:
             with torch.no_grad():
                 bert_hs, _ = self.bert(input_ids=input_ids, attention_mask=attention_mask,
@@ -50,4 +68,8 @@ class BertEncoder(GeneralEncoder):
         else:
             bert_hs, _ = self.bert(input_ids=input_ids, attention_mask=attention_mask,
                                    token_type_ids=token_type_ids)
+
+        if self.cache is not None:
+            self.cache[input_hash] = bert_hs
+
         return bert_hs

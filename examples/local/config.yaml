@@ -6,7 +6,7 @@ test_file: 'data_small.json'
 cache_folder: 'cached_natq'
 tokenizer_name: 'bert-base-uncased'
 
-batch_size: 2
+batch_size: 1
 accumulate_grad_batches: 1
 
 model:
@@ -18,7 +18,8 @@ model:
   pooling_type: 'avg'
   dropout: 0.0
   normalize_model_result: true
-  dropout_bert: null  # null means use the bert dropout used during pre-training
+  dropout_bert: 0.0  # set to null to use the original bert dropout used during pre-training
+  cache_results: True
 
 # cnn example - still not working
 #  name: 'cnn'
@@ -48,4 +49,4 @@ patience: 5
 gradient_clipping: 0
 precision: 32
 seed: null
-max_epochs: 1
+max_epochs: 8
