@@ -18,8 +18,8 @@ model:
   pooling_type: 'avg'
   dropout: 0.0
   normalize_model_result: true
-  dropout_bert: 0.0  # set to null to use the original bert dropout used during pre-training
-  cache_results: True
+  dropout_bert: null  # set to null to use the original bert dropout used during pre-training
+  cache_results: False
 
 # cnn example - still not working
 #  name: 'cnn'
@@ -49,4 +49,4 @@ patience: 5
 gradient_clipping: 0
 precision: 32
 seed: null
-max_epochs: 8
+max_epochs: 1

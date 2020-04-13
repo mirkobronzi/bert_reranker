@@ -14,6 +14,7 @@ from yaml import load
 
 from bert_reranker.data.data_loader import generate_dataloader
 from bert_reranker.data.predict import evaluate_model
+from bert_reranker.models.cache_manager import CacheManagerCallback
 from bert_reranker.models.load_model import load_model
 from bert_reranker.models.pl_model_loader import try_to_restore_model_weights
 from bert_reranker.models.retriever_trainer import RetrieverTrainer
@@ -112,6 +113,12 @@ def main():
 
     early_stopping = EarlyStopping('val_acc_0', mode='max', patience=hyper_params['patience'])
 
+    if (hyper_params['model'].get('name') == 'bert_encoder' and
+            hyper_params['model'].get('cache_results')):
+        cbs = [CacheManagerCallback(ret, args.output)]
+    else:
+        cbs = []
+
     if hyper_params['precision'] not in {16, 32}:
         raise ValueError('precision should be either 16 or 32')
 
@@ -134,6 +141,7 @@ def main():
         gradient_clip_val=hyper_params['gradient_clipping'],
         checkpoint_callback=checkpoint_callback,
         early_stop_callback=early_stopping,
+        callbacks=cbs,
         precision=hyper_params['precision'],
         resume_from_checkpoint=ckpt_to_resume,
         accumulate_grad_batches=hyper_params['accumulate_grad_batches'],

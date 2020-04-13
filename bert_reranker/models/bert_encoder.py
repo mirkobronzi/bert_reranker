@@ -1,4 +1,5 @@
 import logging
+import pickle
 
 import torch
 import torch.nn as nn
@@ -116,3 +117,12 @@ class BertEncoder(GeneralEncoder):
                 cache_results, bert_hs, still_to_compute_iids)
 
         return bert_hs
+
+    def save_cache(self, save_to):
+        with open(save_to, "wb") as out_stream:
+            pickle.dump(self.cache, out_stream)
+
+    def load_cache(self, load_from):
+        with open(load_from, "rb") as in_stream:
+            self.cache = pickle.load(in_stream)
+        return len(self.cache)
