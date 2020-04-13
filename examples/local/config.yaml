@@ -6,7 +6,7 @@ test_file: 'data_small.json'
 cache_folder: 'cached_natq'
 tokenizer_name: 'bert-base-uncased'
 
-batch_size: 1
+batch_size: 2
 accumulate_grad_batches: 1
 
 model:

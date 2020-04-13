@@ -7,14 +7,14 @@ from bert_reranker.utils.hp_utils import check_and_log_hp
 def load_model(hyper_params, tokenizer, debug):
     check_and_log_hp(['name'], hyper_params['model'])
     if hyper_params['model']['name'] == 'bert_encoder':
-        bert_question_encoder = BertEncoder(hyper_params)
-        bert_paragraph_encoder = BertEncoder(hyper_params)
+        bert_question_encoder = BertEncoder(hyper_params, name='question')
+        bert_paragraph_encoder = BertEncoder(hyper_params, name='paragraph')
         model = EmbeddingRetriever(
             bert_question_encoder, bert_paragraph_encoder, tokenizer,
             hyper_params['max_question_len'], hyper_params['max_paragraph_len'], debug)
     elif hyper_params['model']['name'] == 'bert_ffw':
-        bert_question_encoder = BertEncoder(hyper_params)
-        bert_paragraph_encoder = BertEncoder(hyper_params)
+        bert_question_encoder = BertEncoder(hyper_params, name='question')
+        bert_paragraph_encoder = BertEncoder(hyper_params, name='paragraph')
         if bert_question_encoder.post_pooling_last_hidden_size != \
                 bert_paragraph_encoder.post_pooling_last_hidden_size:
             raise ValueError("question/paragraph encoder should have the same output hidden size")

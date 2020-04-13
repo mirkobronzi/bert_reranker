@@ -28,7 +28,7 @@ def hashable(input_id):
 
 class BertEncoder(GeneralEncoder):
 
-    def __init__(self, hyper_params):
+    def __init__(self, hyper_params, name=''):
         model_hparams = hyper_params['model']
         check_and_log_hp(
             ['bert_base', 'dropout_bert', 'freeze_bert', 'cache_results'],
@@ -36,6 +36,7 @@ class BertEncoder(GeneralEncoder):
         bert = AutoModel.from_pretrained(model_hparams['bert_base'])
         super(BertEncoder, self).__init__(hyper_params, bert.config.hidden_size)
         self.bert = bert
+        self.name = name
 
         if model_hparams['cache_results']:
             if not model_hparams['freeze_bert'] or not model_hparams['dropout_bert'] == 0.0:
@@ -93,7 +94,8 @@ class BertEncoder(GeneralEncoder):
                 input_ids, attention_mask, token_type_ids)
             self.cache_hit += input_ids.shape[0] - len(still_to_compute_iids)
             self.cache_miss += len(still_to_compute_iids)
-            logger.info('hit: {} / miss: {}'.format(self.cache_hit, self.cache_miss))
+            logger.info('{} => hit: {} / miss: {}'.format(
+                self.name, self.cache_hit, self.cache_miss))
             if len(still_to_compute_iids) == 0:
                 return torch.stack(cache_results, dim=0)
 
