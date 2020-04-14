@@ -107,7 +107,8 @@ def main():
         save_top_k=1,
         verbose=True,
         monitor='val_acc_0',
-        mode='max'
+        mode='max',
+        period=0
     )
 
     early_stopping = EarlyStopping('val_acc_0', mode='max', patience=hyper_params['patience'])
