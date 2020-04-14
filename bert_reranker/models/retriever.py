@@ -269,3 +269,6 @@ class RetrieverTrainer(pl.LightningModule):
 
     def test_dataloader(self):
         return self.test_data
+
+
+    

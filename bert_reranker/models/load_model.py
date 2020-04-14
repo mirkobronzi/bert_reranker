@@ -1,5 +1,7 @@
 from bert_reranker.models.bert_encoder import BertEncoder
 from bert_reranker.models.cnn_model import CNNEncoder
+from bert_reranker.models.rnn_model import RNNEncoder
+
 from bert_reranker.models.retriever import Retriever
 from bert_reranker.utils.hp_utils import check_and_log_hp
 
@@ -18,6 +20,13 @@ def load_model(hyper_params, tokenizer, debug):
         model = Retriever(cnn_question_encoder, cnn_paragraph_encoder, tokenizer,
                           hyper_params['max_question_len'], hyper_params['max_paragraph_len'],
                           debug)
+    elif hyper_params['model']['name'] == 'rnn':
+        rnn_question_encoder = RNNEncoder(hyper_params, tokenizer.vocab_size)
+        rnn_paragraph_encoder = RNNEncoder(hyper_params, tokenizer.vocab_size)
+        model = Retriever(rnn_question_encoder, rnn_paragraph_encoder, tokenizer,
+                          hyper_params['max_question_len'], hyper_params['max_paragraph_len'],
+                          debug)
+
     else:
         raise ValueError('model name {} not supported'.format(hyper_params['model']['name']))
     return model

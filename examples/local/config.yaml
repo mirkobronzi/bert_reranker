@@ -10,15 +10,15 @@ batch_size: 2
 accumulate_grad_batches: 1
 
 model:
-  name: 'bert_encoder'
-  bert_base: 'bert-base-uncased'
-  freeze_bert: true
-  layers_pre_pooling: [5, 4]
-  layers_post_pooling: [4]
-  pooling_type: 'avg'
-  dropout: 0.0
-  normalize_model_result: true
-  dropout_bert: null  # null means use the bert dropout used during pre-training
+#  name: 'bert_encoder'
+#  bert_base: 'bert-base-uncased'
+#  freeze_bert: true
+#  layers_pre_pooling: [5, 4]
+#  layers_post_pooling: [4]
+#  pooling_type: 'avg'
+#  dropout: 0.0
+#  normalize_model_result: true
+#  dropout_bert: null  # null means use the bert dropout used during pre-training
 
 # cnn example - still not working
 #  name: 'cnn'
@@ -29,6 +29,17 @@ model:
 #  pooling_type: 'avg'
 #  dropout: 0.0
 #  normalize_model_result: true
+#
+ name: 'rnn'
+ num_layers: 1
+ emb_size: 100
+ rnn_latentsize: 100
+ layers_pre_pooling: []
+ layers_post_pooling: [4]
+ pooling_type: 'avg'
+ dropout: 0.0
+ normalize_model_result: false 
+
 
 loss_type: 'classification'
 
