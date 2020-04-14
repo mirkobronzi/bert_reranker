@@ -81,7 +81,8 @@ class BertEncoder(GeneralEncoder):
             if cache_result is None:
                 non_cached_result = bert_hs[non_cached_result_index]
                 final_results.append(non_cached_result)
-                self.cache[hashable(still_to_compute_iids[non_cached_result_index])] = non_cached_result.cpu()
+                self.cache[hashable(still_to_compute_iids[non_cached_result_index])] = \
+                    non_cached_result.cpu()
                 non_cached_result_index += 1
             else:
                 final_results.append(cache_result)
