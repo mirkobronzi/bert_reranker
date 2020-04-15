@@ -1,8 +1,8 @@
-train_file: 'train.json'
+train_file: 'data_small.json'
 dev_files:
-  dev_file_1: 'dev.json'
-  dev_file_2: 'dev.json'
-test_file: 'dev.json'
+  dev_file_1: 'data_small.json'
+  dev_file_2: 'data_small.json'
+test_file: 'data_small.json'
 cache_folder: 'cached_natq'
 tokenizer_name: 'bert-base-uncased'
 
@@ -59,3 +59,4 @@ patience: 5
 gradient_clipping: 0
 precision: 32
 seed: null
+max_epochs: 1

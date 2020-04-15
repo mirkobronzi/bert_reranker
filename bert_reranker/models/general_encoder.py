@@ -53,11 +53,13 @@ class GeneralEncoder(nn.Module):
                                       True)
         self.pre_pooling_net = nn.Sequential(*pre_pooling_seq)
 
-        last_hidden_size = model_hparams['layers_pre_pooling'][-1] if \
+        pre_pooling_last_hidden_size = model_hparams['layers_pre_pooling'][-1] if \
             model_hparams['layers_pre_pooling'] else encoder_hidden_size
-        post_pooling_seq = _get_layers(last_hidden_size, model_hparams['dropout'],
+        post_pooling_seq = _get_layers(pre_pooling_last_hidden_size, model_hparams['dropout'],
                                        model_hparams['layers_post_pooling'],
                                        False)
+        self.post_pooling_last_hidden_size = model_hparams['layers_post_pooling'][-1] if \
+            model_hparams['layers_post_pooling'] else pre_pooling_last_hidden_size
         self.post_pooling_net = nn.Sequential(*post_pooling_seq)
 
     def get_encoder_hidden_states(self, input_ids, attention_mask, token_type_ids):

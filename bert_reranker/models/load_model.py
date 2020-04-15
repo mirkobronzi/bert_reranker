@@ -1,8 +1,12 @@
 from bert_reranker.models.bert_encoder import BertEncoder
 from bert_reranker.models.cnn_model import CNNEncoder
+<<<<<<< HEAD
 from bert_reranker.models.rnn_model import RNNEncoder
 
 from bert_reranker.models.retriever import Retriever
+=======
+from bert_reranker.models.retriever import Retriever, EmbeddingRetriever, FeedForwardRetriever
+>>>>>>> 78231e606316e7183863daf37459ba6e89801f9c
 from bert_reranker.utils.hp_utils import check_and_log_hp
 
 
@@ -11,9 +15,20 @@ def load_model(hyper_params, tokenizer, debug):
     if hyper_params['model']['name'] == 'bert_encoder':
         bert_question_encoder = BertEncoder(hyper_params)
         bert_paragraph_encoder = BertEncoder(hyper_params)
-        model = Retriever(bert_question_encoder, bert_paragraph_encoder, tokenizer,
-                          hyper_params['max_question_len'], hyper_params['max_paragraph_len'],
-                          debug)
+        model = EmbeddingRetriever(
+            bert_question_encoder, bert_paragraph_encoder, tokenizer,
+            hyper_params['max_question_len'], hyper_params['max_paragraph_len'], debug)
+    elif hyper_params['model']['name'] == 'bert_ffw':
+        bert_question_encoder = BertEncoder(hyper_params)
+        bert_paragraph_encoder = BertEncoder(hyper_params)
+        if bert_question_encoder.post_pooling_last_hidden_size != \
+                bert_paragraph_encoder.post_pooling_last_hidden_size:
+            raise ValueError("question/paragraph encoder should have the same output hidden size")
+        previous_hidden_size = bert_question_encoder.post_pooling_last_hidden_size
+        model = FeedForwardRetriever(
+            bert_question_encoder, bert_paragraph_encoder, tokenizer,
+            hyper_params['max_question_len'], hyper_params['max_paragraph_len'], debug,
+            hyper_params['model'], previous_hidden_size=previous_hidden_size)
     elif hyper_params['model']['name'] == 'cnn':
         cnn_question_encoder = CNNEncoder(hyper_params, tokenizer.vocab_size)
         cnn_paragraph_encoder = CNNEncoder(hyper_params, tokenizer.vocab_size)
@@ -26,7 +41,9 @@ def load_model(hyper_params, tokenizer, debug):
         model = Retriever(rnn_question_encoder, rnn_paragraph_encoder, tokenizer,
                           hyper_params['max_question_len'], hyper_params['max_paragraph_len'],
                           debug)
-
+        model = EmbeddingRetriever(
+            cnn_question_encoder, cnn_paragraph_encoder, tokenizer,
+            hyper_params['max_question_len'], hyper_params['max_paragraph_len'], debug)
     else:
         raise ValueError('model name {} not supported'.format(hyper_params['model']['name']))
     return model

@@ -10,7 +10,8 @@ from bert_reranker.utils.hp_utils import check_and_log_hp
 logger = logging.getLogger(__name__)
 
 
-def _get_layers(prev_hidden_size, dropout, layer_sizes, append_relu_and_dropout_after_last_layer):
+def get_ffw_layers(
+        prev_hidden_size, dropout, layer_sizes, append_relu_and_dropout_after_last_layer):
     result = []
     for i, size in enumerate(layer_sizes):
         result.append(nn.Linear(prev_hidden_size, size))

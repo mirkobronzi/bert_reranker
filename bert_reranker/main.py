@@ -16,7 +16,7 @@ from bert_reranker.data.data_loader import generate_dataloader
 from bert_reranker.data.predict import evaluate_model
 from bert_reranker.models.load_model import load_model
 from bert_reranker.models.pl_model_loader import try_to_restore_model_weights
-from bert_reranker.models.retriever import RetrieverTrainer
+from bert_reranker.models.retriever_trainer import RetrieverTrainer
 from bert_reranker.utils.hp_utils import check_and_log_hp
 from bert_reranker.utils.logging_utils import LoggerWriter
 
@@ -61,7 +61,7 @@ def main():
 
     check_and_log_hp(
         ['train_file', 'dev_files', 'test_file', 'cache_folder', 'batch_size', 'tokenizer_name', 'model',
-         'max_question_len', 'max_paragraph_len', 'patience', 'gradient_clipping',
+         'max_question_len', 'max_paragraph_len', 'patience', 'gradient_clipping', 'max_epochs',
          'loss_type', 'optimizer',  'precision', 'accumulate_grad_batches', 'seed'],
         hyper_params)
     
@@ -107,7 +107,8 @@ def main():
         save_top_k=1,
         verbose=True,
         monitor='val_acc_0',
-        mode='max'
+        mode='max',
+        period=0
     )
 
     early_stopping = EarlyStopping('val_acc_0', mode='max', patience=hyper_params['patience'])
@@ -136,7 +137,8 @@ def main():
         early_stop_callback=early_stopping,
         precision=hyper_params['precision'],
         resume_from_checkpoint=ckpt_to_resume,
-        accumulate_grad_batches=hyper_params['accumulate_grad_batches'])
+        accumulate_grad_batches=hyper_params['accumulate_grad_batches'],
+        max_epochs=hyper_params['max_epochs'])
 
     ret_trainee = RetrieverTrainer(ret, train_dataloader, dev_dataloaders, test_dataloader,
                                    hyper_params['loss_type'], hyper_params['optimizer'])
