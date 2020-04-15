@@ -37,9 +37,6 @@ def load_model(hyper_params, tokenizer, debug):
         model = Retriever(rnn_question_encoder, rnn_paragraph_encoder, tokenizer,
                           hyper_params['max_question_len'], hyper_params['max_paragraph_len'],
                           debug)
-        model = EmbeddingRetriever(
-            cnn_question_encoder, cnn_paragraph_encoder, tokenizer,
-            hyper_params['max_question_len'], hyper_params['max_paragraph_len'], debug)
     else:
         raise ValueError('model name {} not supported'.format(hyper_params['model']['name']))
     return model
