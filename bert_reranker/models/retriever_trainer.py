@@ -32,18 +32,8 @@ class RetrieverTrainer(pl.LightningModule):
         return self.retriever(**kwargs)
 
     def step_helper(self, batch):
-        input_ids_question, attention_mask_question, token_type_ids_question, \
-            batch_input_ids_paragraphs, batch_attention_mask_paragraphs, \
-            batch_token_type_ids_paragraphs, targets = batch
-
-        inputs = {
-            'input_ids_question': input_ids_question,
-            'attention_mask_question': attention_mask_question,
-            'token_type_ids_question': token_type_ids_question,
-            'batch_input_ids_paragraphs': batch_input_ids_paragraphs,
-            'batch_attention_mask_paragraphs': batch_attention_mask_paragraphs,
-            'batch_token_type_ids_paragraphs': batch_token_type_ids_paragraphs
-        }
+        inputs = {k: v for k, v in batch.items() if k != 'target'}
+        targets = batch['target']
 
         if self.loss_type == 'negative_sampling':
             if self.retriever.returns_embeddings:
@@ -133,7 +123,7 @@ class RetrieverTrainer(pl.LightningModule):
         # dataset_number, hence the default value at 0
         loss, all_prob = self.step_helper(batch)
         _, predictions = torch.max(all_prob, 1)
-        targets = batch[-1]
+        targets = batch['target']
         val_acc = torch.tensor(accuracy_score(targets.cpu(), predictions.cpu())).to(targets.device)
 
         return {'val_loss_' + str(dataset_number): loss, 'val_acc_' + str(dataset_number): val_acc}
