@@ -1,12 +1,8 @@
 from bert_reranker.models.bert_encoder import BertEncoder
 from bert_reranker.models.cnn_model import CNNEncoder
-<<<<<<< HEAD
 from bert_reranker.models.rnn_model import RNNEncoder
 
-from bert_reranker.models.retriever import Retriever
-=======
 from bert_reranker.models.retriever import Retriever, EmbeddingRetriever, FeedForwardRetriever
->>>>>>> 78231e606316e7183863daf37459ba6e89801f9c
 from bert_reranker.utils.hp_utils import check_and_log_hp
 
 
