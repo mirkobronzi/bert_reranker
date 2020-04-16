@@ -80,7 +80,7 @@ def main():
     train_dataloader = generate_dataloader(
         hyper_params['train_file'], hyper_params['max_question_len'],
         hyper_params['max_paragraph_len'], tokenizer, hyper_params['batch_size'],
-        num_workers=args.num_workers)
+        num_workers=args.num_workers, shuffle=True)
 
     dev_dataloaders = []
     for dev_file in hyper_params['dev_files'].values():
@@ -90,14 +90,15 @@ def main():
                 hyper_params['max_question_len'],
                 hyper_params['max_paragraph_len'],
                 tokenizer, hyper_params['batch_size'],
-                num_workers=args.num_workers
+                num_workers=args.num_workers,
+                shuffle=False
             )
         )
 
     test_dataloader = generate_dataloader(
         hyper_params['test_file'], hyper_params['max_question_len'],
         hyper_params['max_paragraph_len'], tokenizer, hyper_params['batch_size'],
-        num_workers=args.num_workers)
+        num_workers=args.num_workers, shuffle=False)
 
     ret = load_model(hyper_params, tokenizer, args.debug)
 

@@ -55,21 +55,6 @@ class ReRankerDataset(Dataset):
 
 
 def json_entry_to_dataset(qa_pair, max_question_len, max_paragraph_len, tokenizer):
-    """
-    output format is a dataset with a question ([batch_size, seq_len])
-    and a set of paragraphs ([batch_size, paragraph_size, seq_len]).
-
-    A dataloader contains the token_ids, the padding, and the bert token type.
-
-
-    :param natq_json_file:
-    :param cache_folder:
-    :param max_question_len:
-    :param max_paragraph_len:
-    :param tokenizer:
-    :return:
-    """
-
     question, answers = qa_pair
 
     paragraphs = [remove_html_toks(i) for i in answers]
@@ -94,6 +79,6 @@ def json_entry_to_dataset(qa_pair, max_question_len, max_paragraph_len, tokenize
 
 
 def generate_dataloader(data_file, max_question_len, max_paragraph_len, tokenizer, batch_size,
-                        num_workers):
+                        num_workers, shuffle):
     dataset = ReRankerDataset(data_file, max_question_len, max_paragraph_len, tokenizer)
-    return DataLoader(dataset, batch_size=batch_size, num_workers=num_workers)
+    return DataLoader(dataset, batch_size=batch_size, num_workers=num_workers, shuffle=shuffle)
