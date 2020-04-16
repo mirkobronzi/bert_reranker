@@ -20,9 +20,9 @@ class RetrieverTrainer(pl.LightningModule):
         self.loss_type = loss_type
         self.optimizer_type = optimizer_type
 
+        self.cs = torch.nn.CosineSimilarity(dim=2)
         if loss_type == 'classification':
             self.cross_entropy = nn.CrossEntropyLoss()
-            self.cs = torch.nn.CosineSimilarity(dim=2)
 
         if self.loss_type == 'cosine':
             self.cosine_loss = torch.nn.CosineEmbeddingLoss()
