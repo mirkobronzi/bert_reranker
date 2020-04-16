@@ -32,7 +32,6 @@ def shuffle_paragraphs(paragraphs):
 
 
 class ReRankerDataset(Dataset):
-    """Face Landmarks dataset."""
 
     def __init__(self, json_file, max_question_len, max_paragraph_len, tokenizer):
         self.max_question_len = max_question_len
