@@ -109,13 +109,8 @@ class EmbeddingRetriever(Retriever):
             max_paragraph_len, debug)
         self.returns_embeddings = True
 
-    def forward(self, input_ids_question, attention_mask_question, token_type_ids_question,
-                batch_input_ids_paragraphs, batch_attention_mask_paragraphs,
-                batch_token_type_ids_paragraphs):
-        return self.compute_emebeddings(
-            input_ids_question, attention_mask_question, token_type_ids_question,
-            batch_input_ids_paragraphs, batch_attention_mask_paragraphs,
-            batch_token_type_ids_paragraphs)
+    def forward(self, q_ids, q_am, q_tt, p_ids, p_am, p_tt):
+        return self.compute_emebeddings(q_ids, q_am, q_tt, p_ids, p_am, p_tt)
 
 
 class FeedForwardRetriever(Retriever):

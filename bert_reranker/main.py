@@ -47,6 +47,7 @@ def main():
     parser.add_argument('--predict-to', help='(optiona) write predictions here)')
     parser.add_argument('--redirect-log', help='will intercept any stdout/err and log it',
                         action='store_true')
+    parser.add_argument('--num_workers', help='number of workers - default 2', type=int, default=2)
     parser.add_argument('--debug', help='will log more info', action='store_true')
     args = parser.parse_args()
 
@@ -60,7 +61,8 @@ def main():
         hyper_params = load(stream, Loader=yaml.FullLoader)
 
     check_and_log_hp(
-        ['train_file', 'dev_files', 'test_file', 'cache_folder', 'batch_size', 'tokenizer_name',
+
+        ['train_file', 'dev_files', 'test_file', 'batch_size', 'tokenizer_name',
          'model', 'max_question_len', 'max_paragraph_len', 'patience', 'gradient_clipping',
          'max_epochs', 'loss_type', 'optimizer',  'precision', 'accumulate_grad_batches', 'seed'],
         hyper_params)
@@ -78,26 +80,27 @@ def main():
     tokenizer = AutoTokenizer.from_pretrained(tokenizer_name)
 
     train_dataloader = generate_dataloader(
-        hyper_params['train_file'], hyper_params['cache_folder'],
-        hyper_params['max_question_len'], hyper_params['max_paragraph_len'],
-        tokenizer, hyper_params['batch_size'])
+        hyper_params['train_file'], hyper_params['max_question_len'],
+        hyper_params['max_paragraph_len'], tokenizer, hyper_params['batch_size'],
+        num_workers=args.num_workers, shuffle=True)
 
     dev_dataloaders = []
     for dev_file in hyper_params['dev_files'].values():
         dev_dataloaders.append(
             generate_dataloader(
                 dev_file,
-                hyper_params['cache_folder'],
                 hyper_params['max_question_len'],
                 hyper_params['max_paragraph_len'],
-                tokenizer, hyper_params['batch_size']
+                tokenizer, hyper_params['batch_size'],
+                num_workers=args.num_workers,
+                shuffle=False
             )
         )
 
     test_dataloader = generate_dataloader(
-        hyper_params['test_file'], hyper_params['cache_folder'],
-        hyper_params['max_question_len'], hyper_params['max_paragraph_len'],
-        tokenizer, hyper_params['batch_size'])
+        hyper_params['test_file'], hyper_params['max_question_len'],
+        hyper_params['max_paragraph_len'], tokenizer, hyper_params['batch_size'],
+        num_workers=args.num_workers, shuffle=False)
 
     ret = load_model(hyper_params, tokenizer, args.debug)
 
@@ -107,7 +110,8 @@ def main():
         save_top_k=1,
         verbose=True,
         monitor='val_acc_0',
-        mode='max'
+        mode='max',
+        period=0
     )
 
     early_stopping = EarlyStopping('val_acc_0', mode='max', patience=hyper_params['patience'])
