@@ -117,7 +117,7 @@ def main():
     early_stopping = EarlyStopping('val_acc_0', mode='max', patience=hyper_params['patience'])
 
     if (hyper_params['model'].get('name') == 'bert_encoder' and
-            hyper_params['model'].get('cache_results')):
+            hyper_params['model'].get('cache_size', 0) > 0):
         cbs = [CacheManagerCallback(ret, args.output)]
     else:
         cbs = []

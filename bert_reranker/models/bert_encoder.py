@@ -32,19 +32,20 @@ class BertEncoder(GeneralEncoder):
     def __init__(self, hyper_params, name=''):
         model_hparams = hyper_params['model']
         check_and_log_hp(
-            ['bert_base', 'dropout_bert', 'freeze_bert', 'cache_results'],
+            ['bert_base', 'dropout_bert', 'freeze_bert', 'cache_size'],
             model_hparams)
         bert = AutoModel.from_pretrained(model_hparams['bert_base'])
         super(BertEncoder, self).__init__(hyper_params, bert.config.hidden_size)
         self.bert = bert
         self.name = name
 
-        if model_hparams['cache_results']:
+        if model_hparams['cache_size'] > 0:
             if not model_hparams['freeze_bert'] or not model_hparams['dropout_bert'] == 0.0:
                 raise ValueError('to cache results, set freeze_bert=True and dropout_bert=0.0')
             self.cache = {}
             self.cache_hit = 0
             self.cache_miss = 0
+            self.max_cache_size = model_hparams['cache_size']
         else:
             self.cache = None
 
@@ -81,8 +82,9 @@ class BertEncoder(GeneralEncoder):
             if cache_result is None:
                 non_cached_result = bert_hs[non_cached_result_index]
                 final_results.append(non_cached_result)
-                self.cache[hashable(still_to_compute_iids[non_cached_result_index])] = \
-                    non_cached_result.cpu()
+                if len(self.cache) < self.max_cache_size:
+                    self.cache[hashable(still_to_compute_iids[non_cached_result_index])] = \
+                        non_cached_result.cpu()
                 non_cached_result_index += 1
             else:
                 final_results.append(cache_result)

@@ -17,9 +17,9 @@ model:
   layers_post_pooling: [4]
   pooling_type: 'avg'
   dropout: 0.0
-  normalize_model_result: true
+  normalize_model_result: False
   dropout_bert: null  # set to null to use the original bert dropout used during pre-training
-  cache_results: False
+  cache_size: 0  # 0 means no cache
 
 # cnn example - still not working
 #  name: 'cnn'
