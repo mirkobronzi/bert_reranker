@@ -102,7 +102,7 @@ class RetrieverTrainer(pl.LightningModule):
                 sin_targets
             )
             # to compute final probabilities
-            logits = torch.bmm(q_emb.unsqueeze(1), p_embs.transpose(2, 1)).squeeze(1)
+            logits = self.cs(q_emb.unsqueeze(1), p_embs).squeeze(1)
         else:
             raise ValueError('loss_type {} not supported. Please choose between negative_sampling,'
                              ' classification, cosine, triplet_loss')
