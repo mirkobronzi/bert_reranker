@@ -68,8 +68,7 @@ class CachedBertEncoder(BertEncoder):
         check_and_log_hp(
             ['bert_base', 'dropout_bert', 'freeze_bert', 'cache_size'],
             model_hparams)
-        bert = AutoModel.from_pretrained(model_hparams['bert_base'])
-        super(CachedBertEncoder, self).__init__(hyper_params, name='')
+        super(CachedBertEncoder, self).__init__(hyper_params, name=name)
 
         if model_hparams['cache_size'] > 0:
             if not model_hparams['freeze_bert'] or not model_hparams['dropout_bert'] == 0.0:
