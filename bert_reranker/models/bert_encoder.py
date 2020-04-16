@@ -32,22 +32,12 @@ class BertEncoder(GeneralEncoder):
     def __init__(self, hyper_params, name=''):
         model_hparams = hyper_params['model']
         check_and_log_hp(
-            ['bert_base', 'dropout_bert', 'freeze_bert', 'cache_size'],
+            ['bert_base', 'dropout_bert', 'freeze_bert'],
             model_hparams)
         bert = AutoModel.from_pretrained(model_hparams['bert_base'])
         super(BertEncoder, self).__init__(hyper_params, bert.config.hidden_size)
         self.bert = bert
         self.name = name
-
-        if model_hparams['cache_size'] > 0:
-            if not model_hparams['freeze_bert'] or not model_hparams['dropout_bert'] == 0.0:
-                raise ValueError('to cache results, set freeze_bert=True and dropout_bert=0.0')
-            self.cache = {}
-            self.cache_hit = 0
-            self.cache_miss = 0
-            self.max_cache_size = model_hparams['cache_size']
-        else:
-            self.cache = None
 
         bert_dropout = model_hparams['dropout_bert']
         if bert_dropout is not None:
@@ -58,6 +48,38 @@ class BertEncoder(GeneralEncoder):
             logger.info('using the original bert model dropout')
 
         self.freeze_bert = model_hparams['freeze_bert']
+
+    def get_encoder_hidden_states(self, input_ids, attention_mask, token_type_ids):
+
+        if self.freeze_bert:
+            with torch.no_grad():
+                bert_hs, _ = self.bert(input_ids=input_ids, attention_mask=attention_mask,
+                                       token_type_ids=token_type_ids)
+        else:
+            bert_hs, _ = self.bert(input_ids=input_ids, attention_mask=attention_mask,
+                                   token_type_ids=token_type_ids)
+        return bert_hs
+
+
+class CachedBertEncoder(BertEncoder):
+
+    def __init__(self, hyper_params, name=''):
+        model_hparams = hyper_params['model']
+        check_and_log_hp(
+            ['bert_base', 'dropout_bert', 'freeze_bert', 'cache_size'],
+            model_hparams)
+        bert = AutoModel.from_pretrained(model_hparams['bert_base'])
+        super(CachedBertEncoder, self).__init__(hyper_params, name='')
+
+        if model_hparams['cache_size'] > 0:
+            if not model_hparams['freeze_bert'] or not model_hparams['dropout_bert'] == 0.0:
+                raise ValueError('to cache results, set freeze_bert=True and dropout_bert=0.0')
+            self.cache = {}
+            self.cache_hit = 0
+            self.cache_miss = 0
+            self.max_cache_size = model_hparams['cache_size']
+        else:
+            self.cache = None
 
     def _search_in_cache(self, input_ids, attention_mask, token_type_ids):
         results = []
