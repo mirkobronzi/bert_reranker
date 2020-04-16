@@ -5,9 +5,11 @@ import logging
 import os
 import sys
 
+import numpy as np
 import pytorch_lightning as pl
 import torch
 import yaml
+from pytorch_lightning import loggers
 from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
 from transformers import AutoTokenizer
 from yaml import load
@@ -21,9 +23,7 @@ from bert_reranker.utils.hp_utils import check_and_log_hp
 from bert_reranker.utils.logging_utils import LoggerWriter
 
 logger = logging.getLogger(__name__)
-from pytorch_lightning import loggers
 
-import numpy as np
 
 def main():
     parser = argparse.ArgumentParser()
@@ -46,12 +46,12 @@ def main():
     parser.add_argument('--predict-to', help='(optiona) write predictions here)')
     parser.add_argument('--redirect-log', help='will intercept any stdout/err and log it',
                         action='store_true')
+    parser.add_argument('--num_workers', help='number of workers - default 2', type=int, default=2)
     parser.add_argument('--debug', help='will log more info', action='store_true')
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.INFO)
 
-    
     if args.redirect_log:
         sys.stdout = LoggerWriter(logger.info)
         sys.stderr = LoggerWriter(logger.warning)
@@ -60,11 +60,11 @@ def main():
         hyper_params = load(stream, Loader=yaml.FullLoader)
 
     check_and_log_hp(
-        ['train_file', 'dev_files', 'test_file', 'cache_folder', 'batch_size', 'tokenizer_name', 'model',
-         'max_question_len', 'max_paragraph_len', 'patience', 'gradient_clipping', 'max_epochs',
-         'loss_type', 'optimizer',  'precision', 'accumulate_grad_batches', 'seed'],
+        ['train_file', 'dev_files', 'test_file', 'batch_size', 'tokenizer_name',
+         'model', 'max_question_len', 'max_paragraph_len', 'patience', 'gradient_clipping',
+         'max_epochs', 'loss_type', 'optimizer',  'precision', 'accumulate_grad_batches', 'seed'],
         hyper_params)
-    
+
     if hyper_params['seed'] is not None:
         # fix the seed
         torch.manual_seed(hyper_params['seed'])
@@ -78,26 +78,27 @@ def main():
     tokenizer = AutoTokenizer.from_pretrained(tokenizer_name)
 
     train_dataloader = generate_dataloader(
-        hyper_params['train_file'], hyper_params['cache_folder'],
-        hyper_params['max_question_len'], hyper_params['max_paragraph_len'],
-        tokenizer, hyper_params['batch_size'])
+        hyper_params['train_file'], hyper_params['max_question_len'],
+        hyper_params['max_paragraph_len'], tokenizer, hyper_params['batch_size'],
+        num_workers=args.num_workers, shuffle=True)
 
     dev_dataloaders = []
     for dev_file in hyper_params['dev_files'].values():
         dev_dataloaders.append(
             generate_dataloader(
                 dev_file,
-                hyper_params['cache_folder'],
                 hyper_params['max_question_len'],
                 hyper_params['max_paragraph_len'],
-                tokenizer, hyper_params['batch_size']
+                tokenizer, hyper_params['batch_size'],
+                num_workers=args.num_workers,
+                shuffle=False
             )
         )
 
     test_dataloader = generate_dataloader(
-        hyper_params['test_file'], hyper_params['cache_folder'],
-        hyper_params['max_question_len'], hyper_params['max_paragraph_len'],
-        tokenizer, hyper_params['batch_size'])
+        hyper_params['test_file'], hyper_params['max_question_len'],
+        hyper_params['max_paragraph_len'], tokenizer, hyper_params['batch_size'],
+        num_workers=args.num_workers, shuffle=False)
 
     ret = load_model(hyper_params, tokenizer, args.debug)
 
