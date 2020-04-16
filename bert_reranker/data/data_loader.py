@@ -93,7 +93,7 @@ def json_entry_to_dataset(qa_pair, max_question_len, max_paragraph_len, tokenize
             'target': target}
 
 
-def generate_dataloader(data_file, cache_folder, max_question_len, max_paragraph_len,
-                        tokenizer, batch_size):
+def generate_dataloader(data_file, max_question_len, max_paragraph_len, tokenizer, batch_size,
+                        num_workers):
     dataset = ReRankerDataset(data_file, max_question_len, max_paragraph_len, tokenizer)
-    return DataLoader(dataset, batch_size=batch_size)
+    return DataLoader(dataset, batch_size=batch_size, num_workers=num_workers)
