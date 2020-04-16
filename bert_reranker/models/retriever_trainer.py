@@ -22,6 +22,7 @@ class RetrieverTrainer(pl.LightningModule):
 
         if loss_type == 'classification':
             self.cross_entropy = nn.CrossEntropyLoss()
+            self.cs = torch.nn.CosineSimilarity(dim=2)
 
         if self.loss_type == 'cosine':
             self.cosine_loss = torch.nn.CosineEmbeddingLoss()
@@ -55,7 +56,8 @@ class RetrieverTrainer(pl.LightningModule):
         elif self.loss_type == 'classification':
             if self.retriever.returns_embeddings:
                 q_emb, p_embs = self.retriever(**inputs)
-                logits = torch.bmm(q_emb.unsqueeze(1), p_embs.transpose(2, 1)).squeeze(1)
+                # logits = torch.bmm(q_emb.unsqueeze(1), p_embs.transpose(2, 1)).squeeze(1)
+                logits = self.cs(q_emb.unsqueeze(1), p_embs).squeeze(1)
             else:
                 logits = self.retriever(**inputs)
 
