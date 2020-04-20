@@ -43,7 +43,10 @@ def main():
     parser.add_argument('--validate', help='will not train - will just evaluate on dev',
                         action='store_true')
     parser.add_argument('--predict', help='will predict on the json file you provide as an arg')
-    parser.add_argument('--predict-to', help='(optiona) write predictions here)')
+    parser.add_argument('--save-weights-to',
+                        help='will save ONLY the model weights (not the pytorch lightning object)'
+                             ' to this file')
+    parser.add_argument('--predict-to', help='(optional) write predictions here)')
     parser.add_argument('--redirect-log', help='will intercept any stdout/err and log it',
                         action='store_true')
     parser.add_argument('--num_workers', help='number of workers - default 2', type=int, default=2)
@@ -73,30 +76,38 @@ def main():
         )
         ret_trainee.load_state_dict(model_ckpt["state_dict"])
         evaluate_model(ret_trainee, qa_pairs_json_file=args.predict, predict_to=args.predict_to)
+    elif args.save_weights_to is not None:
+        torch.save(ret_trainee.retriever.state_dict(), args.save_weights_to)
     else:
         logger.warning('please select one between --train / --validate / --test')
 
 
 def init_model(hyper_params, num_workers, output, validation_interval, gpu, no_model_restoring,
                debug):
+
     check_and_log_hp(
         ['train_file', 'dev_files', 'test_file', 'batch_size', 'tokenizer_name',
          'model', 'max_question_len', 'max_paragraph_len', 'patience', 'gradient_clipping',
          'max_epochs', 'loss_type', 'optimizer', 'precision', 'accumulate_grad_batches', 'seed'],
         hyper_params)
+
     if hyper_params['seed'] is not None:
         # fix the seed
         torch.manual_seed(hyper_params['seed'])
         np.random.seed(hyper_params['seed'])
         torch.backends.cudnn.deterministic = True
         torch.backends.cudnn.benchmark = False
+
     os.makedirs(hyper_params['cache_folder'], exist_ok=True)
     tokenizer_name = hyper_params['tokenizer_name']
     tokenizer = AutoTokenizer.from_pretrained(tokenizer_name)
+    ret = load_model(hyper_params, tokenizer, debug)
+
     train_dataloader = generate_dataloader(
         hyper_params['train_file'], hyper_params['max_question_len'],
         hyper_params['max_paragraph_len'], tokenizer, hyper_params['batch_size'],
         num_workers=num_workers, shuffle=True)
+
     dev_dataloaders = []
     for dev_file in hyper_params['dev_files'].values():
         dev_dataloaders.append(
@@ -113,7 +124,7 @@ def init_model(hyper_params, num_workers, output, validation_interval, gpu, no_m
         hyper_params['test_file'], hyper_params['max_question_len'],
         hyper_params['max_paragraph_len'], tokenizer, hyper_params['batch_size'],
         num_workers=num_workers, shuffle=False)
-    ret = load_model(hyper_params, tokenizer, debug)
+
     os.makedirs(output, exist_ok=True)
     checkpoint_callback = ModelCheckpoint(
         filepath=os.path.join(output, '{epoch}-{val_acc_0:.2f}-{val_loss_0:.2f}'),
@@ -134,6 +145,7 @@ def init_model(hyper_params, num_workers, output, validation_interval, gpu, no_m
     tb_logger = loggers.TensorBoardLogger('experiment_logs')
     for hparam in list(hyper_params):
         tb_logger.experiment.add_text(hparam, str(hyper_params[hparam]))
+
     trainer = pl.Trainer(
         logger=tb_logger,
         gpus=gpu,
@@ -147,6 +159,7 @@ def init_model(hyper_params, num_workers, output, validation_interval, gpu, no_m
         resume_from_checkpoint=ckpt_to_resume,
         accumulate_grad_batches=hyper_params['accumulate_grad_batches'],
         max_epochs=hyper_params['max_epochs'])
+
     ret_trainee = RetrieverTrainer(ret, train_dataloader, dev_dataloaders, test_dataloader,
                                    hyper_params['loss_type'], hyper_params['optimizer'])
     return ckpt_to_resume, ret_trainee, trainer
