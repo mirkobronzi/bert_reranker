@@ -105,28 +105,6 @@ def init_model(hyper_params, num_workers, output, validation_interval, gpu, no_m
     tokenizer = AutoTokenizer.from_pretrained(tokenizer_name)
     ret = load_model(hyper_params, tokenizer, debug)
 
-    train_dataloader = generate_dataloader(
-        hyper_params['train_file'], hyper_params['max_question_len'],
-        hyper_params['max_paragraph_len'], tokenizer, hyper_params['batch_size'],
-        num_workers=num_workers, shuffle=True)
-
-    dev_dataloaders = []
-    for dev_file in hyper_params['dev_files'].values():
-        dev_dataloaders.append(
-            generate_dataloader(
-                dev_file,
-                hyper_params['max_question_len'],
-                hyper_params['max_paragraph_len'],
-                tokenizer, hyper_params['batch_size'],
-                num_workers=num_workers,
-                shuffle=False
-            )
-        )
-    test_dataloader = generate_dataloader(
-        hyper_params['test_file'], hyper_params['max_question_len'],
-        hyper_params['max_paragraph_len'], tokenizer, hyper_params['batch_size'],
-        num_workers=num_workers, shuffle=False)
-
     os.makedirs(output, exist_ok=True)
     checkpoint_callback = ModelCheckpoint(
         filepath=os.path.join(output, '{epoch}-{val_acc_0:.2f}-{val_loss_0:.2f}'),
@@ -170,9 +148,36 @@ def init_model(hyper_params, num_workers, output, validation_interval, gpu, no_m
         accumulate_grad_batches=hyper_params['accumulate_grad_batches'],
         max_epochs=hyper_params['max_epochs'])
 
+    dev_dataloaders, test_dataloader, train_dataloader = get_data_loaders(hyper_params, num_workers,
+                                                                          tokenizer)
+
     ret_trainee = RetrieverTrainer(ret, train_dataloader, dev_dataloaders, test_dataloader,
                                    hyper_params['loss_type'], hyper_params['optimizer'])
     return ckpt_to_resume, ret_trainee, trainer
+
+
+def get_data_loaders(hyper_params, num_workers, tokenizer):
+    train_dataloader = generate_dataloader(
+        hyper_params['train_file'], hyper_params['max_question_len'],
+        hyper_params['max_paragraph_len'], tokenizer, hyper_params['batch_size'],
+        num_workers=num_workers, shuffle=True)
+    dev_dataloaders = []
+    for dev_file in hyper_params['dev_files'].values():
+        dev_dataloaders.append(
+            generate_dataloader(
+                dev_file,
+                hyper_params['max_question_len'],
+                hyper_params['max_paragraph_len'],
+                tokenizer, hyper_params['batch_size'],
+                num_workers=num_workers,
+                shuffle=False
+            )
+        )
+    test_dataloader = generate_dataloader(
+        hyper_params['test_file'], hyper_params['max_question_len'],
+        hyper_params['max_paragraph_len'], tokenizer, hyper_params['batch_size'],
+        num_workers=num_workers, shuffle=False)
+    return dev_dataloaders, test_dataloader, train_dataloader
 
 
 if __name__ == '__main__':

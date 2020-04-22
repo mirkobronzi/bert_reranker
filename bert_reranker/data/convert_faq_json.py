@@ -26,7 +26,9 @@ def make_qa_pairs_faq(json_file, n_wrong_answers, seed):
 
         candidate_answers = []
         candidate_answers.append(correct_answer)
-        candidate_answers.extend(wrong_answers[:n_wrong_answers])
+        if n_wrong_answers > 0:
+            wrong_answers = wrong_answers[:n_wrong_answers]
+        candidate_answers.extend(wrong_answers)
         qa_pairs.append([question, candidate_answers])
 
     return qa_pairs
@@ -49,7 +51,8 @@ def main():
     parser.add_argument("--output", help="output json", required=True)
     parser.add_argument("--rounds", help="how many times we use the same question", type=int,
                         default=10)
-    parser.add_argument("--wrong-answers", help="how many wrong answers for a given question.",
+    parser.add_argument("--wrong-answers", help="how many wrong answers for a given question."
+                                                " -1 means to keep all the available ones.",
                         type=int, default=2)
     args = parser.parse_args()
 
