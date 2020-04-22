@@ -12,6 +12,8 @@ def make_qa_pairs_faq(json_file, n_wrong_answers, seed):
     all_questions_to_answer_index = {}
     all_answers = []
 
+    answer_size = None
+
     for k, v in json_file.items():
         if k != "document_URL":
             answer = "".join(json_file[k]["plaintext"])
@@ -32,9 +34,17 @@ def make_qa_pairs_faq(json_file, n_wrong_answers, seed):
         candidate_answers.append(correct_answer)
         if n_wrong_answers > 0:
             wrong_answers = wrong_answers[:n_wrong_answers]
+
+        if answer_size is None:
+            answer_size = len(wrong_answers)
+
+        if answer_size != len(wrong_answers):
+            raise ValueError('different number of answers')
+
         candidate_answers.extend(wrong_answers)
         qa_pairs.append([question, candidate_answers])
 
+    logger.info('every question has {} wrong 1 answers'.format(answer_size))
     return qa_pairs
 
 
