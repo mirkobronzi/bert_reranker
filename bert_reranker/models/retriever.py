@@ -111,10 +111,7 @@ class Retriever(nn.Module):
                 q_inputs['input_ids'], q_inputs['attention_mask'], q_inputs['token_type_ids'],
                 p_inputs['input_ids'], p_inputs['attention_mask'], p_inputs['token_type_ids'],
             )
-
-            relevance_scores = torch.sigmoid(
-                torch.matmul(q_emb, p_embs.squeeze(0).T).squeeze(0)
-            )
+            relevance_scores = torch.matmul(q_emb, p_embs.squeeze(0).T).squeeze(0)
 
             rerank_index = torch.argsort(-relevance_scores)
             relevance_scores_numpy = relevance_scores.detach().cpu().numpy()
