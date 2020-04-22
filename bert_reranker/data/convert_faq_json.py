@@ -54,6 +54,8 @@ def main():
     parser.add_argument("--wrong-answers", help="how many wrong answers for a given question."
                                                 " -1 means to keep all the available ones.",
                         type=int, default=2)
+    parser.add_argument("--max-size", help="max size for the questions. Default: take all of them",
+                        type=int, default=-1)
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.INFO)
@@ -62,6 +64,10 @@ def main():
     logger.info('collapsed {} files into a single dict with {} elements'.format(
         len(args.input), len(collapsed_json)
     ))
+
+    if args.max_size > 0:
+        logger.info('keeping only {} questions'.format(args.max_size))
+        collapsed_json = {k: v for k, v in list(collapsed_json.items())[:args.max_size]}
 
     qa_pairs = []
     for seed in range(args.rounds):
