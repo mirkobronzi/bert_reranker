@@ -32,7 +32,7 @@ def evaluate_model(ret_trainee, qa_pairs_json_file, predict_to):
             # out_stream.write(question + '\n')
             # out_stream.write('ranking: {}'.format(out[2]) + '\n')
             # out_stream.write('\t' + '\n\t'.join(answers) + '\n\n')
-            out_stream.write('{}: {}\n'.format(count, out[2][0]))
+            out_stream.write('{}: {}\n'.format(count, out[2][0] == 0))
             count += 1
 
     acc = correct / len(qa_pairs) * 100
