@@ -9,17 +9,21 @@ logger = logging.getLogger(__name__)
 def make_qa_pairs_faq(json_file, n_wrong_answers, seed):
 
     random.seed(seed)
-    all_questions = []
+    all_questions_to_answer_index = {}
     all_answers = []
 
     for k, v in json_file.items():
         if k != "document_URL":
-            all_questions.append(k)
-            all_answers.append("".join(json_file[k]["plaintext"]))
+            answer = "".join(json_file[k]["plaintext"])
+
+            if answer not in all_answers:
+                all_answers.append(answer)
+            answer_index = all_answers.index(answer)
+            all_questions_to_answer_index[k] = answer_index
 
     qa_pairs = []
-    for idx, question in enumerate(all_questions):
-        correct_answer = all_answers[idx]
+    for question, answer_index in all_questions_to_answer_index.items():
+        correct_answer = all_answers[answer_index]
         wrong_answers = all_answers.copy()
         wrong_answers.remove(correct_answer)
         random.shuffle(wrong_answers)

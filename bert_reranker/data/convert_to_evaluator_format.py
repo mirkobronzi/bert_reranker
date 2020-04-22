@@ -63,6 +63,9 @@ def main():
     with open(args.output, "w", encoding="utf-8") as out_stream:
         json.dump(converted, out_stream, indent=4, ensure_ascii=False)
 
+    logger.info('converted {} questions and {} answers'.format(
+        len(question_to_correct_answer_index), len(ordered_answers)))
+
 
 if __name__ == "__main__":
     main()
