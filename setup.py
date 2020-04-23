@@ -5,6 +5,10 @@ setup(
     name='bert_reranker',
     version='0.1.0',
     packages=find_packages(include=['bert_reranker', 'bert_reranker.*']),
+    license='MIT',
+    author='Mirko Bronzi',
+    author_email = 'm.bronzi@gmail.com',
+    url='https://github.com/mirkobronzi/bert_reranker',
     python_requires='>=3.7',
     install_requires=[
         'flake8', 'tqdm', 'pyyaml>=5.3', 'pytest', 'numpy>=1.16.4', 'pytest',
