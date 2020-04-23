@@ -61,6 +61,30 @@ class Retriever(nn.Module):
         h_paragraphs_batch = h_paragraphs_batch_reshape.reshape(batch_size, num_document, -1)
         return h_question, h_paragraphs_batch
 
+    def embed_paragraph(self, paragraph):
+        self.eval()
+        with torch.no_grad():
+            paragraph_inputs = self.tokenizer.encode_plus(
+                paragraph, add_special_tokens=True, max_length=self.max_paragraph_len,
+                pad_to_max_length=True, return_tensors='pt')
+            tmp_device = next(self.bert_paragraph_encoder.parameters()).device
+            inputs = {k: v.to(tmp_device) for k, v in paragraph_inputs.items()}
+
+            paragraph_embedding = self.bert_paragraph_encoder(**inputs)
+        return paragraph_embedding
+
+    def embed_question(self, question):
+        self.eval()
+        with torch.no_grad():
+            question_inputs = self.tokenizer.encode_plus(
+                question, add_special_tokens=True, max_length=self.max_question_len,
+                pad_to_max_length=True, return_tensors='pt')
+            tmp_device = next(self.bert_question_encoder.parameters()).device
+            inputs = {k: v.to(tmp_device) for k, v in question_inputs.items()}
+
+            question_embedding = self.bert_question_encoder(**inputs)
+        return question_embedding
+
     def predict(self, question_str: str, batch_paragraph_strs: List[str]):
         self.eval()
         with torch.no_grad():
@@ -87,10 +111,7 @@ class Retriever(nn.Module):
                 q_inputs['input_ids'], q_inputs['attention_mask'], q_inputs['token_type_ids'],
                 p_inputs['input_ids'], p_inputs['attention_mask'], p_inputs['token_type_ids'],
             )
-
-            relevance_scores = torch.sigmoid(
-                torch.matmul(q_emb, p_embs.squeeze(0).T).squeeze(0)
-            )
+            relevance_scores = torch.matmul(q_emb, p_embs.squeeze(0).T).squeeze(0)
 
             rerank_index = torch.argsort(-relevance_scores)
             relevance_scores_numpy = relevance_scores.detach().cpu().numpy()

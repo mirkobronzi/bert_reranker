@@ -19,6 +19,7 @@ def evaluate_model(ret_trainee, qa_pairs_json_file, predict_to):
         qa_pairs = json.load(f)
 
     correct = 0
+    count = 0
     out_stream = open(predict_to, 'w') if predict_to else None
     for question, answers in tqdm(qa_pairs):
 
@@ -28,9 +29,11 @@ def evaluate_model(ret_trainee, qa_pairs_json_file, predict_to):
             correct += 1
 
         if out_stream:
-            out_stream.write(question + '\n')
-            out_stream.write('ranking: {}'.format(out[2]) + '\n')
-            out_stream.write('\t' + '\n\t'.join(answers) + '\n\n')
+            # out_stream.write(question + '\n')
+            # out_stream.write('ranking: {}'.format(out[2]) + '\n')
+            # out_stream.write('\t' + '\n\t'.join(answers) + '\n\n')
+            out_stream.write('{}: {}\n'.format(count, out[2][0] == 0))
+            count += 1
 
     acc = correct / len(qa_pairs) * 100
     logger.info("correct {} over {} - accuracy is {}".format(correct, len(qa_pairs), acc))
