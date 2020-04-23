@@ -57,7 +57,7 @@ def main():
         question_to_correct_answer_index[question] = answers_to_index[correct_answer]
 
     ordered_answers_index = sorted(answers_to_index.items(), key=lambda item: item[1])
-    ordered_answers = {i: x[0] for i, x in enumerate(ordered_answers_index)}
+    ordered_answers = [(i, x[0]) for i, x in enumerate(ordered_answers_index)]
 
     converted = {'questions': question_to_correct_answer_index, 'answers': ordered_answers}
     with open(args.output, "w", encoding="utf-8") as out_stream:
