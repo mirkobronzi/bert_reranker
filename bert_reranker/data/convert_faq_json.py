@@ -44,7 +44,7 @@ def make_qa_pairs_faq(json_file, n_wrong_answers, seed):
         candidate_answers.extend(wrong_answers)
         qa_pairs.append([question, candidate_answers])
 
-    logger.info('every question has {} wrong 1 answers'.format(answer_size))
+    logger.info('every question has {} wrong answers'.format(answer_size))
     return qa_pairs
 
 
