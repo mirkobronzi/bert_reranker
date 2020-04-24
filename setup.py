@@ -7,7 +7,7 @@ setup(
     packages=find_packages(include=['bert_reranker', 'bert_reranker.*']),
     license='MIT',
     author='Mirko Bronzi',
-    author_email = 'm.bronzi@gmail.com',
+    author_email='m.bronzi@gmail.com',
     url='https://github.com/mirkobronzi/bert_reranker',
     python_requires='>=3.7',
     install_requires=[

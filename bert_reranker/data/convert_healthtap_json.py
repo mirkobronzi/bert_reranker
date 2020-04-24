@@ -10,7 +10,7 @@ import pandas as pd
 logger = logging.getLogger(__name__)
 
 
-def generate_dataset(data, seed):
+def generate_dataset(data, seed, wrong_answers):
 
     random.seed(seed)
 
@@ -31,9 +31,9 @@ def generate_dataset(data, seed):
 
         candidate_answers = []
         candidate_answers.append(correct_answer)
-        random_answers = random.sample(all_answers, 2)
+        random_answers = random.sample(all_answers, wrong_answers)
         while correct_answer in random_answers:
-            random_answers = random.sample(all_answers, 2)
+            random_answers = random.sample(all_answers, wrong_answers)
         candidate_answers.extend(random_answers)
 
         qa_pairs.append([question, candidate_answers])
@@ -43,8 +43,11 @@ def generate_dataset(data, seed):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--input", help="input json (in natq format)", required=True)
+    parser.add_argument("--input", help="input csv file (with healthtap)", required=True)
     parser.add_argument("--output", help="output json", required=True)
+    parser.add_argument("--wrong-answers", help="how many wrong answers for a given question."
+                                                " -1 means to keep all the available ones.",
+                        type=int, default=2)
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.INFO)
@@ -65,9 +68,9 @@ def main():
     data_dev = data.iloc[idx_end_train:idx_end_dev]
     data_test = data.iloc[idx_end_dev:]
 
-    qa_pairs_train = generate_dataset(data_train, seed)
-    qa_pairs_dev = generate_dataset(data_dev, seed)
-    qa_pairs_test = generate_dataset(data_test, seed)
+    qa_pairs_train = generate_dataset(data_train, seed, args.wrong_answers)
+    qa_pairs_dev = generate_dataset(data_dev, seed, args.wrong_answers)
+    qa_pairs_test = generate_dataset(data_test, seed, args.wrong_answers)
 
     with open(args.output + 'healthtap_train.json', "w", encoding="utf-8") as out_stream:
         json.dump(qa_pairs_train, out_stream, indent=4, ensure_ascii=False)
