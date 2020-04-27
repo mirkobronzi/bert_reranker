@@ -78,14 +78,14 @@ def main():
     qa_pairs_dev = generate_dataset(data_dev, seed, args.wrong_answers)
     qa_pairs_test = generate_dataset(data_test, seed, args.wrong_answers)
 
-    with open(os.path.join(args.output, 'healthtap_train.json'), "w", encoding="utf-8") as out_stream:
-        json.dump(qa_pairs_train, out_stream, indent=4, ensure_ascii=False)
+    with open(os.path.join(args.output, 'healthtap_train.json'), "w", encoding="utf-8") as ostream:
+        json.dump(qa_pairs_train, ostream, indent=4, ensure_ascii=False)
 
-    with open(os.path.join(args.output, 'healthtap_dev.json'), "w", encoding="utf-8") as out_stream:
-        json.dump(qa_pairs_dev, out_stream, indent=4, ensure_ascii=False)
+    with open(os.path.join(args.output, 'healthtap_dev.json'), "w", encoding="utf-8") as ostream:
+        json.dump(qa_pairs_dev, ostream, indent=4, ensure_ascii=False)
 
-    with open(os.path.join(args.output, 'healthtap_test.json'), "w", encoding="utf-8") as out_stream:
-        json.dump(qa_pairs_test, out_stream, indent=4, ensure_ascii=False)
+    with open(os.path.join(args.output, 'healthtap_test.json'), "w", encoding="utf-8") as ostream:
+        json.dump(qa_pairs_test, ostream, indent=4, ensure_ascii=False)
 
 
 if __name__ == "__main__":
