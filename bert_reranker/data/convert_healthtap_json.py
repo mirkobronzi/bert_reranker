@@ -2,6 +2,7 @@ import ast
 import argparse
 import json
 import logging
+import os
 import random
 
 from tqdm import tqdm
@@ -44,47 +45,46 @@ def generate_dataset(data, seed, wrong_answers):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--input", help="input csv file (with healthtap)", required=True)
-    parser.add_argument("--output", help="output json", required=True)
+    parser.add_argument("--output", help="folder where to write the output", required=True)
     parser.add_argument("--wrong-answers", help="how many wrong answers for a given question."
                                                 " -1 means to keep all the available ones.",
                         type=int, default=2)
+    parser.add_argument("--train-size", type=int, default=1500000)
+    parser.add_argument("--dev-size", type=int, default=5000)
+    parser.add_argument("--test-size", type=int, default=5000)
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.INFO)
 
     seed = 42
-    n_dev = 5000
-    n_test = 5000
 
     data = pd.read_csv(args.input)
     data = data.sample(frac=1, random_state=seed).reset_index(
         drop=True
     )  # Shuffle the df
 
-    idx_end_train = len(data) - n_dev - n_test
-    idx_end_dev = len(data) - n_test
+    if (args.train_size + args.dev_size + args.test_size) > len(data):
+        raise ValueError('train + dev + test size is bigger than data size')
+
+    idx_end_train = args.train_size
+    idx_end_dev = idx_end_train + args.dev_size
+    idx_end_test = idx_end_dev + args.test_size
 
     data_train = data.iloc[0:idx_end_train]
     data_dev = data.iloc[idx_end_train:idx_end_dev]
-    data_test = data.iloc[idx_end_dev:]
+    data_test = data.iloc[idx_end_dev:idx_end_test]
 
     qa_pairs_train = generate_dataset(data_train, seed, args.wrong_answers)
     qa_pairs_dev = generate_dataset(data_dev, seed, args.wrong_answers)
     qa_pairs_test = generate_dataset(data_test, seed, args.wrong_answers)
 
-    with open(args.output + 'healthtap_train.json', "w", encoding="utf-8") as out_stream:
+    with open(os.path.join(args.output, 'healthtap_train.json'), "w", encoding="utf-8") as out_stream:
         json.dump(qa_pairs_train, out_stream, indent=4, ensure_ascii=False)
 
-    with open(args.output + 'healthtap_train_small.json', "w", encoding="utf-8") as out_stream:
-        json.dump(qa_pairs_train[0:int(1e5)], out_stream, indent=4, ensure_ascii=False)
-
-    with open(args.output + 'healthtap_train_medium.json', "w", encoding="utf-8") as out_stream:
-        json.dump(qa_pairs_train[0:int(5e5)], out_stream, indent=4, ensure_ascii=False)
-
-    with open(args.output + 'healthtap_dev.json', "w", encoding="utf-8") as out_stream:
+    with open(os.path.join(args.output, 'healthtap_dev.json'), "w", encoding="utf-8") as out_stream:
         json.dump(qa_pairs_dev, out_stream, indent=4, ensure_ascii=False)
 
-    with open(args.output + 'healthtap_test.json', "w", encoding="utf-8") as out_stream:
+    with open(os.path.join(args.output, 'healthtap_test.json'), "w", encoding="utf-8") as out_stream:
         json.dump(qa_pairs_test, out_stream, indent=4, ensure_ascii=False)
 
 
