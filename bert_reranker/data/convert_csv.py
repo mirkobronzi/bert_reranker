@@ -45,9 +45,6 @@ def main():
     parser.add_argument("--wrong-answers", help="how many wrong answers for a given question."
                                                 " -1 means to keep all the available ones.",
                         type=int, default=2)
-    parser.add_argument("--train-size", type=int, default=1500000)
-    parser.add_argument("--dev-size", type=int, default=5000)
-    parser.add_argument("--test-size", type=int, default=5000)
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.INFO)
