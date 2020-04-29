@@ -9,33 +9,58 @@ from tqdm import tqdm
 logger = logging.getLogger(__name__)
 
 
-def generate_dataset(data, seed, n_of_wrong_answers):
+def generate_dataset(data, seed, n_of_wrong_answers, mode):
 
     random.seed(seed)
 
     all_questions = []
+    all_gt_questions = []
     all_answers = []
 
-    for question, answer in zip(data.question, data.answer):
+    for question, answer, gt_question in zip(data.question, data.answer, data.gt_question):
         all_answers.append(answer)
         all_questions.append(question)
+        all_gt_questions.append(gt_question)
 
     qa_pairs = []
-    for idx, question in tqdm(enumerate(all_questions)):
-        correct_answer = all_answers[idx]
-
-        candidate_answers = [correct_answer]  # first one is always correct
-
-        negative_answers = set(all_answers).copy()
-        negative_answers.remove(correct_answer)
-        negative_answers = list(negative_answers)
-        if n_of_wrong_answers > 0:
-            negative_answers = random.sample(n_of_wrong_answers)
-
-        candidate_answers.extend(negative_answers)
-        qa_pairs.append([question, candidate_answers])
+    for idx in tqdm(range(len(all_questions))):
+        if mode == 'qa':
+            qa_pair = generate_qa_pair(all_answers, all_questions, idx, n_of_wrong_answers)
+        elif mode == 'qq':
+            qa_pair = generate_qq_pair(all_gt_questions, all_questions, idx, n_of_wrong_answers)
+        else:
+            raise ValueError("mode {} not supported".format(mode))
+        qa_pairs.append(qa_pair)
 
     return qa_pairs
+
+
+def generate_qq_pair(all_gt_questions, all_questions, idx, n_of_wrong_answers):
+    cquestion = all_questions[idx]
+    correct_gt_question = all_gt_questions[idx]
+    candidate_answers = [correct_gt_question]  # first one is always correct
+    negative_answers = set(all_gt_questions).copy()
+    negative_answers.remove(correct_gt_question)
+    negative_answers = list(negative_answers)
+    if n_of_wrong_answers > 0:
+        negative_answers = random.sample(n_of_wrong_answers)
+    candidate_answers.extend(negative_answers)
+    qa_pair = [cquestion, candidate_answers]
+    return qa_pair
+
+
+def generate_qa_pair(all_answers, all_questions, idx, n_of_wrong_answers):
+    cquestion = all_questions[idx]
+    correct_answer = all_answers[idx]
+    candidate_answers = [correct_answer]  # first one is always correct
+    negative_answers = set(all_answers).copy()
+    negative_answers.remove(correct_answer)
+    negative_answers = list(negative_answers)
+    if n_of_wrong_answers > 0:
+        negative_answers = random.sample(n_of_wrong_answers)
+    candidate_answers.extend(negative_answers)
+    qa_pair = [cquestion, candidate_answers]
+    return qa_pair
 
 
 def main():
@@ -45,12 +70,14 @@ def main():
     parser.add_argument("--wrong-answers", help="how many wrong answers for a given question."
                                                 " -1 means to keep all the available ones.",
                         type=int, default=2)
+    parser.add_argument("--mode", help="either qa (question to answer) or qq (question to ground"
+                                       " truth question)", required=True)
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.INFO)
 
     data = pd.read_csv(args.input)
-    qa_pairs_train = generate_dataset(data, 1, args.wrong_answers)
+    qa_pairs_train = generate_dataset(data, 1, args.wrong_answers, args.mode)
     with open(args.output, "w", encoding="utf-8") as ostream:
         json.dump(qa_pairs_train, ostream, indent=4, ensure_ascii=False)
 
