@@ -72,14 +72,27 @@ def main():
                         type=int, default=2)
     parser.add_argument("--mode", help="either qa (question to answer) or qq (question to ground"
                                        " truth question)", required=True)
+    parser.add_argument("--from-line", help="starts from this line in the csv", type=int, default=0)
+    parser.add_argument("--to-line", help="ends at this line in the csv", type=int, default=-1)
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.INFO)
 
     data = pd.read_csv(args.input)
-    qa_pairs_train = generate_dataset(data, 1, args.wrong_answers, args.mode)
+
+    if args.to_line == -1:
+        to = len(data)
+    else:
+        to = args.to_line
+
+    data = data[args.from_line: to]
+
+    qa_pairs = generate_dataset(data, 1, args.wrong_answers, args.mode)
+
+    logger.info('generate {} pairs'.format(len(qa_pairs)))
+
     with open(args.output, "w", encoding="utf-8") as ostream:
-        json.dump(qa_pairs_train, ostream, indent=4, ensure_ascii=False)
+        json.dump(qa_pairs, ostream, indent=4, ensure_ascii=False)
 
 
 if __name__ == "__main__":
