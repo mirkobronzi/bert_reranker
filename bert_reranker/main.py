@@ -100,7 +100,6 @@ def init_model(hyper_params, num_workers, output, validation_interval, gpu, no_m
         torch.backends.cudnn.deterministic = True
         torch.backends.cudnn.benchmark = False
 
-    os.makedirs(hyper_params['cache_folder'], exist_ok=True)
     tokenizer_name = hyper_params['tokenizer_name']
     tokenizer = AutoTokenizer.from_pretrained(tokenizer_name)
     ret = load_model(hyper_params, tokenizer, debug)

@@ -47,18 +47,15 @@ class Retriever(nn.Module):
             input_ids=input_ids_question, attention_mask=attention_mask_question,
             token_type_ids=token_type_ids_question)
 
-        batch_input_ids_paragraphs_reshape = batch_input_ids_paragraphs.reshape(
-            -1, max_len_size)
-        batch_attention_mask_paragraphs_reshape = batch_attention_mask_paragraphs.reshape(
-            -1, max_len_size)
-        batch_token_type_ids_paragraphs_reshape = batch_token_type_ids_paragraphs.reshape(
-            -1, max_len_size)
+        h_paragraph_list = []
+        for i in range(num_document):
+            h_paragraphs = self.bert_paragraph_encoder(
+                input_ids=batch_input_ids_paragraphs[:, i, :],
+                attention_mask=batch_attention_mask_paragraphs[:, i, :],
+                token_type_ids=batch_token_type_ids_paragraphs[:, i, :])
+            h_paragraph_list.append(h_paragraphs)
+        h_paragraphs_batch = torch.stack(h_paragraph_list, dim=1)
 
-        h_paragraphs_batch_reshape = self.bert_paragraph_encoder(
-            input_ids=batch_input_ids_paragraphs_reshape,
-            attention_mask=batch_attention_mask_paragraphs_reshape,
-            token_type_ids=batch_token_type_ids_paragraphs_reshape)
-        h_paragraphs_batch = h_paragraphs_batch_reshape.reshape(batch_size, num_document, -1)
         return h_question, h_paragraphs_batch
 
     def embed_paragraph(self, paragraph):
