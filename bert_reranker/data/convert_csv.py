@@ -23,6 +23,7 @@ def generate_dataset(data, seed, n_of_wrong_answers, mode):
         all_gt_questions.append(gt_question)
 
     qa_pairs = []
+    answer_size = None
     for idx in tqdm(range(len(all_questions))):
         if mode == 'qa':
             qa_pair = generate_qa_pair(all_answers, all_questions, idx, n_of_wrong_answers)
@@ -32,6 +33,12 @@ def generate_dataset(data, seed, n_of_wrong_answers, mode):
             raise ValueError("mode {} not supported".format(mode))
         qa_pairs.append(qa_pair)
 
+        if answer_size is None:
+            answer_size = len(qa_pair[1])
+        assert len(qa_pair[1]) == answer_size
+
+    logger.info('generate {} pairs - every pair has a pool of {} candidates'.format(
+        len(qa_pairs), answer_size))
     return qa_pairs
 
 
@@ -88,8 +95,6 @@ def main():
     data = data[args.from_line: to]
 
     qa_pairs = generate_dataset(data, 1, args.wrong_answers, args.mode)
-
-    logger.info('generate {} pairs'.format(len(qa_pairs)))
 
     with open(args.output, "w", encoding="utf-8") as ostream:
         json.dump(qa_pairs, ostream, indent=4, ensure_ascii=False)
