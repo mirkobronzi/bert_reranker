@@ -124,8 +124,9 @@ class Retriever(nn.Module):
             rerank_index_numpy = rerank_index.detach().cpu().numpy()
             reranked_paragraphs = [batch_paragraph_strs[i] for i in rerank_index_numpy]
             reranked_relevance_scores = relevance_scores_numpy[rerank_index_numpy]
+            reranked_normalized_scores = [normalized_scores[i] for i in rerank_index_numpy]
             return (reranked_paragraphs, reranked_relevance_scores, rerank_index_numpy,
-                    normalized_scores)
+                    reranked_normalized_scores)
 
 
 class EmbeddingRetriever(Retriever):
