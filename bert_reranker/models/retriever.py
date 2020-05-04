@@ -111,14 +111,13 @@ class Retriever(nn.Module):
             question_inputs = self.tokenizer.encode_plus(
                 question_str, add_special_tokens=True, max_length=self.max_question_len,
                 pad_to_max_length=True, return_tensors='pt')
-            tmp_device = next(self.bert_question_encoder.parameters()).device
             q_inputs = {k: v.to(tmp_device) for k, v in question_inputs.items()}
 
-            q_emb, p_embs = self.forward(
-                q_inputs['input_ids'], q_inputs['attention_mask'], q_inputs['token_type_ids'],
-                p_inputs['input_ids'], p_inputs['attention_mask'], p_inputs['token_type_ids'],
-            )
-            relevance_scores = torch.matmul(q_emb, p_embs.squeeze(0).T).squeeze(0)
+            relevance_scores = self.compute_score(
+                q_ids=q_inputs['input_ids'], q_am=q_inputs['attention_mask'],
+                q_tt=q_inputs['token_type_ids'], p_ids=p_inputs['input_ids'],
+                p_am=p_inputs['attention_mask'], p_tt=p_inputs['token_type_ids']
+            ).squeeze(0)
 
             rerank_index = torch.argsort(-relevance_scores)
             relevance_scores_numpy = relevance_scores.detach().cpu().numpy()
@@ -173,4 +172,4 @@ class FeedForwardRetriever(Retriever):
         return logits.squeeze(dim=2)
 
     def compute_score(self, **kwargs):
-        return self.forward(**kwargs)
+        q_emb, p_embs = self.forward(**kwargs)
