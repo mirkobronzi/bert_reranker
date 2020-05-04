@@ -29,12 +29,14 @@ def evaluate_model(ret_trainee, qa_pairs_json_file, predict_to):
             correct += 1
 
         if out_stream:
-            out_stream.write('\n-------------------------\n')
+            out_stream.write('-------------------------\n')
             out_stream.write('question:\n\t{}\n'.format(question))
             out_stream.write(
                 'predicted answer: correct? {} / score {:3.3} / norm score {:3.3} / answer content:'
                 '\n\t{}\n'.format(
                     out[2][0] == 0, out[1][0], out[3][0], out[0][0]))
+            out_stream.write(
+                'ground truth:\n\t{}\n\n'.format(answers[0]))
         count += 1
 
     acc = correct / len(qa_pairs) * 100
