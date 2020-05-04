@@ -20,8 +20,7 @@ class Retriever(nn.Module):
         self.debug = debug
         self.max_question_len = max_question_len
         self.max_paragraph_len = max_paragraph_len
-        self.cache_hash2str = {}
-        self.cache_hash2array = {}
+        self.sigmoid = torch.nn.Sigmoid()
 
     def forward(self, **kwargs):
         """
@@ -119,12 +118,14 @@ class Retriever(nn.Module):
                 p_am=p_inputs['attention_mask'], p_tt=p_inputs['token_type_ids']
             ).squeeze(0)
 
+            normalized_scores = self.sigmoid(relevance_scores)
             rerank_index = torch.argsort(-relevance_scores)
             relevance_scores_numpy = relevance_scores.detach().cpu().numpy()
             rerank_index_numpy = rerank_index.detach().cpu().numpy()
             reranked_paragraphs = [batch_paragraph_strs[i] for i in rerank_index_numpy]
             reranked_relevance_scores = relevance_scores_numpy[rerank_index_numpy]
-            return reranked_paragraphs, reranked_relevance_scores, rerank_index_numpy
+            return (reranked_paragraphs, reranked_relevance_scores, rerank_index_numpy,
+                    normalized_scores)
 
 
 class EmbeddingRetriever(Retriever):
