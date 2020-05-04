@@ -36,11 +36,7 @@ class RetrieverTrainer(pl.LightningModule):
         targets = batch['target']
 
         if self.loss_type == 'negative_sampling':
-            if self.retriever.returns_embeddings:
-                q_emb, p_embs = self.retriever(**inputs)
-                logits = torch.bmm(q_emb.unsqueeze(1), p_embs.transpose(2, 1)).squeeze(1)
-            else:
-                logits = self.retriever(**inputs)
+            logits = self.retriever.compute_score(**inputs)
             all_prob = torch.sigmoid(logits)
 
             pos_preds = []
@@ -53,12 +49,7 @@ class RetrieverTrainer(pl.LightningModule):
             neg_loss = - torch.log(1 - neg_preds).sum()
             loss = pos_loss + neg_loss
         elif self.loss_type == 'classification':
-            if self.retriever.returns_embeddings:
-                q_emb, p_embs = self.retriever(**inputs)
-                logits = torch.bmm(q_emb.unsqueeze(1), p_embs.transpose(2, 1)).squeeze(1)
-            else:
-                logits = self.retriever(**inputs)
-
+            logits = self.retriever.compute_score(**inputs)
             loss = self.cross_entropy(logits, targets)
         elif self.loss_type == 'triplet_loss':
             if not self.retriever.returns_embeddings:

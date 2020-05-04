@@ -24,9 +24,19 @@ class Retriever(nn.Module):
         self.cache_hash2array = {}
 
     def forward(self, **kwargs):
+        """
+        forward method - it will return a score if self.returns_embeddings = False,
+                         two embeddings (question/answer) if self.returns_embeddings = True
+        """
         raise ValueError('not implemented - use a subclass.')
 
-    def compute_emebeddings(
+    def compute_score(self, **kwargs):
+        """
+        returns a similarity score.
+        """
+        raise ValueError('not implemented - use a subclass.')
+
+    def compute_embeddings(
             self, input_ids_question, attention_mask_question, token_type_ids_question,
             batch_input_ids_paragraphs, batch_attention_mask_paragraphs,
             batch_token_type_ids_paragraphs):
@@ -128,7 +138,11 @@ class EmbeddingRetriever(Retriever):
         self.returns_embeddings = True
 
     def forward(self, q_ids, q_am, q_tt, p_ids, p_am, p_tt):
-        return self.compute_emebeddings(q_ids, q_am, q_tt, p_ids, p_am, p_tt)
+        return self.compute_embeddings(q_ids, q_am, q_tt, p_ids, p_am, p_tt)
+
+    def compute_score(self, **kwargs):
+        q_emb, p_embs = self.forward(**kwargs)
+        return torch.bmm(q_emb.unsqueeze(1), p_embs.transpose(2, 1)).squeeze(1)
 
 
 class FeedForwardRetriever(Retriever):
@@ -149,7 +163,7 @@ class FeedForwardRetriever(Retriever):
     def forward(self, input_ids_question, attention_mask_question, token_type_ids_question,
                 batch_input_ids_paragraphs, batch_attention_mask_paragraphs,
                 batch_token_type_ids_paragraphs):
-        q_emb, p_embs = self.compute_emebeddings(
+        q_emb, p_embs = self.compute_embeddings(
             input_ids_question, attention_mask_question, token_type_ids_question,
             batch_input_ids_paragraphs, batch_attention_mask_paragraphs,
             batch_token_type_ids_paragraphs)
@@ -157,3 +171,6 @@ class FeedForwardRetriever(Retriever):
         concatenated_embs = torch.cat((q_emb.unsqueeze(1).repeat(1, n_paragraph, 1), p_embs), dim=2)
         logits = self.ffw_net(concatenated_embs)
         return logits.squeeze(dim=2)
+
+    def compute_score(self, **kwargs):
+        return self.forward(**kwargs)
