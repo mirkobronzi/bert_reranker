@@ -4,7 +4,7 @@ import logging
 
 from tqdm import tqdm
 
-from bert_reranker.data.data_loader import remove_html_toks
+from bert_reranker.data.data_loader import clean_text
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +28,7 @@ def main():
             if data['num_positives'] >= 1 and data['num_negatives'] >= 2:
                 question = data['question']
                 paras = data['right_paragraphs'][:1] + data['wrong_paragraphs'][:2]
-                paras = [remove_html_toks(i) for i in paras]
+                paras = [clean_text(i) for i in paras]
                 new_example = [question] + [paras]
 
                 if data['dataset'] == 'train':
