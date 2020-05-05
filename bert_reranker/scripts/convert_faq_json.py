@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 def make_qa_pairs_faq(json_file, n_wrong_answers, seed):
 
     random.seed(seed)
-    all_answers, all_questions_to_answer_index = collect_answers(json_file)
+    all_answers, all_questions_to_answer_index, _ = collect_answers(json_file)
 
     answer_size = None
     qa_pairs = []
@@ -38,17 +38,19 @@ def make_qa_pairs_faq(json_file, n_wrong_answers, seed):
 
 
 def collect_answers(json_file):
-    all_questions_to_answer_index = {}
-    all_answers = []
+    question_to_answer_index = {}
+    question_to_answer = {}
+    answers = []
     for k, v in json_file.items():
         if k != "document_URL":
             answer = "".join(json_file[k]["plaintext"])
 
-            if answer not in all_answers:
-                all_answers.append(answer)
-            answer_index = all_answers.index(answer)
-            all_questions_to_answer_index[k] = answer_index
-    return all_answers, all_questions_to_answer_index
+            if answer not in answers:
+                answers.append(answer)
+            answer_index = answers.index(answer)
+            question_to_answer_index[k] = answer_index
+            question_to_answer[k] = answer
+    return answers, question_to_answer_index, question_to_answer
 
 
 def collapse_jsons(json_files):
@@ -67,6 +69,9 @@ def main():
     parser.add_argument("--input", help="input json (in natq format)", required=True, nargs='+')
     parser.add_argument("--output-train", help="output json for train")
     parser.add_argument("--output-answers", help="output txt containing the answer list")
+    parser.add_argument("--output-questions", help="output txt containing the question list")
+    parser.add_argument("--output-questions2answers", help="output txt containing both questions "
+                                                           "and answers")
     parser.add_argument("--rounds", help="how many times we use the same question", type=int,
                         default=10)
     parser.add_argument("--wrong-answers", help="how many wrong answers for a given question."
@@ -84,19 +89,43 @@ def main():
     ))
 
     if args.output_train is not None:
-        creat_train_output(args, collapsed_json)
+        create_train_output(args, collapsed_json)
 
     if args.output_answers is not None:
-        creat_answer_output(args, collapsed_json)
+        create_answer_output(args, collapsed_json)
+
+    if args.output_questions is not None:
+        create_question_output(args, collapsed_json)
+
+    if args.output_questions2answers is not None:
+        create_question2answer_output(args, collapsed_json)
 
 
-def creat_answer_output(args, collapsed_json):
-    answers, _ = collect_answers(collapsed_json)
+def create_answer_output(args, collapsed_json):
+    answers, _, _ = collect_answers(collapsed_json)
+    answers_uniq = set(answers)
+    logger.info('found {} questions - {} remaining after uniq'.format(
+        len(answers), len(answers_uniq)))
     with open(args.output_answers, "w", encoding="utf-8") as out_stream:
         out_stream.write('\n'.join(answers))
 
 
-def creat_train_output(args, collapsed_json):
+def create_question_output(args, collapsed_json):
+    _, _, q2a = collect_answers(collapsed_json)
+    q2a_uniq = set(q2a.keys())
+    logger.info('found {} questions - {} remaining after uniq'.format(len(q2a), len(q2a_uniq)))
+    with open(args.output_questions, "w", encoding="utf-8") as out_stream:
+        out_stream.write('\n'.join(q2a_uniq))
+
+
+def create_question2answer_output(args, collapsed_json):
+    _, _, q2a = collect_answers(collapsed_json)
+    logger.info('found {} questions2answer'.format(len(q2a)))
+    with open(args.output_questions2answers, "w", encoding="utf-8") as out_stream:
+        out_stream.write('\n'.join(['{} => {}'.format(k, v) for k, v in q2a.items()]))
+
+
+def create_train_output(args, collapsed_json):
     if args.max_size > 0:
         logger.info('keeping only {} questions'.format(args.max_size))
         collapsed_json = {k: v for k, v in list(collapsed_json.items())[:args.max_size]}
