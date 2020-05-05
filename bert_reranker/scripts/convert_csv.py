@@ -125,6 +125,8 @@ def main():
     with open(args.output, "w", encoding="utf-8") as ostream:
         json.dump(qa_pairs, ostream, indent=4, ensure_ascii=False)
 
+    logger.info('result written to {}'.format(args.output))
+
 
 if __name__ == "__main__":
     main()
