@@ -70,9 +70,15 @@ def generate_qq_pair(all_gt_questions, all_questions, idx, n_of_wrong_answers, c
     return qa_pair
 
 
-def generate_qa_pair(all_answers, all_questions, idx, n_of_wrong_answers):
+def generate_qa_pair(all_answers, all_questions, idx, n_of_wrong_answers, candidates):
     cquestion = all_questions[idx]
     correct_answer = all_answers[idx]
+
+    if candidates is not None:
+        if correct_answer not in candidates:
+            return None
+        all_answers = candidates
+
     candidate_answers = [correct_answer]  # first one is always correct
     negative_answers = set(all_answers).copy()
     negative_answers.remove(correct_answer)
