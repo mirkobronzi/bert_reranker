@@ -20,8 +20,9 @@ def main():
         candidates = [x. strip() for x in in_stream.readlines()]
 
     for input_question in args.input_questions:
-        _generate_json(input_question, os.path.join(args.output,
-                                                    ntpath.basename(input_question)), candidates)
+        _generate_json(
+            input_question,
+            os.path.join(args.output, ntpath.basename(input_question)) + '.json', candidates)
 
 
 def _generate_json(input_file, output_file, candidates):
