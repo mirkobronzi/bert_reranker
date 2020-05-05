@@ -29,11 +29,15 @@ def evaluate_model(ret_trainee, qa_pairs_json_file, predict_to):
             correct += 1
 
         if out_stream:
-            # out_stream.write(question + '\n')
-            # out_stream.write('ranking: {}'.format(out[2]) + '\n')
-            # out_stream.write('\t' + '\n\t'.join(answers) + '\n\n')
-            out_stream.write('{}: {}\n'.format(count, out[2][0] == 0))
-            count += 1
+            out_stream.write('-------------------------\n')
+            out_stream.write('question:\n\t{}\n'.format(question))
+            out_stream.write(
+                'predicted answer: correct? {} / score {:3.3} / norm score {:3.3} / answer content:'
+                '\n\t{}\n'.format(
+                    out[2][0] == 0, out[1][0], out[3][0], out[0][0]))
+            out_stream.write(
+                'ground truth:\n\t{}\n\n'.format(answers[0]))
+        count += 1
 
     acc = correct / len(qa_pairs) * 100
     logger.info("correct {} over {} - accuracy is {}".format(correct, len(qa_pairs), acc))
