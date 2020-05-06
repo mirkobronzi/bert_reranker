@@ -106,6 +106,7 @@ def evaluate_tokenizer_cutoff(file_to_evaluate, tokenizer, max_lengths=[10, 30, 
 def json_entry_to_dataset(qa_pair, max_question_len, max_paragraph_len, tokenizer):
     question, answers = qa_pair
 
+    question = clean_text(question)
     paragraphs = [clean_text(i) for i in answers]
     shuffled_paragraphs, target = shuffle_paragraphs(paragraphs)
     input_question = tokenizer.encode_plus(question, add_special_tokens=True,
