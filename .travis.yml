@@ -6,12 +6,9 @@ install:
   # Reducing verbosity is needed because of Travis' limit on log length
   - pip install -e . --quiet
   - pip install pytest pytest-cov
-script:
-  # run flake8 with exactly the same options as in the commit hook:
-  - config/hooks/pre-commit
-  - pytest --cov=./ --cov-report xml
 jobs:
   include:
     - script: ./tests/end2end/run_exp1.sh
-#after_success:
-#  - bash <(curl -s https://codecov.io/bash)
+    - script: config/hooks/pre-commit
+    - script: pytest
+

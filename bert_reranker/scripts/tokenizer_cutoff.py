@@ -8,6 +8,7 @@ from bert_reranker.data.data_loader import clean_text
 
 logger = logging.getLogger(__name__)
 
+
 def count_cutoff_sentences(sentences, tokenizer, max_length):
 
     cutoff_results = {}
@@ -17,14 +18,15 @@ def count_cutoff_sentences(sentences, tokenizer, max_length):
     cutoff_sentences = []
     for sentence in sentences:
 
-        encoded_sentence = tokenizer.encode(sentence, max_length=max_length, add_special_tokens=True, pad_to_max_length=True)
-        decoded_sentence = tokenizer.decode(encoded_sentence, skip_special_tokens=True, clean_up_tokenization_spaces=True)
+        encoded_sentence = tokenizer.encode(sentence, max_length=max_length,
+                                            add_special_tokens=True, pad_to_max_length=True)
+        decoded_sentence = tokenizer.decode(encoded_sentence, skip_special_tokens=True,
+                                            clean_up_tokenization_spaces=True)
 
         if not clean_text(sentence) == clean_text(decoded_sentence):
             n_sentences_cutoff += 1
             original_sentences.append(clean_text(sentence))
             cutoff_sentences.append(clean_text(decoded_sentence))
-
 
     cutoff_results = {
         'n_sentences_cutoff': n_sentences_cutoff,
@@ -35,11 +37,17 @@ def count_cutoff_sentences(sentences, tokenizer, max_length):
 
     return cutoff_results
 
-def evaluate_tokenizer_cutoff(file_to_evaluate, tokenizer, max_question_length, max_answer_length):
-    '''evaluate how much questions are being cutoff based on tokenizer's max length'''
-    with open(file_to_evaluate, 'r', encoding='utf-8') as in_stream:
-        qa_pairs = json.load(in_stream)
 
+def evaluate_tokenizer_cutoff(file, tokenizer, max_question_length, max_answer_length):
+    with open(file, 'r', encoding='utf-8') as in_stream:
+        qa_pairs = json.load(in_stream)
+    evaluate_tokenizer_cutoff_from_json(qa_pairs, tokenizer, max_question_length,
+                                        max_answer_length)
+
+
+def evaluate_tokenizer_cutoff_from_json(qa_pairs, tokenizer, max_question_length,
+                                        max_answer_length):
+    """evaluate how much questions are being cutoff based on tokenizer's max length"""
     # Collect all unique questions and answers
     all_questions = []
     all_answers = set()
@@ -61,18 +69,21 @@ def evaluate_tokenizer_cutoff(file_to_evaluate, tokenizer, max_question_length, 
     logger.info('Number of questions cutoff by tokenizer: {} / {}, ({:3.2f} %)'.format(
         cutoff_results['questions']['n_sentences_cutoff'],
         cutoff_results['questions']['total_sentences'],
-        cutoff_results['questions']['n_sentences_cutoff'] / cutoff_results['questions']['total_sentences']*100,
+        cutoff_results['questions']['n_sentences_cutoff'] /
+        cutoff_results['questions']['total_sentences'] * 100,
         )
     )
     logger.info('Max length used for answers: {}'.format(max_answer_length))
     logger.info('Number of answers cutoff by tokenizer: {} / {}, ({:3.2f} %)'.format(
         cutoff_results['answers']['n_sentences_cutoff'],
         cutoff_results['answers']['total_sentences'],
-        cutoff_results['answers']['n_sentences_cutoff'] / cutoff_results['questions']['total_sentences']*100,
+        cutoff_results['answers']['n_sentences_cutoff'] /
+        cutoff_results['questions']['total_sentences'] * 100,
         )
     )
 
     return cutoff_results
+
 
 def main():
     parser = argparse.ArgumentParser()
@@ -86,10 +97,21 @@ def main():
 
     tokenizer = AutoTokenizer.from_pretrained(args.tokenizer_name)
 
+    with open(args.data_file, 'r', encoding='utf-8') as in_stream:
+        qa_pairs = json.load(in_stream)
+
+    logger.info('tokenization example for the first 5 utterances:')
+    for i in range(5):
+        question, candidates = qa_pairs[i]
+        logger.info('question {} "{}" => "{}"'.format(
+            i, question, tokenizer.decode(tokenizer.encode(question))))
+        logger.info('candidate {} "{}" => "{}"'.format(
+            i, candidates[0], tokenizer.decode(tokenizer.encode(candidates[0]))))
+
     max_lengths = [10, 30, 50, 100]
 
     for max_length in max_lengths:
-        cutoff_results =  evaluate_tokenizer_cutoff(args.data_file, tokenizer, max_length, max_length)
+        evaluate_tokenizer_cutoff_from_json(qa_pairs, tokenizer, max_length, max_length)
 
 
 if __name__ == '__main__':
