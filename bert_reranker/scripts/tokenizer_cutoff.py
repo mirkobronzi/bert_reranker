@@ -4,14 +4,12 @@ import json
 
 from transformers import AutoTokenizer
 
-from bert_reranker.data.data_loader import clean_text
+from bert_reranker.data.data_normalization import clean_text
 
 logger = logging.getLogger(__name__)
 
 
 def count_cutoff_sentences(sentences, tokenizer, max_length):
-
-    cutoff_results = {}
 
     n_sentences_cutoff = 0
     original_sentences = []
@@ -80,10 +78,9 @@ def evaluate_tokenizer_cutoff(qa_pairs, tokenizer, max_question_length, max_answ
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--data_file',
+    parser.add_argument('--input',
                         help='data file containing questions and answers', required=True)
-
-    parser.add_argument('--tokenizer_name',
+    parser.add_argument('--tokenizer-name',
                         help='name of the tokenizer to use', required=True)
     args = parser.parse_args()
     logging.basicConfig(level=logging.INFO)
