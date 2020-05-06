@@ -11,7 +11,7 @@ setup(
     url='https://github.com/mirkobronzi/bert_reranker',
     python_requires='>=3.7',
     install_requires=[
-        'flake8', 'tqdm', 'pyyaml>=5.3', 'pytest', 'numpy>=1.16.4', 'pytest', 'pandas',
+        'flake8', 'tqdm', 'pyyaml>=5.3', 'pytest', 'numpy>=1.16.4', 'pytest', 'pandas', 'nltk',
         'torch', 'transformers', 'pytorch-lightning', 'sklearn', 'pandas', 'setuptools>=41.0.0'],
     entry_points={
         'console_scripts': [
