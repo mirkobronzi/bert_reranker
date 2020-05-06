@@ -14,7 +14,7 @@ from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
 from transformers import AutoTokenizer
 from yaml import load
 
-from bert_reranker.data.data_loader import generate_dataloader, evaluate_tokenizer_cutoff
+from bert_reranker.data.data_loader import generate_dataloader
 from bert_reranker.data.predict import evaluate_model
 from bert_reranker.models.cache_manager import CacheManagerCallback
 from bert_reranker.models.load_model import load_model
@@ -22,6 +22,7 @@ from bert_reranker.models.pl_model_loader import try_to_restore_model_weights
 from bert_reranker.models.retriever_trainer import RetrieverTrainer
 from bert_reranker.utils.hp_utils import check_and_log_hp
 from bert_reranker.utils.logging_utils import LoggerWriter
+from bert_reranker.scripts.tokenizer_cutoff import evaluate_tokenizer_cutoff
 
 logger = logging.getLogger(__name__)
 
