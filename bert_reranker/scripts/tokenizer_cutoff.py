@@ -1,10 +1,8 @@
 import argparse
-import logging
 import json
+import logging
 
 from transformers import AutoTokenizer
-
-from bert_reranker.data.data_normalization import clean_text
 
 logger = logging.getLogger(__name__)
 
@@ -12,28 +10,12 @@ logger = logging.getLogger(__name__)
 def count_cutoff_sentences(sentences, tokenizer, max_length):
 
     n_sentences_cutoff = 0
-    original_sentences = []
-    cutoff_sentences = []
     for sentence in sentences:
-
-        encoded_sentence = tokenizer.encode(sentence, max_length=max_length,
-                                            add_special_tokens=True, pad_to_max_length=True)
-        decoded_sentence = tokenizer.decode(encoded_sentence, skip_special_tokens=True,
-                                            clean_up_tokenization_spaces=True)
-
-        if not clean_text(sentence) == clean_text(decoded_sentence):
+        #  + 2 is to account for [CLS] and [SEP]
+        if len(tokenizer.tokenize(sentence)) + 2 > max_length:
             n_sentences_cutoff += 1
-            original_sentences.append(clean_text(sentence))
-            cutoff_sentences.append(clean_text(decoded_sentence))
 
-    cutoff_results = {
-        'n_sentences_cutoff': n_sentences_cutoff,
-        'original_questions': original_sentences,
-        'cutoff_questions': cutoff_sentences,
-        'total_sentences': len(sentences),
-        }
-
-    return cutoff_results
+    return n_sentences_cutoff
 
 
 def evaluate_tokenizer_cutoff(file, tokenizer, max_question_length, max_answer_length):
@@ -58,29 +40,21 @@ def evaluate_tokenizer_cutoff_from_json(qa_pairs, tokenizer, max_question_length
     # Analyze how much is being cutoff
     cutoff_results_questions = count_cutoff_sentences(all_questions, tokenizer, max_question_length)
     cutoff_results_answers = count_cutoff_sentences(all_answers, tokenizer, max_answer_length)
-    cutoff_results = {
-        'questions': cutoff_results_questions,
-        'answers': cutoff_results_answers,
-    }
 
     logger.info('Max length used for questions: {}'.format(max_question_length))
-    logger.info('Number of questions cutoff by tokenizer: {} / {}, ({:3.2f} %)'.format(
-        cutoff_results['questions']['n_sentences_cutoff'],
-        cutoff_results['questions']['total_sentences'],
-        cutoff_results['questions']['n_sentences_cutoff'] /
-        cutoff_results['questions']['total_sentences'] * 100,
+    logger.info('Number of questions cutoff by tokenizer: {} / {}, ({:3.2f} %)\n'.format(
+        cutoff_results_questions,
+        len(all_questions),
+        cutoff_results_questions / len(all_questions) * 100
         )
     )
     logger.info('Max length used for answers: {}'.format(max_answer_length))
-    logger.info('Number of answers cutoff by tokenizer: {} / {}, ({:3.2f} %)'.format(
-        cutoff_results['answers']['n_sentences_cutoff'],
-        cutoff_results['answers']['total_sentences'],
-        cutoff_results['answers']['n_sentences_cutoff'] /
-        cutoff_results['questions']['total_sentences'] * 100,
+    logger.info('Number of answers cutoff by tokenizer: {} / {}, ({:3.2f} %)\n'.format(
+        cutoff_results_answers,
+        len(all_answers),
+        cutoff_results_answers / len(all_answers) * 100
         )
     )
-
-    return cutoff_results
 
 
 def main():
@@ -94,16 +68,16 @@ def main():
 
     tokenizer = AutoTokenizer.from_pretrained(args.tokenizer_name)
 
-    with open(args.data_file, 'r', encoding='utf-8') as in_stream:
+    with open(args.input, 'r', encoding='utf-8') as in_stream:
         qa_pairs = json.load(in_stream)
 
     logger.info('tokenization example for the first 5 utterances:')
     for i in range(5):
         question, candidates = qa_pairs[i]
         logger.info('question {} "{}" => "{}"'.format(
-            i, question, tokenizer.decode(tokenizer.encode(question))))
-        logger.info('candidate {} "{}" => "{}"'.format(
-            i, candidates[0], tokenizer.decode(tokenizer.encode(candidates[0]))))
+            i, question, tokenizer.tokenize(question)))
+        logger.info('candidate {} "{}" => "{}"\n'.format(
+            i, candidates[0], tokenizer.tokenize(candidates[0])))
 
     max_lengths = [10, 30, 50, 100]
 
