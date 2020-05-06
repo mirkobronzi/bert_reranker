@@ -51,6 +51,11 @@ def main():
     parser.add_argument('--redirect-log', help='will intercept any stdout/err and log it',
                         action='store_true')
     parser.add_argument('--num_workers', help='number of workers - default 2', type=int, default=2)
+
+    parser.add_argument('--ground-truth-available',
+                        help='will assume the order in the data is the ground truth (when doing '
+                             '--predict)',
+                        action='store_true')
     parser.add_argument('--debug', help='will log more info', action='store_true')
     args = parser.parse_args()
 
@@ -76,7 +81,8 @@ def main():
             ckpt_to_resume, map_location=torch.device("cpu")
         )
         ret_trainee.load_state_dict(model_ckpt["state_dict"])
-        evaluate_model(ret_trainee, qa_pairs_json_file=args.predict, predict_to=args.predict_to)
+        evaluate_model(ret_trainee, qa_pairs_json_file=args.predict, predict_to=args.predict_to,
+                       ground_truth_available=args.ground_truth_available)
     elif args.save_weights_to is not None:
         torch.save(ret_trainee.retriever.state_dict(), args.save_weights_to)
     else:
