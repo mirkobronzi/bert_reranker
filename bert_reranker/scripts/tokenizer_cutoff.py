@@ -40,24 +40,39 @@ def evaluate_tokenizer_cutoff(file_to_evaluate, tokenizer, max_question_length, 
     with open(file_to_evaluate, 'r', encoding='utf-8') as in_stream:
         qa_pairs = json.load(in_stream)
 
-    # Collect a list of all unique questions and answers
+    # Collect all unique questions and answers
     all_questions = []
-    all_answers = []
+    all_answers = set()
     for qa_pair in qa_pairs:
         question, answers = qa_pair
         all_questions.append(question)
-        all_answers.extend(answers)
-    all_answers = list(set(all_answers))
+        all_answers |= set(answers)
+    all_answers = list(all_answers)
 
     # Analyze how much is being cutoff
     cutoff_results_questions = count_cutoff_sentences(all_questions, tokenizer, max_question_length)
     cutoff_results_answers = count_cutoff_sentences(all_answers, tokenizer, max_answer_length)
-    cutoff_results_all = {
+    cutoff_results = {
         'questions': cutoff_results_questions,
         'answers': cutoff_results_answers,
     }
 
-    return cutoff_results_all
+    logger.info('Max length used for questions: {}'.format(max_question_length))
+    logger.info('Number of questions cutoff by tokenizer: {} / {}, ({:3.2f} %)'.format(
+        cutoff_results['questions']['n_sentences_cutoff'],
+        cutoff_results['questions']['total_sentences'],
+        cutoff_results['questions']['n_sentences_cutoff'] / cutoff_results['questions']['total_sentences']*100,
+        )
+    )
+    logger.info('Max length used for answers: {}'.format(max_answer_length))
+    logger.info('Number of answers cutoff by tokenizer: {} / {}, ({:3.2f} %)'.format(
+        cutoff_results['answers']['n_sentences_cutoff'],
+        cutoff_results['answers']['total_sentences'],
+        cutoff_results['answers']['n_sentences_cutoff'] / cutoff_results['questions']['total_sentences']*100,
+        )
+    )
+
+    return cutoff_results
 
 def main():
     parser = argparse.ArgumentParser()
@@ -76,17 +91,6 @@ def main():
     for max_length in max_lengths:
         cutoff_results =  evaluate_tokenizer_cutoff(args.data_file, tokenizer, max_length, max_length)
 
-        logger.info('Max length used: {}'.format(max_length))
-        logger.info('Number of questions cutoff by tokenizer: {} / {}'.format(
-            cutoff_results['questions']['n_sentences_cutoff'],
-            cutoff_results['questions']['total_sentences'],
-            )
-        )
-        logger.info('Number of answers cutoff by tokenizer: {} / {}'.format(
-            cutoff_results['answers']['n_sentences_cutoff'],
-            cutoff_results['answers']['total_sentences'],
-            )
-        )
 
 if __name__ == '__main__':
     main()
