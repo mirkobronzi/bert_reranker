@@ -1,9 +1,8 @@
 import json
 import logging
 import os
-import re
 import random
-import string
+import re
 
 from torch.utils.data import DataLoader, Dataset
 
@@ -11,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 
 def remove_links(s):
-    '''swap a link with a _URL_ token'''
+    """swap a link with a _URL_ token"""
     return re.sub(r"http\S+", "_URL_", s)
 
 
@@ -22,13 +21,14 @@ def remove_html_tags(s):
 
 
 def remove_standard_punctuation(s):
-    punctuation = '¿!"#$%&\'()*+,-./:;<=>?@[\\]^`{|}~' # We are leaving out _ for the _URL_ token
-    return s.translate(str.maketrans(punctuation, ' '*len(punctuation)))
+    punctuation = '¿!"#$%&\'()*+,-./:;<=>?@[\\]^`{|}~'  # We are leaving out _ for the _URL_ token
+    return s.translate(str.maketrans(punctuation, ' ' * len(punctuation)))
 
 
 def remove_extra_whitespace(s):
     s = ' '.join(s.split())
     return s
+
 
 def clean_text(s):
     s = s.lower()
@@ -68,6 +68,7 @@ class ReRankerDataset(Dataset):
         data = json_entry_to_dataset(
             self.qa_pairs[idx], self.max_question_len, self.max_paragraph_len, self.tokenizer)
         return data
+
 
 def json_entry_to_dataset(qa_pair, max_question_len, max_paragraph_len, tokenizer):
     question, answers = qa_pair

@@ -157,7 +157,9 @@ def init_model(hyper_params, num_workers, output, validation_interval, gpu, no_m
     dev_dataloaders, test_dataloader, train_dataloader = get_data_loaders(hyper_params, num_workers,
                                                                           tokenizer)
     # Evaluate dataset coverage by the tokenizer
-    cutoff_results = evaluate_tokenizer_cutoff(hyper_params['train_file'], tokenizer, hyper_params['max_question_len'], hyper_params['max_paragraph_len'])
+    evaluate_tokenizer_cutoff(hyper_params['train_file'],
+                              tokenizer, hyper_params['max_question_len'],
+                              hyper_params['max_paragraph_len'])
 
     ret_trainee = RetrieverTrainer(ret, train_dataloader, dev_dataloaders, test_dataloader,
                                    hyper_params['loss_type'], hyper_params['optimizer'])
