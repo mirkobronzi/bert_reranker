@@ -14,7 +14,7 @@ from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
 from transformers import AutoTokenizer
 from yaml import load
 
-from bert_reranker.data.data_loader import generate_dataloader
+from bert_reranker.data.data_loader import generate_dataloader, evaluate_tokenizer_cutoff
 from bert_reranker.data.predict import evaluate_model
 from bert_reranker.models.cache_manager import CacheManagerCallback
 from bert_reranker.models.load_model import load_model
@@ -155,6 +155,9 @@ def init_model(hyper_params, num_workers, output, validation_interval, gpu, no_m
 
     dev_dataloaders, test_dataloader, train_dataloader = get_data_loaders(hyper_params, num_workers,
                                                                           tokenizer)
+
+    # Evaluate dataset coverage
+    cutoff_results = evaluate_tokenizer_cutoff(hyper_params['train_file'], tokenizer)
 
     ret_trainee = RetrieverTrainer(ret, train_dataloader, dev_dataloaders, test_dataloader,
                                    hyper_params['loss_type'], hyper_params['optimizer'])
