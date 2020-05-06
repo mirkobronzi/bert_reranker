@@ -13,7 +13,7 @@ def get_batched_pairs(qa_pairs, batch_size):
     return result
 
 
-def evaluate_model(ret_trainee, qa_pairs_json_file, predict_to, ground_truth_available):
+def generate_predictions(ret_trainee, qa_pairs_json_file, predict_to, ground_truth_available):
 
     with open(qa_pairs_json_file, "r", encoding="utf-8") as f:
         qa_pairs = json.load(f)

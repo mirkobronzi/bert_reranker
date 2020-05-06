@@ -15,7 +15,7 @@ from transformers import AutoTokenizer
 from yaml import load
 
 from bert_reranker.data.data_loader import generate_dataloader
-from bert_reranker.data.predict import evaluate_model
+from bert_reranker.data.predict import generate_predictions
 from bert_reranker.models.cache_manager import CacheManagerCallback
 from bert_reranker.models.load_model import load_model
 from bert_reranker.models.pl_model_loader import try_to_restore_model_weights
@@ -57,6 +57,8 @@ def main():
                         help='will assume the order in the data is the ground truth (when doing '
                              '--predict)',
                         action='store_true')
+    parser.add_argument('--print-sentence-stats', help='will print stats on the data',
+                        action='store_true')
     parser.add_argument('--debug', help='will log more info', action='store_true')
     args = parser.parse_args()
 
@@ -71,7 +73,7 @@ def main():
 
     ckpt_to_resume, ret_trainee, trainer = init_model(
         hyper_params, args.num_workers, args.output, args.validation_interval, args.gpu,
-        args.no_model_restoring, args.debug)
+        args.no_model_restoring, args.debug, args.print_sentence_stats)
 
     if args.train:
         trainer.fit(ret_trainee)
@@ -82,8 +84,9 @@ def main():
             ckpt_to_resume, map_location=torch.device("cpu")
         )
         ret_trainee.load_state_dict(model_ckpt["state_dict"])
-        evaluate_model(ret_trainee, qa_pairs_json_file=args.predict, predict_to=args.predict_to,
-                       ground_truth_available=args.ground_truth_available)
+        generate_predictions(ret_trainee, qa_pairs_json_file=args.predict,
+                             predict_to=args.predict_to,
+                             ground_truth_available=args.ground_truth_available)
     elif args.save_weights_to is not None:
         torch.save(ret_trainee.retriever.state_dict(), args.save_weights_to)
     else:
@@ -91,7 +94,7 @@ def main():
 
 
 def init_model(hyper_params, num_workers, output, validation_interval, gpu, no_model_restoring,
-               debug):
+               debug, print_sentence_stats):
 
     check_and_log_hp(
 
@@ -156,10 +159,11 @@ def init_model(hyper_params, num_workers, output, validation_interval, gpu, no_m
 
     dev_dataloaders, test_dataloader, train_dataloader = get_data_loaders(hyper_params, num_workers,
                                                                           tokenizer)
-    # Evaluate dataset coverage by the tokenizer
-    evaluate_tokenizer_cutoff(hyper_params['train_file'],
-                              tokenizer, hyper_params['max_question_len'],
-                              hyper_params['max_paragraph_len'])
+
+    if print_sentence_stats:
+        evaluate_tokenizer_cutoff(hyper_params['train_file'],
+                                  tokenizer, hyper_params['max_question_len'],
+                                  hyper_params['max_paragraph_len'])
 
     ret_trainee = RetrieverTrainer(ret, train_dataloader, dev_dataloaders, test_dataloader,
                                    hyper_params['loss_type'], hyper_params['optimizer'])
