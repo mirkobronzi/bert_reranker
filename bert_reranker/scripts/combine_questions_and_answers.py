@@ -9,8 +9,10 @@ logger = logging.getLogger(__name__)
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--input-questions", required=True, nargs='+')
-    parser.add_argument("--input-candidates", required=True)
+    parser.add_argument("--input-questions", help='files with one question per line',
+                        required=True, nargs='+')
+    parser.add_argument("--input-candidates", help='file with one candidate per line',
+                        required=True)
     parser.add_argument("--output", help="output folder", required=True)
     args = parser.parse_args()
 
