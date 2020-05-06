@@ -3,6 +3,7 @@ import json
 import logging
 import re
 
+import tqdm
 from nltk import word_tokenize
 from nltk.corpus import stopwords
 
@@ -52,7 +53,7 @@ def main():
         qa_pairs = json.load(in_stream)
 
     cleaned_qa_pqirs = []
-    for question, answers in qa_pairs:
+    for question, answers in tqdm.tqdm(qa_pairs):
         if args.remove_urls:
             answers = [remove_links(answer) for answer in answers]
             question = remove_links(question)
