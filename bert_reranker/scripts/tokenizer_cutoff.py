@@ -38,10 +38,8 @@ def count_cutoff_sentences(sentences, tokenizer, max_length):
     return cutoff_results
 
 
-def evaluate_tokenizer_cutoff(file_to_evaluate, tokenizer, max_question_length, max_answer_length):
+def evaluate_tokenizer_cutoff(qa_pairs, tokenizer, max_question_length, max_answer_length):
     """evaluate how much questions are being cutoff based on tokenizer's max length"""
-    with open(file_to_evaluate, 'r', encoding='utf-8') as in_stream:
-        qa_pairs = json.load(in_stream)
 
     # Collect all unique questions and answers
     all_questions = []
@@ -92,10 +90,21 @@ def main():
 
     tokenizer = AutoTokenizer.from_pretrained(args.tokenizer_name)
 
+    with open(args.data_file, 'r', encoding='utf-8') as in_stream:
+        qa_pairs = json.load(in_stream)
+
+    logger.info('tokenization example for the first 5 utterances:')
+    for i in range(5):
+        question, candidates = qa_pairs[i]
+        logger.info('question {} "{}" => "{}"'.format(
+            i, question, tokenizer.decode(tokenizer.encode(question))))
+        logger.info('candidate {} "{}" => "{}"'.format(
+            i, candidates[0], tokenizer.decode(tokenizer.encode(candidates[0]))))
+
     max_lengths = [10, 30, 50, 100]
 
     for max_length in max_lengths:
-        evaluate_tokenizer_cutoff(args.data_file, tokenizer, max_length, max_length)
+        evaluate_tokenizer_cutoff(qa_pairs, tokenizer, max_length, max_length)
 
 
 if __name__ == '__main__':
