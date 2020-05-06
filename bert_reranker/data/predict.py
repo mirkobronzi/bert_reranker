@@ -22,7 +22,7 @@ def evaluate_model(ret_trainee, qa_pairs_json_file, predict_to, ground_truth_ava
     count = 0
     out_stream = open(predict_to, 'w') if predict_to else None
 
-    if not ground_truth_available:
+    if not ground_truth_available and out_stream is not None:
         out_stream.write('!!NO GROUND TRUTH AVAILABLE FOR THESE PREDICTIONS!!\n\n')
     for question, answers in tqdm(qa_pairs):
 
