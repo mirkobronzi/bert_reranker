@@ -1,6 +1,12 @@
+import argparse
+import logging
 import json
 
+from transformers import AutoTokenizer
+
 from bert_reranker.data.data_loader import clean_text
+
+logger = logging.getLogger(__name__)
 
 def count_cutoff_sentences(sentences, tokenizer, max_length):
 
@@ -52,3 +58,35 @@ def evaluate_tokenizer_cutoff(file_to_evaluate, tokenizer, max_question_length, 
     }
 
     return cutoff_results_all
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--data_file',
+                        help='data file containing questions and answers', required=True)
+
+    parser.add_argument('--tokenizer_name',
+                        help='name of the tokenizer to use', required=True)
+    args = parser.parse_args()
+    logging.basicConfig(level=logging.INFO)
+
+    tokenizer = AutoTokenizer.from_pretrained(args.tokenizer_name)
+
+    max_lengths = [10, 30, 50, 100]
+
+    for max_length in max_lengths:
+        cutoff_results =  evaluate_tokenizer_cutoff(args.data_file, tokenizer, max_length, max_length)
+
+        logger.info('Max length used: {}'.format(max_length))
+        logger.info('Number of questions cutoff by tokenizer: {} / {}'.format(
+            cutoff_results['questions']['n_sentences_cutoff'],
+            cutoff_results['questions']['total_sentences'],
+            )
+        )
+        logger.info('Number of answers cutoff by tokenizer: {} / {}'.format(
+            cutoff_results['answers']['n_sentences_cutoff'],
+            cutoff_results['answers']['total_sentences'],
+            )
+        )
+
+if __name__ == '__main__':
+    main()
