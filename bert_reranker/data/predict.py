@@ -1,5 +1,6 @@
 import json
 import logging
+import math
 
 from tqdm import tqdm
 
@@ -18,8 +19,8 @@ def generate_predictions(ret_trainee, qa_pairs_json_file, predict_to, ground_tru
     with open(qa_pairs_json_file, "r", encoding="utf-8") as f:
         qa_pairs = json.load(f)
 
-    correct = 0
-    count = 0
+    predictions = []
+    normalized_scores = []
     out_stream = open(predict_to, 'w') if predict_to else None
 
     if not ground_truth_available and out_stream is not None:
@@ -28,8 +29,8 @@ def generate_predictions(ret_trainee, qa_pairs_json_file, predict_to, ground_tru
 
         out = ret_trainee.retriever.predict(question, answers)
 
-        if out[2][0] == 0:  # answers[0] is always the correct answer
-            correct += 1
+        predictions.append(out[2][0])
+        normalized_scores.append(out[3][0])
 
         if out_stream:
             out_stream.write('-------------------------\n')
@@ -45,12 +46,30 @@ def generate_predictions(ret_trainee, qa_pairs_json_file, predict_to, ground_tru
                 out_stream.write(
                     'prediction: score {:3.3} / norm score {:3.3} / answer content:'
                     '\n\t{}\n'.format(out[1][0], out[3][0], out[0][0]))
-        count += 1
 
     if ground_truth_available:
-        acc = correct / len(qa_pairs) * 100
-        logger.info("correct {} over {} - accuracy is {}".format(correct, len(qa_pairs), acc))
+        for threshold in [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]:
+            result_message = compute_result_at_threshold(predictions, normalized_scores, threshold)
+            logger.info(result_message)
+            if out_stream is not None:
+                out_stream.write(result_message)
     else:
         logger.info("--ground-truth-available not used - not computing accuracy")
     if out_stream:
         out_stream.close()
+
+
+def compute_result_at_threshold(predictions, normalized_scores, threshold):
+    correct = 0
+    count = 0
+    not_considered = 0
+    for i, prediction in enumerate(predictions):
+        if normalized_scores[i] >= threshold:
+            correct += int(prediction == 0)
+            count += 1
+        else:
+            not_considered += 1
+    acc = correct / count * 100 if count > 0 else math.nan
+    return "threshold {}: answered considered: {} (not considered correct :{}) - correct " \
+           "(among the considered ones): {} - accuracy is {}".format(
+               threshold, count, not_considered, correct, acc)
