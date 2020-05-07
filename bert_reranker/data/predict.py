@@ -52,7 +52,7 @@ def generate_predictions(ret_trainee, qa_pairs_json_file, predict_to, ground_tru
             result_message = compute_result_at_threshold(predictions, normalized_scores, threshold)
             logger.info(result_message)
             if out_stream is not None:
-                out_stream.write(result_message)
+                out_stream.write(result_message + '\n')
     else:
         logger.info("--ground-truth-available not used - not computing accuracy")
     if out_stream:
