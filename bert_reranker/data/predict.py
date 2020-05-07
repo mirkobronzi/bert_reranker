@@ -70,6 +70,6 @@ def compute_result_at_threshold(predictions, normalized_scores, threshold):
         else:
             not_considered += 1
     acc = correct / count * 100 if count > 0 else math.nan
-    return "threshold {}: answered considered: {} (not considered correct :{}) - correct " \
-           "(among the considered ones): {} - accuracy is {}".format(
+    return "threshold {:1.3f}: entries included: {:4} (filtered out :{:4}) - correct " \
+           "(among the included): {:4} - accuracy is {:3.2f}".format(
                threshold, count, not_considered, correct, acc)
