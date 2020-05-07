@@ -20,7 +20,7 @@ class Retriever(nn.Module):
         self.debug = debug
         self.max_question_len = max_question_len
         self.max_paragraph_len = max_paragraph_len
-        self.sigmoid = torch.nn.Sigmoid()
+        self.softmax = torch.nn.Softmax(dim=0)
 
     def forward(self, **kwargs):
         """
@@ -118,7 +118,7 @@ class Retriever(nn.Module):
                 p_am=p_inputs['attention_mask'], p_tt=p_inputs['token_type_ids']
             ).squeeze(0)
 
-            normalized_scores = self.sigmoid(relevance_scores)
+            normalized_scores = self.softmax(relevance_scores)
             rerank_index = torch.argsort(-relevance_scores)
             relevance_scores_numpy = relevance_scores.detach().cpu().numpy()
             rerank_index_numpy = rerank_index.detach().cpu().numpy()
