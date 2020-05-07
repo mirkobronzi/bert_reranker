@@ -95,7 +95,7 @@ class RetrieverTrainer(pl.LightningModule):
         else:
             raise ValueError('loss_type {} not supported. Please choose between negative_sampling,'
                              ' classification, cosine, triplet_loss')
-        all_prob = torch.sigmoid(logits)
+        all_prob = torch.softmax(logits)
         return loss, all_prob
 
     def training_step(self, batch, batch_idx):
