@@ -1,5 +1,3 @@
-import logging
-
 from bert_reranker.models.bert_encoder import BertEncoder, CachedBertEncoder
 from bert_reranker.models.cnn_model import CNNEncoder
 from bert_reranker.models.retriever import EmbeddingRetriever, FeedForwardRetriever
