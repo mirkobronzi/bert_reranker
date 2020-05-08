@@ -14,7 +14,7 @@ def load_model(hyper_params, tokenizer, debug):
 
         if hyper_params['model']['single_encoder']:
             bert_question_encoder = encoder(hyper_params, name='single')
-            bert_paragraph_encoder = encoder(hyper_params, name='single')
+            bert_paragraph_encoder = bert_question_encoder
         else:
             bert_question_encoder = encoder(hyper_params, name='question')
             bert_paragraph_encoder = encoder(hyper_params, name='paragraph')
@@ -31,7 +31,7 @@ def load_model(hyper_params, tokenizer, debug):
 
         if hyper_params['model']['single_encoder']:
             bert_question_encoder = encoder(hyper_params, name='single')
-            bert_paragraph_encoder = encoder(hyper_params, name='single')
+            bert_paragraph_encoder = bert_question_encoder
         else:
             bert_question_encoder = encoder(hyper_params, name='question')
             bert_paragraph_encoder = encoder(hyper_params, name='paragraph')
