@@ -11,6 +11,7 @@ accumulate_grad_batches: 1
 
 model:
   name: 'bert_encoder'
+  single_encoder: true
   bert_base: 'bert-base-uncased'
   freeze_bert: true
   layers_pre_pooling: [5, 4]
