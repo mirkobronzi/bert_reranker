@@ -57,6 +57,22 @@ def evaluate_tokenizer_cutoff_from_json(qa_pairs, tokenizer, max_question_length
     )
 
 
+def evaluate_tokenizer_cutoff_from_txt(sentences, tokenizer, max_sentence_length):
+    """evaluate how much questions are being cutoff based on tokenizer's max length"""
+    # Collect all unique questions and answers
+
+    # Analyze how much is being cutoff
+    cutoff_results_questions = count_cutoff_sentences(sentences, tokenizer, max_sentence_length)
+
+    logger.info('Max length used for questions: {}'.format(max_sentence_length))
+    logger.info('Number of questions cutoff by tokenizer: {} / {}, ({:3.2f} %)\n'.format(
+        cutoff_results_questions,
+        len(sentences),
+        cutoff_results_questions / len(sentences) * 100
+        )
+    )
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--input',
@@ -68,9 +84,30 @@ def main():
 
     tokenizer = AutoTokenizer.from_pretrained(args.tokenizer_name)
 
+    if args.input.endswith('.json'):
+        analyze_json(args, tokenizer)
+    elif args.input.endswith('.txt'):
+        analyze_txt(args, tokenizer)
+    else:
+        raise ValueError('only .json or .txt are supported')
+
+
+def analyze_txt(args, tokenizer):
+    with open(args.input, 'r', encoding='utf-8') as in_stream:
+        sentences = in_stream.readlines()
+    logger.info('tokenization example for the first 5 utterances:')
+    for i in range(5):
+        sentence = sentences[i]
+        logger.info('question {} "{}" => "{}"'.format(
+            i, sentence, tokenizer.tokenize(sentence)))
+    max_lengths = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 150, 200, 300, 400, 500, 750]
+    for max_length in max_lengths:
+        evaluate_tokenizer_cutoff_from_txt(sentences, tokenizer, max_length)
+
+
+def analyze_json(args, tokenizer):
     with open(args.input, 'r', encoding='utf-8') as in_stream:
         qa_pairs = json.load(in_stream)
-
     logger.info('tokenization example for the first 5 utterances:')
     for i in range(5):
         question, candidates = qa_pairs[i]
@@ -78,9 +115,7 @@ def main():
             i, question, tokenizer.tokenize(question)))
         logger.info('candidate {} "{}" => "{}"\n'.format(
             i, candidates[0], tokenizer.tokenize(candidates[0])))
-
     max_lengths = [10, 30, 50, 100]
-
     for max_length in max_lengths:
         evaluate_tokenizer_cutoff_from_json(qa_pairs, tokenizer, max_length, max_length)
 

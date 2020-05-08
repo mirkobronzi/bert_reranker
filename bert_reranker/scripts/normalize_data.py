@@ -21,9 +21,11 @@ def remove_html_tags(s):
     return re.sub(clean, '', s)
 
 
-def remove_standard_punctuation(s):
-    punctuation = '¿!"#$%&\'()*+,-./:;<=>?@[\\]^`{|}~'  # We are leaving out _ for the _URL_ token
-    return s.translate(str.maketrans(punctuation, ' ' * len(punctuation)))
+NON_STANDARD_PUNCTUATION_RE = re.compile('¿')
+
+
+def remove_non_standard_punctuation(s):
+    return NON_STANDARD_PUNCTUATION_RE.sub(' ', s)
 
 
 def remove_extra_whitespace(s):
@@ -46,6 +48,8 @@ def main():
     parser.add_argument("--output", help="json file where to write the output", required=True)
     parser.add_argument("--remove-urls", action='store_true')
     parser.add_argument("--remove-stopwords", action='store_true')
+    parser.add_argument("--remove-non-standard-punctuation", action='store_true')
+    parser.add_argument("--strip", help='removes leading/trailing spaces', action='store_true')
     args = parser.parse_args()
     logging.basicConfig(level=logging.INFO)
 
@@ -60,6 +64,12 @@ def main():
         if args.remove_stopwords:
             answers = [remove_stopwords(answer) for answer in answers]
             question = remove_stopwords(question)
+        if args.remove_non_standard_punctuation:
+            answers = [remove_non_standard_punctuation(answer) for answer in answers]
+            question = remove_non_standard_punctuation(question)
+        if args.strip:
+            answers = [answer.strip() for answer in answers]
+            question = question.strip()
         cleaned_qa_pqirs.append((question, answers))
 
     logger.info('final json contains {} examples'.format(len(qa_pairs)))

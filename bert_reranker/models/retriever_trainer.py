@@ -25,7 +25,7 @@ class RetrieverTrainer(pl.LightningModule):
 
         if self.loss_type == 'cosine':
             self.cosine_loss = torch.nn.CosineEmbeddingLoss()
-
+        self.softmax = nn.Softmax(dim=1)
         self.val_metrics = {}
 
     def forward(self, **kwargs):
@@ -95,7 +95,7 @@ class RetrieverTrainer(pl.LightningModule):
         else:
             raise ValueError('loss_type {} not supported. Please choose between negative_sampling,'
                              ' classification, cosine, triplet_loss')
-        all_prob = torch.sigmoid(logits)
+        all_prob = self.softmax(logits)
         return loss, all_prob
 
     def training_step(self, batch, batch_idx):
