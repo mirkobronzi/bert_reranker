@@ -22,6 +22,8 @@ class Retriever(nn.Module):
         self.max_question_len = max_question_len
         self.max_paragraph_len = max_paragraph_len
         self.softmax = torch.nn.Softmax(dim=0)
+        # used for a funny bug/feature of the gradient checkpoint..
+        self.dummy_tensor = torch.ones(1, dtype=torch.float32, requires_grad=True)
 
     def forward(self, **kwargs):
         """
@@ -62,7 +64,8 @@ class Retriever(nn.Module):
             res = checkpoint(self.bert_paragraph_encoder,
                              batch_input_ids_paragraphs[:, i, :],
                              batch_attention_mask_paragraphs[:, i, :],
-                             batch_token_type_ids_paragraphs[:, i, :])
+                             batch_token_type_ids_paragraphs[:, i, :],
+                             self.dummy_tensor)
             h_paragraph_list.append(res)
 
         h_paragraphs_batch = torch.stack(h_paragraph_list, dim=1)
