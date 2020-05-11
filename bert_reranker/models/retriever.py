@@ -6,6 +6,7 @@ import torch.nn as nn
 
 from bert_reranker.models.bert_encoder import get_ffw_layers
 from bert_reranker.utils.hp_utils import check_and_log_hp
+from torch.utils.checkpoint import checkpoint
 
 logger = logging.getLogger(__name__)
 
@@ -58,11 +59,12 @@ class Retriever(nn.Module):
 
         h_paragraph_list = []
         for i in range(num_document):
-            h_paragraphs = self.bert_paragraph_encoder(
-                input_ids=batch_input_ids_paragraphs[:, i, :],
-                attention_mask=batch_attention_mask_paragraphs[:, i, :],
-                token_type_ids=batch_token_type_ids_paragraphs[:, i, :])
-            h_paragraph_list.append(h_paragraphs)
+            res = checkpoint(self.bert_paragraph_encoder,
+                             batch_input_ids_paragraphs[:, i, :],
+                             batch_attention_mask_paragraphs[:, i, :],
+                             batch_token_type_ids_paragraphs[:, i, :])
+            h_paragraph_list.append(res)
+
         h_paragraphs_batch = torch.stack(h_paragraph_list, dim=1)
 
         return h_question, h_paragraphs_batch
