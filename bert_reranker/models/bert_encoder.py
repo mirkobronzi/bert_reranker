@@ -29,12 +29,15 @@ def hashable(input_id):
 
 class BertEncoder(GeneralEncoder):
 
-    def __init__(self, hyper_params, name=''):
+    def __init__(self, hyper_params, bert_model, name=''):
         model_hparams = hyper_params['model']
         check_and_log_hp(
             ['bert_base', 'dropout_bert', 'freeze_bert'],
             model_hparams)
-        bert = AutoModel.from_pretrained(model_hparams['bert_base'])
+        if bert_model is None:
+            bert = AutoModel.from_pretrained(model_hparams['bert_base'])
+        else:
+            bert = bert_model
         super(BertEncoder, self).__init__(hyper_params, bert.config.hidden_size)
         self.bert = bert
         self.name = name
@@ -63,12 +66,12 @@ class BertEncoder(GeneralEncoder):
 
 class CachedBertEncoder(BertEncoder):
 
-    def __init__(self, hyper_params, name=''):
+    def __init__(self, hyper_params, bert_model, name=''):
         model_hparams = hyper_params['model']
         check_and_log_hp(
             ['bert_base', 'dropout_bert', 'freeze_bert', 'cache_size'],
             model_hparams)
-        super(CachedBertEncoder, self).__init__(hyper_params, name=name)
+        super(CachedBertEncoder, self).__init__(hyper_params, bert_model, name=name)
 
         if not model_hparams['freeze_bert'] or not model_hparams['dropout_bert'] == 0.0:
             raise ValueError('to cache results, set freeze_bert=True and dropout_bert=0.0')
