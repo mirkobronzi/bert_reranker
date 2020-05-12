@@ -11,6 +11,7 @@ import torch
 import yaml
 from pytorch_lightning import loggers
 from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
+from pytorch_lightning.loggers import WandbLogger
 from transformers import AutoTokenizer
 from yaml import load
 
@@ -138,12 +139,23 @@ def init_model(hyper_params, num_workers, output, validation_interval, gpu, no_m
     else:
         ckpt_to_resume = None
         logger.info('will not try to restore previous models because --no-model-restoring')
-    tb_logger = loggers.TensorBoardLogger('experiment_logs')
-    for hparam in list(hyper_params):
-        tb_logger.experiment.add_text(hparam, str(hyper_params[hparam]))
+
+    if hyper_params['logging']['logger'] == 'tensorboard':
+        pl_logger = loggers.TensorBoardLogger('experiment_logs')
+        for hparam in list(hyper_params):
+            pl_logger.experiment.add_text(hparam, str(hyper_params[hparam]))
+    elif hyper_params['logging']['logger'] == 'wandb':
+        pl_logger = WandbLogger(
+            name = hyper_params['logging']['name'],
+            project = hyper_params['logging']['project'],
+            group = hyper_params['logging']['group'],
+        )
+        pl_logger.log_hyperparams(hyper_params)
+    else:
+        raise ValueError(logger.info('logger {} is not implemnted'.format(hyper_params['logging']['logger'])))
 
     trainer = pl.Trainer(
-        logger=tb_logger,
+        logger=pl_logger,
         gpus=gpu,
         distributed_backend='dp',
         val_check_interval=validation_interval,
