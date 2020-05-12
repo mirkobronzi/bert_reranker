@@ -65,7 +65,7 @@ class GeneralEncoder(nn.Module):
     def get_encoder_hidden_states(self, input_ids, attention_mask, token_type_ids):
         raise ValueError('not implemented - use a subclass')
 
-    def forward(self, input_ids, attention_mask, token_type_ids):
+    def forward(self, input_ids, attention_mask, token_type_ids, dummy_tensor=None):
         hs = self.get_encoder_hidden_states(input_ids=input_ids, attention_mask=attention_mask,
                                             token_type_ids=token_type_ids)
 

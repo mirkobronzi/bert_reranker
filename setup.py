@@ -12,9 +12,9 @@ setup(
     python_requires='>=3.7',
     install_requires=[
         'flake8', 'tqdm', 'pyyaml>=5.3', 'pytest', 'numpy>=1.16.4', 'pytest', 'pandas', 'nltk',
-        'torch==1.4.0', 'transformers==2.8.0', 'pytorch-lightning', 'sklearn', 'pandas',
-        'setuptools>=41.0.0', 'orion @ git+git://github.com/Epistimio/orion.git@develop#egg=orion'],
-    dependency_links=[''],
+        'torch==1.4.0', 'transformers==2.8.0', 'pytorch-lightning==0.7.6rc1', 'sklearn', 'pandas',
+        'wandb', 'setuptools>=41.0.0',
+        'orion @ git+git://github.com/Epistimio/orion.git@develop#egg=orion'],
     entry_points={
         'console_scripts': [
             'main=bert_reranker.main:main'
