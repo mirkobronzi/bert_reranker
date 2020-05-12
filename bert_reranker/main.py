@@ -9,6 +9,7 @@ import numpy as np
 import pytorch_lightning as pl
 import torch
 import yaml
+from orion.client import report_results
 from pytorch_lightning import loggers
 from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
 from transformers import AutoTokenizer
@@ -77,6 +78,12 @@ def main():
 
     if args.train:
         trainer.fit(ret_trainee)
+        best_dev_result = float(trainer.early_stop_callback.best.numpy())
+        report_results([dict(
+            name='dev_metric',
+            type='objective',
+            # note the minus - cause orion is always trying to minimize (cit. from the guide)
+            value=-float(best_dev_result))])
     elif args.validate:
         trainer.test(ret_trainee)
     elif args.predict:
