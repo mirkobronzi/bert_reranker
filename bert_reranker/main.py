@@ -166,6 +166,7 @@ def init_model(
             "precision",
             "accumulate_grad_batches",
             "seed",
+            "logging",
         ],
         hyper_params,
     )
