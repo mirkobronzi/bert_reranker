@@ -14,6 +14,18 @@ Then:
     cd examples/local
     sh run.sh
 
+## Hyper-parameter search with Orion
+
+See the example under:
+
+    cd examples/local_orion
+    sh run.sh
+
+Note the setup in `run.sh` will store the Orion files locally.
+
+To use an online DB (e.g., to run on multiple machines), please follow
+https://orion.readthedocs.io/en/latest/install/database.html#atlas-mongodb
+
 ### To contribute:
 Enable flake8 check before commit:
 (run from the root of the repository)
