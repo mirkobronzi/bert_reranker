@@ -24,6 +24,10 @@ model:
 
 loss_type: 'classification'
 
+# Logging
+logging:
+    logger: 'tensorboard'
+
 # this is mostly used when freezing the bert model
 optimizer:
   name: 'adamw'

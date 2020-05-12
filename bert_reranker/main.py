@@ -96,12 +96,21 @@ def main():
         help="will print stats on the data",
         action="store_true",
     )
+    parser.add_argument('--log', help='log to this file (in addition to stdout/err)')
     parser.add_argument("--debug", help="will log more info", action="store_true")
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.INFO)
 
-    if args.redirect_log:
+    # will log to a file if provided (useful for orion on cluster)
+    if args.log is not None:
+        handler = logging.handlers.WatchedFileHandler(args.log)
+        formatter = logging.Formatter(logging.BASIC_FORMAT)
+        handler.setFormatter(formatter)
+        root = logging.getLogger()
+        root.setLevel(logging.INFO)
+        root.addHandler(handler)
+    if args.redirect_log or args.log:
         sys.stdout = LoggerWriter(logger.info)
         sys.stderr = LoggerWriter(logger.warning)
 
