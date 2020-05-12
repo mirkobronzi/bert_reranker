@@ -34,6 +34,15 @@ model:
 
 loss_type: 'classification'
 
+# Logging
+logging:
+    logger: 'tensorboard'
+
+# logging:
+#     logger: 'wandb'
+#     project: 'bert_reranker'
+#     group: 'big_beef_experiments'
+#     name: 'take1'
 # this is mostly used when freezing the bert model
 optimizer:
   name: 'adamw'
