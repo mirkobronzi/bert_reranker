@@ -16,7 +16,7 @@ model:
   freeze_bert: true
   layers_pre_pooling: [5, 4]
   layers_post_pooling: [4]
-  pooling_type: 'avg'
+  pooling_type: 'orion~choices(["avg", "cls"])'
   dropout: 'orion~uniform(0,0.5)'
   normalize_model_result: False
   dropout_bert: null  # set to null to use the original bert dropout used during pre-training
