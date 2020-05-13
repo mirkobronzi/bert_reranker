@@ -115,7 +115,7 @@ def analyze_json(args, tokenizer):
             i, question, tokenizer.tokenize(question)))
         logger.info('candidate {} "{}" => "{}"\n'.format(
             i, candidates[0], tokenizer.tokenize(candidates[0])))
-    max_lengths = [10, 30, 50, 100]
+    max_lengths = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 150, 200, 300, 400, 500, 750]
     for max_length in max_lengths:
         evaluate_tokenizer_cutoff_from_json(qa_pairs, tokenizer, max_length, max_length)
 
