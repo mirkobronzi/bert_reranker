@@ -131,7 +131,7 @@ def main():
         gpu,
         args.no_model_restoring,
         args.debug,
-        args.print_sentence_stats,
+        args.print_sentence_stats
     )
 
     if args.train:
@@ -167,7 +167,7 @@ def init_model(
     gpu,
     no_model_restoring,
     debug,
-    print_sentence_stats,
+    print_sentence_stats
 ):
 
     check_and_log_hp(
@@ -234,14 +234,15 @@ def init_model(
         logger.info(
             "will not try to restore previous models because --no-model-restoring"
         )
-
     if hyper_params["logging"]["logger"] == "tensorboard":
         pl_logger = loggers.TensorBoardLogger("experiment_logs")
         for hparam in list(hyper_params):
             pl_logger.experiment.add_text(hparam, str(hyper_params[hparam]))
     elif hyper_params["logging"]["logger"] == "wandb":
+        orion_trial_id = os.environ.get('ORION_TRIAL_ID')
+        name = orion_trial_id if orion_trial_id else hyper_params["logging"]["name"]
         pl_logger = WandbLogger(
-            name=hyper_params["logging"]["name"],
+            name=name,
             project=hyper_params["logging"]["project"],
             group=hyper_params["logging"]["group"],
         )
