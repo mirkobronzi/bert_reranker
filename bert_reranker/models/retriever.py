@@ -55,18 +55,21 @@ class Retriever(nn.Module):
                         batch_input_ids_paragraphs.cpu().numpy()[i][j])
                     logger.info('>>>> {}'.format(answer))
 
-        h_question = self.bert_question_encoder(
-            input_ids=input_ids_question, attention_mask=attention_mask_question,
-            token_type_ids=token_type_ids_question)
+        h_question = checkpoint(
+            self.bert_question_encoder,
+            input_ids_question,
+            attention_mask_question,
+            token_type_ids_question,
+            self.dummy_tensor)
 
         h_paragraph_list = []
         for i in range(num_document):
-            res = checkpoint(self.bert_paragraph_encoder,
-                             batch_input_ids_paragraphs[:, i, :],
-                             batch_attention_mask_paragraphs[:, i, :],
-                             batch_token_type_ids_paragraphs[:, i, :],
-                             self.dummy_tensor)
-            h_paragraph_list.append(res)
+            h_paragraph = checkpoint(self.bert_paragraph_encoder,
+                                     batch_input_ids_paragraphs[:, i, :],
+                                     batch_attention_mask_paragraphs[:, i, :],
+                                     batch_token_type_ids_paragraphs[:, i, :],
+                                     self.dummy_tensor)
+            h_paragraph_list.append(h_paragraph)
 
         h_paragraphs_batch = torch.stack(h_paragraph_list, dim=1)
 
