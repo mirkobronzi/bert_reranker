@@ -4,6 +4,7 @@ import argparse
 import logging
 import os
 import sys
+from logging.handlers import WatchedFileHandler
 
 import numpy as np
 import pytorch_lightning as pl
@@ -103,7 +104,7 @@ def main():
 
     # will log to a file if provided (useful for orion on cluster)
     if args.log is not None:
-        handler = logging.handlers.WatchedFileHandler(args.log)
+        handler = WatchedFileHandler(args.log)
         formatter = logging.Formatter(logging.BASIC_FORMAT)
         handler.setFormatter(formatter)
         root = logging.getLogger()
