@@ -41,8 +41,7 @@ def main():
         "--gpu",
         help="list of gpu ids to use. default is cpu. example: --gpu 0 1",
         type=int,
-        nargs="+",
-        default=0,
+        nargs="+"
     )
     parser.add_argument(
         "--validation-interval",
@@ -117,12 +116,18 @@ def main():
     with open(args.config, "r") as stream:
         hyper_params = load(stream, Loader=yaml.FullLoader)
 
+    if args.gpu is None:
+        gpu_string = os.environ.get('GPU')
+        gpu = [int(x) for x in gpu_string.strip().split()]
+    else:
+        gpu = args.gpu
+
     ckpt_to_resume, ret_trainee, trainer = init_model(
         hyper_params,
         args.num_workers,
         args.output,
         args.validation_interval,
-        args.gpu,
+        gpu,
         args.no_model_restoring,
         args.debug,
         args.print_sentence_stats,
