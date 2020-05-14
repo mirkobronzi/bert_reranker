@@ -117,8 +117,8 @@ def main():
     with open(args.config, "r") as stream:
         hyper_params = load(stream, Loader=yaml.FullLoader)
 
-    if args.gpu is None:
-        gpu_string = os.environ.get('GPU')
+    if args.gpu is None and 'GPU' in os.environ:
+        gpu_string = os.environ['GPU']
         gpu = [int(x) for x in gpu_string.strip().split()]
     else:
         gpu = args.gpu
@@ -136,7 +136,7 @@ def main():
 
     if args.train:
         trainer.fit(ret_trainee)
-        best_dev_result = float(trainer.early_stop_callback.best.numpy())
+        best_dev_result = float(trainer.early_stop_callback.best.cpu().numpy())
         report_results([dict(
             name='dev_metric',
             type='objective',
