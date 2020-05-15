@@ -1,0 +1,42 @@
+train_file: '../local/data_small.json'
+dev_files:
+  dev_file_1: '../local/data_small.json'
+  dev_file_2: '../local/data_small.json'
+test_file: '../local/data_small.json'
+cache_folder: 'cached_natq'
+tokenizer_name: 'bert-base-uncased'
+
+batch_size: 2
+accumulate_grad_batches: 1
+
+model:
+  name: 'bert_encoder'
+  single_encoder: true
+  bert_base: 'bert-base-uncased'
+  freeze_bert: true
+  layers_pre_pooling: [5, 4]
+  layers_post_pooling: [4]
+  pooling_type: 'orion~choices(["avg", "cls"])'
+  dropout: 'orion~uniform(0,0.5)'
+  normalize_model_result: False
+  dropout_bert: null  # set to null to use the original bert dropout used during pre-training
+  cache_size: 0  # 0 means no cache
+
+loss_type: 'classification'
+
+# Logging
+logging:
+    logger: 'tensorboard'
+
+# this is mostly used when freezing the bert model
+optimizer:
+  name: 'adamw'
+  lr: 0.001
+
+max_question_len: 10
+max_paragraph_len:  10
+patience: 5
+gradient_clipping: 0
+precision: 32
+seed: null
+max_epochs: 1

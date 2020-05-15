@@ -4,11 +4,13 @@ import argparse
 import logging
 import os
 import sys
+from logging.handlers import WatchedFileHandler
 
 import numpy as np
 import pytorch_lightning as pl
 import torch
 import yaml
+from orion.client import report_results
 from pytorch_lightning import loggers
 from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
 from pytorch_lightning.loggers import WandbLogger
@@ -40,8 +42,7 @@ def main():
         "--gpu",
         help="list of gpu ids to use. default is cpu. example: --gpu 0 1",
         type=int,
-        nargs="+",
-        default=0,
+        nargs="+"
     )
     parser.add_argument(
         "--validation-interval",
@@ -95,31 +96,52 @@ def main():
         help="will print stats on the data",
         action="store_true",
     )
+    parser.add_argument('--log', help='log to this file (in addition to stdout/err)')
     parser.add_argument("--debug", help="will log more info", action="store_true")
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.INFO)
 
-    if args.redirect_log:
+    # will log to a file if provided (useful for orion on cluster)
+    if args.log is not None:
+        handler = WatchedFileHandler(args.log)
+        formatter = logging.Formatter(logging.BASIC_FORMAT)
+        handler.setFormatter(formatter)
+        root = logging.getLogger()
+        root.setLevel(logging.INFO)
+        root.addHandler(handler)
+    if args.redirect_log or args.log:
         sys.stdout = LoggerWriter(logger.info)
         sys.stderr = LoggerWriter(logger.warning)
 
     with open(args.config, "r") as stream:
         hyper_params = load(stream, Loader=yaml.FullLoader)
 
+    if args.gpu is None and 'GPU' in os.environ:
+        gpu_string = os.environ['GPU']
+        gpu = [int(x) for x in gpu_string.strip().split()]
+    else:
+        gpu = args.gpu
+
     ckpt_to_resume, ret_trainee, trainer = init_model(
         hyper_params,
         args.num_workers,
         args.output,
         args.validation_interval,
-        args.gpu,
+        gpu,
         args.no_model_restoring,
         args.debug,
-        args.print_sentence_stats,
+        args.print_sentence_stats
     )
 
     if args.train:
         trainer.fit(ret_trainee)
+        best_dev_result = float(trainer.early_stop_callback.best.cpu().numpy())
+        report_results([dict(
+            name='dev_metric',
+            type='objective',
+            # note the minus - cause orion is always trying to minimize (cit. from the guide)
+            value=-float(best_dev_result))])
     elif args.validate:
         trainer.test(ret_trainee)
     elif args.predict:
@@ -145,7 +167,7 @@ def init_model(
     gpu,
     no_model_restoring,
     debug,
-    print_sentence_stats,
+    print_sentence_stats
 ):
 
     check_and_log_hp(
@@ -212,14 +234,15 @@ def init_model(
         logger.info(
             "will not try to restore previous models because --no-model-restoring"
         )
-
     if hyper_params["logging"]["logger"] == "tensorboard":
         pl_logger = loggers.TensorBoardLogger("experiment_logs")
         for hparam in list(hyper_params):
             pl_logger.experiment.add_text(hparam, str(hyper_params[hparam]))
     elif hyper_params["logging"]["logger"] == "wandb":
+        orion_trial_id = os.environ.get('ORION_TRIAL_ID')
+        name = orion_trial_id if orion_trial_id else hyper_params["logging"]["name"]
         pl_logger = WandbLogger(
-            name=hyper_params["logging"]["name"],
+            name=name,
             project=hyper_params["logging"]["project"],
             group=hyper_params["logging"]["group"],
         )
