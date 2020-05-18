@@ -2,6 +2,7 @@ import json
 import logging
 import math
 
+import numpy as np
 from tqdm import tqdm
 
 logger = logging.getLogger(__name__)
@@ -57,6 +58,19 @@ def generate_predictions(ret_trainee, qa_pairs_json_file, predict_to, ground_tru
         logger.info("--ground-truth-available not used - not computing accuracy")
     if out_stream:
         out_stream.close()
+
+
+def generate_embeddings(ret_trainee, qa_pairs_json_file, out_file):
+
+    with open(qa_pairs_json_file, "r", encoding="utf-8") as f:
+        qa_pairs = json.load(f)
+
+    q_embs = []
+    for question, answers in tqdm(qa_pairs):
+        q_emb = ret_trainee.retriever.embed_question(question)
+        q_embs.append(q_emb)
+
+    np.save(out_file, np.concatenate(q_embs))
 
 
 def compute_result_at_threshold(predictions, normalized_scores, threshold):

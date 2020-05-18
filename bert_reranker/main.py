@@ -18,7 +18,7 @@ from transformers import AutoTokenizer
 from yaml import load
 
 from bert_reranker.data.data_loader import generate_dataloader
-from bert_reranker.data.predict import generate_predictions
+from bert_reranker.data.predict import generate_predictions, generate_embeddings
 from bert_reranker.models.cache_manager import CacheManagerCallback
 from bert_reranker.models.load_model import load_model
 from bert_reranker.models.pl_model_loader import try_to_restore_model_weights
@@ -69,6 +69,12 @@ def main():
     )
     parser.add_argument(
         "--predict", help="will predict on the json file you provide as an arg"
+    )
+    parser.add_argument(
+        "--file-to-emb", help="will use this file as input to generate embeddings"
+    )
+    parser.add_argument(
+        "--write-emb-to", help="will write question embeddings to this file"
     )
     parser.add_argument(
         "--save-weights-to",
@@ -152,6 +158,16 @@ def main():
             qa_pairs_json_file=args.predict,
             predict_to=args.predict_to,
             ground_truth_available=args.ground_truth_available,
+        )
+    elif args.file_to_emb:
+        if args.write_emb_to is None:
+            raise ValueError('please specify also --write-emb-to')
+        model_ckpt = torch.load(ckpt_to_resume, map_location=torch.device("cpu"))
+        ret_trainee.load_state_dict(model_ckpt["state_dict"])
+        generate_embeddings(
+            ret_trainee,
+            qa_pairs_json_file=args.file_to_emb,
+            out_file=args.write_emb_to
         )
     elif args.save_weights_to is not None:
         torch.save(ret_trainee.retriever.state_dict(), args.save_weights_to)
