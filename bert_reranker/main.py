@@ -166,7 +166,7 @@ def main():
         ret_trainee.load_state_dict(model_ckpt["state_dict"])
         generate_embeddings(
             ret_trainee,
-            qa_pairs_json_file=args.file_to_emb,
+            csv_input_file=args.file_to_emb,
             out_file=args.write_emb_to
         )
     elif args.save_weights_to is not None:

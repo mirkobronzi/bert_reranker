@@ -3,6 +3,7 @@ import logging
 import math
 
 import numpy as np
+import pandas as pd
 from tqdm import tqdm
 
 logger = logging.getLogger(__name__)
@@ -60,14 +61,12 @@ def generate_predictions(ret_trainee, qa_pairs_json_file, predict_to, ground_tru
         out_stream.close()
 
 
-def generate_embeddings(ret_trainee, qa_pairs_json_file, out_file):
-
-    with open(qa_pairs_json_file, "r", encoding="utf-8") as f:
-        qa_pairs = json.load(f)
+def generate_embeddings(ret_trainee, csv_input_file, out_file):
+    data = pd.read_csv(csv_input_file)
 
     q_embs = []
-    for question, answers in tqdm(qa_pairs):
-        q_emb = ret_trainee.retriever.embed_question(question)
+    for question, validation in tqdm(zip(data.question, data.validation), total=len(data)):
+        q_emb = ret_trainee.retriever.embed_question(question).squeeze(0)
         q_embs.append(q_emb)
 
     np.save(out_file, np.concatenate(q_embs))
