@@ -1,11 +1,10 @@
 import json
 import logging
 import math
+import pickle
 
-import numpy as np
 import pandas as pd
 from tqdm import tqdm
-import pickle 
 
 logger = logging.getLogger(__name__)
 
@@ -65,18 +64,30 @@ def generate_predictions(ret_trainee, qa_pairs_json_file, predict_to, ground_tru
 def generate_embeddings(ret_trainee, csv_input_file, out_file):
     data = pd.read_csv(csv_input_file)
 
-    import pdb
     q_embs = []
-    vals = [] 
+    vals = []
     topics = []
-    for question, validation, topic in tqdm(zip(data.question, data.validation, data.topic), total=len(data)):
+    gt_questions = set()
+    for question, validation, topic, gt_question in tqdm(
+            zip(data.question, data.validation, data.topic, data.gt_question), total=len(data)):
         q_emb = ret_trainee.retriever.embed_question(question)
         q_embs.append(q_emb)
         vals.append(validation)
         topics.append(topic)
+        gt_questions.add(gt_question)
 
-    dct = {'embs': q_embs, 'vals': vals, 'topics' : topics}
-    pickle.dump(dct, open(out_file, 'wb'))
+    dct = {'embs': q_embs, 'vals': vals, 'topics': topics}
+    with open('QUESTION_' + out_file, 'wb') as out_stream:
+        pickle.dump(dct, out_stream)
+
+    logger.info('embedded {} questions - now embedding {} gt_questions'.format(
+        len(q_embs), len(gt_questions)))
+    p_embs = []
+    for gt_question in tqdm(gt_questions):
+        p_emb = ret_trainee.retriever.embed_paragraph(gt_question)
+        p_embs.append(p_emb)
+    with open('GT_QUESTION_' + out_file, 'wb') as out_stream:
+        pickle.dump(p_embs, out_stream)
 
 
 def compute_result_at_threshold(predictions, normalized_scores, threshold):
