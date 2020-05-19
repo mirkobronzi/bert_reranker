@@ -5,6 +5,7 @@ import math
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
+import pickle 
 
 logger = logging.getLogger(__name__)
 
@@ -64,12 +65,18 @@ def generate_predictions(ret_trainee, qa_pairs_json_file, predict_to, ground_tru
 def generate_embeddings(ret_trainee, csv_input_file, out_file):
     data = pd.read_csv(csv_input_file)
 
+    import pdb
     q_embs = []
-    for question, validation in tqdm(zip(data.question, data.validation), total=len(data)):
-        q_emb = ret_trainee.retriever.embed_question(question).squeeze(0)
+    vals = [] 
+    topics = []
+    for question, validation, topic in tqdm(zip(data.question, data.validation, data.topic), total=len(data)):
+        q_emb = ret_trainee.retriever.embed_question(question)
         q_embs.append(q_emb)
+        vals.append(validation)
+        topics.append(topic)
 
-    np.save(out_file, np.concatenate(q_embs))
+    dct = {'embs': q_embs, 'vals': vals, 'topics' : topics}
+    pickle.dump(dct, open(out_file, 'wb'))
 
 
 def compute_result_at_threshold(predictions, normalized_scores, threshold):
