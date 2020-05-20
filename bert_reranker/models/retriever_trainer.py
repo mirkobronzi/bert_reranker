@@ -8,6 +8,11 @@ from sklearn.metrics import accuracy_score
 from bert_reranker.models.optimizer import get_optimizer
 
 
+def soft_cross_entropy(logits, soft_targets):
+    t = torch.nn.functional.log_softmax(logits)
+    return torch.sum(-soft_targets * t)
+
+
 class RetrieverTrainer(pl.LightningModule):
 
     def __init__(self, retriever, train_data, dev_data, test_data, loss_type,
