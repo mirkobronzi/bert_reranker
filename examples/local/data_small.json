@@ -1,26 +1,62 @@
-[
-    [
-        "Chickenpox blisters on face now infected with bacteria, yellowish fluid oozes. Am taking coamoxiclav.What will I do w/ the infected blisters?Pick them?",
-        [
-            "Orally and topical. Do not touch the blisters.",
-            "I suppose the answer to your question depends on the symptoms that you are having. Severe shortness of breath is one of the main reasons my patients go to the emergency room.",
-            "Osgood schlatter is a painful tibia tuberosity which is very common in younger people at 8-15 y/o, but can be seen in older people, takes a while before going away. Osteomyelitis if treated and the pain recurs you should see your doc."
-        ]
-    ],
-    [
-        "We are currently trying for a baby, i was 2 days late and had a period that lasted 2.5 days, could i be pregnant?",
-        [
-            "You could be pregnant. I suggest taking a pregnancy test 7 days after a missed period.",
-            "Yes both soft and rigid contact lenses can correct astigmatism.",
-            "If you are taking your birth control the chances of pregnancy are very very lie."
-        ]
-    ],
-    [
-        "Alternating exhaustion (4-5 days)/feeling normal (1-2 weeks),for no reason.During bad days,faint if standing for more than 15-20 minutes,depressive.",
-        [
-            "Consider, or have your doctor consider POTS (postural orthostatic tachycardia syndrome) an abnormality of the function of the autonomic nervous system. This can occur in the presence of another chronic problem, myalgic encephalomyelitis, leading to many of the items in your list above.   Print the following document and take to your doctor:http://www.mecfs-vic.org.au/sites/www.mecfs-vic.org.au/files/Myalgic%20Encephalomyelitis%20International%20Consensus%20Primer%20-2012-11-26.pdf",
-            "Antibiotic failure can be due to the wrong drug, the wrong dose, the wrong route, lack of adequate drainage or the presence of a foreign body.",
-            "Infections. Look over your whole arm - checking for breaks in the skin.  Sometimes even the smallest breaks in the skin can lead to infections or swollen lymph nodes."
-        ]
+{
+      "examples": [
+            {
+                  "id": 0,
+                  "source": "my_source",
+                  "question": "What should happen if there's a change in custody of a child during the pandemic?",
+                  "passage_id": 0
+            },
+            {
+                  "id": 1,
+                  "source": "my_source",
+                  "question": "What is the protocol for my food business?",
+                  "passage_id": 1
+            },
+            {
+                  "id": 2,
+                  "source": "my_source",
+                  "question": "Will warm weather deter the spread of COVID-19?",
+                  "passage_id": 0
+            },
+            {
+                  "id": 3,
+                  "source": "my_source",
+                  "question": "Should municipalities be obliged to buy facemasks and other equipment for the well being of their employees?",
+                  "passage_id": 1
+            },
+            {
+                  "id": 4,
+                  "source": "my_source",
+                  "question": "Are municipalities allowed to change the terms and conditions surrounding paying municipal taxes?",
+                  "passage_id": 0
+            }
+      ],
+      "passages": [
+            {
+                  "passage_id": 0,
+                  "source": "my_source",
+                  "uri": "https://any_uri/quebec-en-faq-7.json",
+                  "reference_type": "FAQ",
+                  "reference": {
+                        "page_title": "Questions and answers concerning the municipalities during the COVID-19 pandemic",
+                        "section_headers": [
+                              "Should referendum votes be held?"
+                        ],
+                        "section_content": "No, they should not. Pursuant to order\u00a02020-008 of March\u00a022, 2020, any procedure involving the movement or gathering of citizens that is part of the decision-making process of a municipal body, including a referendum process, must be suspended or replaced.\u00a0 The government requests that no referendum vote or notice of such a vote be held or issued until further notice. This is consistent with the postponement of municipal by-elections. Further decisions by the government could have the effect of extending the period during which no referendum vote is to be held.",
+                        "selected_span": null
+                  }
+            },
+            {
+                  "passage_id": 1,
+                  "source": "my_source",
+                  "uri": "https://any_uri/quebec-en-faq-3.json",
+                  "reference_type": "passage_only",
+                  "reference": {
+                        "page_title": "Questions and answers pertaining to employers and workers during the COVID-19 pandemic",
+                        "section_headers": [],
+                        "section_content": "Financial assistance to businesses, granted under the programs administered by the minist\u00e8re de l'Agriculture, des P\u00eacheries et de l'Alimentation, is maintained as are essential services. ",
+                        "selected_span": null
+                  }
+            }
     ]
-]
+}
