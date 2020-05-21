@@ -4,13 +4,30 @@ import pytorch_lightning as pl
 import torch
 import torch.nn as nn
 from sklearn.metrics import accuracy_score
+from torch.nn.functional import one_hot
 
 from bert_reranker.models.optimizer import get_optimizer
 
 
 def soft_cross_entropy(logits, soft_targets):
     t = torch.nn.functional.log_softmax(logits)
-    return torch.sum(-soft_targets * t)
+    return torch.sum(-soft_targets * t, dim=1)
+
+
+def prepare_soft_targets(target_ints, num_classes):
+    mask = target_ints == -1
+    inverted_mask = torch.logical_not(mask)
+    modified_target_ints = inverted_mask * target_ints
+    oh_modified_target_ints = one_hot(modified_target_ints, num_classes=num_classes)
+    modified_soft_targets = oh_modified_target_ints.double()
+    repeated_inverted_mask = inverted_mask.unsqueeze(1).repeat((1, num_classes)).reshape(
+        [inverted_mask.shape[0], num_classes])
+    soft_targets = modified_soft_targets * repeated_inverted_mask
+    repeated_mask = mask.unsqueeze(1).repeat((1, num_classes)).reshape(
+        [mask.shape[0], num_classes])
+    uniform_targets = (1 / num_classes) * repeated_mask
+    soft_targets += uniform_targets
+    return soft_targets
 
 
 class RetrieverTrainer(pl.LightningModule):
@@ -56,6 +73,12 @@ class RetrieverTrainer(pl.LightningModule):
         elif self.loss_type == 'classification':
             logits = self.retriever.compute_score(**inputs)
             loss = self.cross_entropy(logits, targets)
+        elif self.loss_type == 'classification_with_uniform_ood':
+            logits = self.retriever.compute_score(**inputs)
+            soft_targets = torch.tensor([1 / logits.shape[1]] * logits.shape[1])
+            loss = soft_cross_entropy(logits, soft_targets)
+            # loss2 = self.cross_entropy(logits, targets)
+            # print('loss {} / loss2 {} / targets {}'.format(loss.shape, loss2.shape, targets))
         elif self.loss_type == 'triplet_loss':
             if not self.retriever.returns_embeddings:
                 raise ValueError('triples_loss is compatible only with models returning embeddings')

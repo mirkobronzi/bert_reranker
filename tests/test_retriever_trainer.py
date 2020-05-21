@@ -1,6 +1,6 @@
 import torch
 
-from bert_reranker.models.retriever_trainer import soft_cross_entropy
+from bert_reranker.models.retriever_trainer import soft_cross_entropy, prepare_soft_targets
 
 
 def test_soft_cross_entropy__simple():
@@ -13,3 +13,14 @@ def test_soft_cross_entropy__simple():
         loss = soft_cross_entropy(logits, soft_targets)
         losses.append(loss)
     assert torch.stack(losses).argmin(0) == 5
+
+
+def test_prepare_soft_targets__simple():
+    num_classes = 4
+    target_ints = torch.tensor([0, 1, -1])
+    soft_targets = prepare_soft_targets(target_ints, num_classes)
+    expected = torch.tensor([
+        [1.0000, 0.0000, 0.0000, 0.0000],
+        [0.0000, 1.0000, 0.0000, 0.0000],
+        [0.2500, 0.2500, 0.2500, 0.2500]], dtype=torch.float64)
+    assert torch.all(expected.eq(soft_targets))
