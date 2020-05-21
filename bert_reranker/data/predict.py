@@ -61,35 +61,84 @@ def generate_predictions(ret_trainee, qa_pairs_json_file, predict_to, ground_tru
         out_stream.close()
 
 
-def generate_embeddings(ret_trainee, csv_input_file, out_file):
-    data = pd.read_csv(csv_input_file)
+def generate_embeddings(ret_trainee, input_file, out_file):
+    if input_file.endswith('.csv'):
+        data = pd.read_csv(input_file)
+        if 'samasource' in input_file:
+            not_user_health_related = (1- (data.samasource_annotation == 'USER_HEALTH_RELATED'))
+            not_user_health_related = not_user_health_related.astype('bool')
+            data = data.loc[not_user_health_related, :]
+        
+            q_embs = []
+            questions = []
+            clusters = []
+            samasource_annotations = []
+            for question, cluster, sam_ant in tqdm(
+                    zip(data.question_processed, data.cluster, data.samasource_annotation)):
+                q_emb = ret_trainee.retriever.embed_question(question)
+                q_embs.append(q_emb)
+                questions.append(question)
+                clusters.append(cluster)
+                samasource_annotations.append(sam_ant)
 
-    q_embs = []
-    vals = []
-    topics = []
-    gt_questions = set()
-    for question, validation, topic, gt_question in tqdm(
-            zip(data.question, data.validation, data.topic, data.gt_question), total=len(data)):
-        q_emb = ret_trainee.retriever.embed_question(question)
-        q_embs.append(q_emb)
-        vals.append(validation)
-        topics.append(topic)
-        gt_questions.add(gt_question)
+            dct = {'embs': q_embs, 'questions': questions, 
+                   'clusters': clusters, 'annotations' : samasource_annotations}
+            with open(out_file, 'wb') as out_stream:
+                pickle.dump(dct, out_stream)
 
-    dct = {'embs': q_embs, 'vals': vals, 'topics': topics}
-    with open('QUESTION_' + out_file, 'wb') as out_stream:
-        pickle.dump(dct, out_stream)
+        else:
+            
+            q_embs = []
+            vals = []
+            topics = []
+            gt_questions = []
+            for question, validation, topic, gt_question in tqdm(
+                    zip(data.question, data.validation, data.topic, data.gt_question), total=len(data)):
+                q_emb = ret_trainee.retriever.embed_question(question)
+                q_embs.append(q_emb)
+                vals.append(validation)
+                topics.append(topic)
+                gt_questions.append(gt_question)
 
-    logger.info('embedded {} questions - now embedding {} gt_questions'.format(
-        len(q_embs), len(gt_questions)))
-    p_embs = []
-    for gt_question in tqdm(gt_questions):
-        p_emb = ret_trainee.retriever.embed_paragraph(gt_question)
-        p_embs.append(p_emb)
-    with open('GT_QUESTION_' + out_file, 'wb') as out_stream:
-        pickle.dump(p_embs, out_stream)
+            dct = {'embs': q_embs, 'vals': vals, 
+                   'topics': topics, 'gt_questions' : gt_questions}
+            with open('QUESTION_' + out_file, 'wb') as out_stream:
+                pickle.dump(dct, out_stream)
+
+            logger.info('embedded {} questions - now embedding {} gt_questions'.format(
+                        len(q_embs), len(gt_questions)))
+            p_embs = []
+            
+            for gt_question in tqdm(set(gt_questions)):
+                p_emb = ret_trainee.retriever.embed_paragraph(gt_question)
+                p_embs.append(p_emb)
+            dct_gt = {'embs' : p_embs, 
+                      'gt_questions' : set(gt_questions)}
+            with open('GT_QUESTION_' + out_file, 'wb') as out_stream:
+                pickle.dump(dct_gt, out_stream)
 
 
+    elif input_file.endswith('json'):
+        import pdb
+        data = pd.read_json(input_file)
+        
+        gt_questions = list(data.iloc[:, 0].values)
+
+        p_embs = []
+        for gt_question in tqdm(gt_questions):
+            p_emb = ret_trainee.retriever.embed_paragraph(gt_question)
+            p_embs.append(p_emb)
+
+        dct_gt = {'embs' : p_embs, 
+                  'gt_questions' : (gt_questions)}
+        with open(out_file, 'wb') as out_stream:
+            pickle.dump(dct_gt, out_stream)
+
+    else:
+        raise ValueError('I do not support that extension, go somewhere else')
+
+
+    
 def compute_result_at_threshold(predictions, normalized_scores, threshold):
     correct = 0
     count = 0
