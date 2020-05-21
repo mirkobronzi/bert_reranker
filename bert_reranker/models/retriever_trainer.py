@@ -32,8 +32,8 @@ class RetrieverTrainer(pl.LightningModule):
         return self.retriever(**kwargs)
 
     def step_helper(self, batch):
-        inputs = {k: v for k, v in batch.items() if k != 'target_pid'}
-        targets = batch['target_pid']
+        inputs = {k: v for k, v in batch.items() if k != 'target_idx'}
+        targets = batch['target_idx']
 
         if self.loss_type == 'negative_sampling':
             logits = self.retriever.compute_score(**inputs)
@@ -114,7 +114,7 @@ class RetrieverTrainer(pl.LightningModule):
         # dataset_number, hence the default value at 0
         loss, all_prob = self.step_helper(batch)
         _, predictions = torch.max(all_prob, 1)
-        targets = batch['target_pid']
+        targets = batch['target_idx']
         val_acc = torch.tensor(accuracy_score(targets.cpu(), predictions.cpu())).to(targets.device)
 
         return {'val_loss_' + str(dataset_number): loss, 'val_acc_' + str(dataset_number): val_acc}

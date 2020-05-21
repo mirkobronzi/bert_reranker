@@ -31,6 +31,7 @@ def encode_sentence(sentence, max_length, tokenizer):
 def _get_passages_by_source(json_data):
     source2passages = defaultdict(list)
     passage_id2source = {}
+    passage_id2index = {}
     for passage in json_data['passages']:
         source = passage['source']
         source2passages[source].append(passage['reference']['section_headers'][0])
@@ -38,7 +39,8 @@ def _get_passages_by_source(json_data):
         if passage_id in passage_id2source:
             raise ValueError('duplicate passage id: {}'.format(passage_id))
         passage_id2source[passage_id] = source
-    return source2passages, passage_id2source
+        passage_id2index[passage_id] = len(source2passages[source]) - 1
+    return source2passages, passage_id2source, passage_id2index
 
 
 def _encode_passages(source2passages, max_passage_length, tokenizer):
@@ -63,7 +65,8 @@ class ReRankerDataset(Dataset):
         with open(json_file, 'r', encoding='utf-8') as in_stream:
             self.json_data = json.load(in_stream)
 
-        source2passages, self.passage_id2source = _get_passages_by_source(self.json_data)
+        source2passages, self.passage_id2source, self.passage_id2index = _get_passages_by_source(
+            self.json_data)
         self.encoded_source2passages = _encode_passages(
             source2passages, max_passage_len, tokenizer)
 
@@ -76,7 +79,9 @@ class ReRankerDataset(Dataset):
         passage_id = example['passage_id']  # this is our target
         encoded_question = encode_sentence(question, self.max_example_len, self.tokenizer)
         source = self.passage_id2source[passage_id]
-        return {'question': encoded_question, 'target_pid': passage_id,
+        # this is the index of the target in the list of passages for the current source
+        target_idx = self.passage_id2index[passage_id]
+        return {'question': encoded_question, 'target_idx': target_idx,
                 'passages': self.encoded_source2passages[source]}
 
 

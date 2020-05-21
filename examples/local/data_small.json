@@ -4,19 +4,19 @@
                   "id": 0,
                   "source": "my_source",
                   "question": "What should happen if there's a change in custody of a child during the pandemic?",
-                  "passage_id": 0
+                  "passage_id": 4
             },
             {
                   "id": 1,
                   "source": "my_source",
                   "question": "What is the protocol for my food business?",
-                  "passage_id": 1
+                  "passage_id": 5
             },
             {
                   "id": 2,
                   "source": "my_source",
                   "question": "Will warm weather deter the spread of COVID-19?",
-                  "passage_id": 0
+                  "passage_id": 6
             },
             {
                   "id": 3,
@@ -33,7 +33,7 @@
       ],
       "passages": [
             {
-                  "passage_id": 0,
+                  "passage_id": 4,
                   "source": "my_source",
                   "uri": "https://any_uri/quebec-en-faq-7.json",
                   "reference_type": "FAQ",
@@ -47,7 +47,7 @@
                   }
             },
             {
-                  "passage_id": 1,
+                  "passage_id": 5,
                   "source": "my_source",
                   "uri": "https://any_uri/quebec-en-faq-3.json",
                   "reference_type": "passage_only",
@@ -59,7 +59,7 @@
                   }
             },
             {
-                  "passage_id": 2,
+                  "passage_id": 6,
                   "source": "my_source",
                   "uri": "https://any_uri/quebec-en-faq-3.json",
                   "reference_type": "passage_only",
