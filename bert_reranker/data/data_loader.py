@@ -2,6 +2,7 @@ import json
 import logging
 import os
 import random
+from collections import defaultdict
 
 from torch.utils.data import DataLoader, Dataset
 
@@ -17,49 +18,66 @@ def shuffle_paragraphs(paragraphs):
     return shuffled_paragraphs, target
 
 
+def encode_sentence(sentence, max_length, tokenizer):
+    input_question = tokenizer.encode_plus(sentence, add_special_tokens=True,
+                                           max_length=max_length,
+                                           pad_to_max_length=True,
+                                           return_tensors='pt')
+    return {'ids': input_question['input_ids'].squeeze(0),
+            'am': input_question['attention_mask'].squeeze(0),
+            'tt': input_question['token_type_ids'].squeeze(0)}
+
+
+def _get_passages_by_source(json_data):
+    source2passages = defaultdict(list)
+    passage_id2source = {}
+    for passage in json_data['passages']:
+        source = passage['source']
+        source2passages[source].append(passage['reference']['section_headers'][0])
+        passage_id = passage['passage_id']
+        if passage_id in passage_id2source:
+            raise ValueError('duplicate passage id: {}'.format(passage_id))
+        passage_id2source[passage_id] = source
+    return source2passages, passage_id2source
+
+
+def _encode_passages(source2passages, max_passage_length, tokenizer):
+    encoded_source2passages = defaultdict(list)
+    for source, passages in source2passages.items():
+        for passage in passages:
+            encoded_passage = encode_sentence(passage, max_passage_length, tokenizer)
+            encoded_source2passages[source].append(encoded_passage)
+    return encoded_source2passages
+
+
 class ReRankerDataset(Dataset):
 
-    def __init__(self, json_file, max_question_len, max_paragraph_len, tokenizer):
-        self.max_question_len = max_question_len
-        self.max_paragraph_len = max_paragraph_len
+    def __init__(self, json_file, max_example_len, max_passage_len, tokenizer):
+        self.max_example_len = max_example_len
+        self.max_passage_len = max_passage_len
         self.tokenizer = tokenizer
 
         if not os.path.exists(json_file):
             raise Exception('{} not found'.format(json_file))
 
         with open(json_file, 'r', encoding='utf-8') as in_stream:
-            self.qa_pairs = json.load(in_stream)
+            self.json_data = json.load(in_stream)
+
+        source2passages, self.passage_id2source = _get_passages_by_source(self.json_data)
+        self.encoded_source2passages = _encode_passages(
+            source2passages, max_passage_len, tokenizer)
 
     def __len__(self):
-        return len(self.qa_pairs)
+        return len(self.json_data)
 
     def __getitem__(self, idx):
-        data = json_entry_to_dataset(
-            self.qa_pairs[idx], self.max_question_len, self.max_paragraph_len, self.tokenizer)
-        return data
-
-
-def json_entry_to_dataset(qa_pair, max_question_len, max_paragraph_len, tokenizer):
-    question, paragraphs = qa_pair
-
-    shuffled_paragraphs, target = shuffle_paragraphs(paragraphs)
-    input_question = tokenizer.encode_plus(question, add_special_tokens=True,
-                                           max_length=max_question_len,
-                                           pad_to_max_length=True,
-                                           return_tensors='pt')
-    inputs_paragraph = tokenizer.batch_encode_plus(shuffled_paragraphs,
-                                                   add_special_tokens=True,
-                                                   pad_to_max_length=True,
-                                                   max_length=max_paragraph_len,
-                                                   return_tensors='pt')
-
-    return {'q_ids': input_question['input_ids'].squeeze(0),
-            'q_am': input_question['attention_mask'].squeeze(0),
-            'q_tt': input_question['token_type_ids'].squeeze(0),
-            'p_ids': inputs_paragraph['input_ids'].squeeze(0),
-            'p_am': inputs_paragraph['attention_mask'].squeeze(0),
-            'p_tt': inputs_paragraph['token_type_ids'].squeeze(0),
-            'target': target}
+        example = self.json_data['examples'][idx]
+        question = example['question']
+        passage_id = example['passage_id']  # this is our target
+        encoded_question = encode_sentence(question, self.max_example_len, self.tokenizer)
+        source = self.passage_id2source[passage_id]
+        return {'question': encoded_question, 'target_pid': passage_id,
+                'passages': self.encoded_source2passages[source]}
 
 
 def generate_dataloader(data_file, max_question_len, max_paragraph_len, tokenizer, batch_size,

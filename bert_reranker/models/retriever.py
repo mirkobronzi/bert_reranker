@@ -38,36 +38,22 @@ class Retriever(nn.Module):
         """
         raise ValueError('not implemented - use a subclass.')
 
-    def compute_embeddings(
-            self, input_ids_question, attention_mask_question, token_type_ids_question,
-            batch_input_ids_paragraphs, batch_attention_mask_paragraphs,
-            batch_token_type_ids_paragraphs):
+    def compute_embeddings(self, question, passages):
 
-        batch_size, num_document, max_len_size = batch_input_ids_paragraphs.size()
-
-        if self.debug:
-            for i in range(batch_size):
-                question = self.tokenizer.convert_ids_to_tokens(
-                    input_ids_question.cpu().numpy()[i])
-                logger.info('>> {}'.format(question))
-                for j in range(num_document):
-                    answer = self.tokenizer.convert_ids_to_tokens(
-                        batch_input_ids_paragraphs.cpu().numpy()[i][j])
-                    logger.info('>>>> {}'.format(answer))
-
+        num_document = len(passages)
         h_question = checkpoint(
             self.bert_question_encoder,
-            input_ids_question,
-            attention_mask_question,
-            token_type_ids_question,
+            question['ids'],
+            question['am'],
+            question['tt'],
             self.dummy_tensor)
 
         h_paragraph_list = []
         for i in range(num_document):
             h_paragraph = checkpoint(self.bert_paragraph_encoder,
-                                     batch_input_ids_paragraphs[:, i, :],
-                                     batch_attention_mask_paragraphs[:, i, :],
-                                     batch_token_type_ids_paragraphs[:, i, :],
+                                     passages[i]['ids'],
+                                     passages[i]['am'],
+                                     passages[i]['tt'],
                                      self.dummy_tensor)
             h_paragraph_list.append(h_paragraph)
 
@@ -146,8 +132,8 @@ class EmbeddingRetriever(Retriever):
             max_paragraph_len, debug)
         self.returns_embeddings = True
 
-    def forward(self, q_ids, q_am, q_tt, p_ids, p_am, p_tt):
-        return self.compute_embeddings(q_ids, q_am, q_tt, p_ids, p_am, p_tt)
+    def forward(self, question, passages):
+        return self.compute_embeddings(question, passages)
 
     def compute_score(self, **kwargs):
         q_emb, p_embs = self.forward(**kwargs)

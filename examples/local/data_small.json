@@ -53,8 +53,20 @@
                   "reference_type": "passage_only",
                   "reference": {
                         "page_title": "Questions and answers pertaining to employers and workers during the COVID-19 pandemic",
-                        "section_headers": [],
+                        "section_headers": ["my gt_question"],
                         "section_content": "Financial assistance to businesses, granted under the programs administered by the minist\u00e8re de l'Agriculture, des P\u00eacheries et de l'Alimentation, is maintained as are essential services. ",
+                        "selected_span": null
+                  }
+            },
+            {
+                  "passage_id": 2,
+                  "source": "my_source",
+                  "uri": "https://any_uri/quebec-en-faq-3.json",
+                  "reference_type": "passage_only",
+                  "reference": {
+                        "page_title": "third question",
+                        "section_headers": ["my 3rd gt_question"],
+                        "section_content": "any content will do..",
                         "selected_span": null
                   }
             }
