@@ -22,7 +22,7 @@ def prepare_soft_targets(target_ints, num_classes):
     modified_soft_targets = oh_modified_target_ints.double()
     repeated_inverted_mask = inverted_mask.unsqueeze(1).repeat((1, num_classes)).reshape(
         [inverted_mask.shape[0], num_classes])
-    soft_targets = modified_soft_targets * repeated_inverted_mask
+    soft_targets = (modified_soft_targets * repeated_inverted_mask).float()
     repeated_mask = mask.unsqueeze(1).repeat((1, num_classes)).reshape(
         [mask.shape[0], num_classes])
     uniform_targets = (1 / num_classes) * repeated_mask
