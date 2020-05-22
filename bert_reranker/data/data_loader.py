@@ -36,18 +36,23 @@ def _get_passages_by_source(json_data):
 
 def is_in_distribution(passage):
     reference_type = passage['reference_type']
-    return reference_type.startswith('faq')
+    return reference_type.lower().startswith('faq')
 
 
 def _encode_passages(source2passages, max_passage_length, tokenizer):
-    encoded_source2passages = defaultdict(list)
+    source2encoded_passages = defaultdict(list)
+    source2id = defaultdict(int)
+    source2ood = defaultdict(int)
     for source, passages in source2passages.items():
         for passage in passages:
             if is_in_distribution(passage):
                 passage_text = passage['reference']['section_headers'][0]
                 encoded_passage = encode_sentence(passage_text, max_passage_length, tokenizer)
-                encoded_source2passages[source].append(encoded_passage)
-    return encoded_source2passages
+                source2encoded_passages[source].append(encoded_passage)
+                source2id[source] += 1
+            else:
+                source2ood[source] += 1
+    return source2encoded_passages, source2id, source2ood
 
 
 class ReRankerDataset(Dataset):
@@ -66,11 +71,16 @@ class ReRankerDataset(Dataset):
         source2passages, pid2passage, pid2index = _get_passages_by_source(
             json_data)
 
-        self.encoded_source2passages = _encode_passages(
+        self.encoded_source2passages, source2id, source2ood = _encode_passages(
             source2passages, max_passage_len, tokenizer)
         self.pid2passage = pid2passage
         self.pid2index = pid2index
         self.examples = json_data['examples']
+        logger.info('loaded passages from file {} - found {} sources'.format(
+            json_file, len(source2id)))
+        for source in source2id.keys():
+            logger.info('source "{}": found {} in-distribution and {} out-of-distribution'.format(
+                source, source2id[source], source2ood[source]))
 
     def __len__(self):
         return len(self.examples)

@@ -104,7 +104,7 @@ def main():
     logging.basicConfig(level=logging.INFO)
 
     # Fix for num_workers > 0
-    torch.multiprocessing.set_sharing_strategy('file_system')
+    # torch.multiprocessing.set_sharing_strategy('file_system')
 
     # will log to a file if provided (useful for orion on cluster)
     if args.log is not None:
