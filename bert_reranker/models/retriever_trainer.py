@@ -75,7 +75,7 @@ class RetrieverTrainer(pl.LightningModule):
             loss = self.cross_entropy(logits, targets)
         elif self.loss_type == 'classification_with_uniform_ood':
             logits = self.retriever.compute_score(**inputs)
-            soft_targets = torch.tensor([1 / logits.shape[1]] * logits.shape[1])
+            soft_targets = prepare_soft_targets(targets, logits.shape[1])
             loss = soft_cross_entropy(logits, soft_targets)
             # loss2 = self.cross_entropy(logits, targets)
             # print('loss {} / loss2 {} / targets {}'.format(loss.shape, loss2.shape, targets))
