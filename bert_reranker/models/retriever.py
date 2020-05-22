@@ -166,4 +166,4 @@ class FeedForwardRetriever(Retriever):
         return logits.squeeze(dim=2)
 
     def compute_score(self, **kwargs):
-        q_emb, p_embs = self.forward(**kwargs)
+        return self.forward(**kwargs)
