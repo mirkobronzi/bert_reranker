@@ -83,7 +83,7 @@ def main():
         action="store_true",
     )
     parser.add_argument(
-        "--num_workers", help="number of workers - default 2", type=int, default=2
+        "--num-workers", help="number of workers - default 2", type=int, default=2
     )
 
     parser.add_argument(
@@ -102,7 +102,6 @@ def main():
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.INFO)
-
 
     # Fix for num_workers > 0
     torch.multiprocessing.set_sharing_strategy('file_system')

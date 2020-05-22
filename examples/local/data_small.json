@@ -27,8 +27,8 @@
             {
                   "id": 4,
                   "source": "my_source",
-                  "question": "Are municipalities allowed to change the terms and conditions surrounding paying municipal taxes?",
-                  "passage_id": 5
+                  "question": "this is an OOD stuqestion - see the related passage",
+                  "passage_id": 4
             }
       ],
       "passages": [
@@ -36,7 +36,7 @@
                   "passage_id": 4,
                   "source": "my_source",
                   "uri": "https://any_uri/quebec-en-faq-7.json",
-                  "reference_type": "FAQ",
+                  "reference_type": "faq",
                   "reference": {
                         "page_title": "Questions and answers concerning the municipalities during the COVID-19 pandemic",
                         "section_headers": [
@@ -50,7 +50,7 @@
                   "passage_id": 5,
                   "source": "my_source",
                   "uri": "https://any_uri/quebec-en-faq-3.json",
-                  "reference_type": "passage_only",
+                  "reference_type": "faq",
                   "reference": {
                         "page_title": "Questions and answers pertaining to employers and workers during the COVID-19 pandemic",
                         "section_headers": ["my gt_question"],
@@ -62,11 +62,23 @@
                   "passage_id": 6,
                   "source": "my_source",
                   "uri": "https://any_uri/quebec-en-faq-3.json",
-                  "reference_type": "passage_only",
+                  "reference_type": "faq",
                   "reference": {
                         "page_title": "third question",
                         "section_headers": ["my 3rd gt_question"],
                         "section_content": "any content will do..",
+                        "selected_span": null
+                  }
+            },
+            {
+                  "passage_id": 10,
+                  "source": "my_source",
+                  "uri": null,
+                  "reference_type": "something_non_faq",
+                  "reference": {
+                        "page_title": null,
+                        "section_headers": [],
+                        "section_content": null,
                         "selected_span": null
                   }
             }
