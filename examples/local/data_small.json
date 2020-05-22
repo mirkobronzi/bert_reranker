@@ -22,13 +22,13 @@
                   "id": 3,
                   "source": "my_source",
                   "question": "Should municipalities be obliged to buy facemasks and other equipment for the well being of their employees?",
-                  "passage_id": 1
+                  "passage_id": 4
             },
             {
                   "id": 4,
                   "source": "my_source",
                   "question": "Are municipalities allowed to change the terms and conditions surrounding paying municipal taxes?",
-                  "passage_id": 0
+                  "passage_id": 5
             }
       ],
       "passages": [

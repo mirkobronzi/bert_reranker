@@ -1,21 +1,11 @@
 import json
 import logging
 import os
-import random
 from collections import defaultdict
 
 from torch.utils.data import DataLoader, Dataset
 
 logger = logging.getLogger(__name__)
-
-
-def shuffle_paragraphs(paragraphs):
-    n_paragraph = len(paragraphs)
-    random_indices = list(range(n_paragraph))
-    random.shuffle(random_indices)
-    shuffled_paragraphs = [paragraphs[i] for i in random_indices]
-    target = random_indices.index(0)
-    return shuffled_paragraphs, target
 
 
 def encode_sentence(sentence, max_length, tokenizer):
@@ -63,18 +53,19 @@ class ReRankerDataset(Dataset):
             raise Exception('{} not found'.format(json_file))
 
         with open(json_file, 'r', encoding='utf-8') as in_stream:
-            self.json_data = json.load(in_stream)
+            json_data = json.load(in_stream)
 
         source2passages, self.passage_id2source, self.passage_id2index = _get_passages_by_source(
-            self.json_data)
+            json_data)
         self.encoded_source2passages = _encode_passages(
             source2passages, max_passage_len, tokenizer)
+        self.examples = json_data['examples']
 
     def __len__(self):
-        return len(self.json_data)
+        return len(self.examples)
 
     def __getitem__(self, idx):
-        example = self.json_data['examples'][idx]
+        example = self.examples[idx]
         question = example['question']
         passage_id = example['passage_id']  # this is our target
         encoded_question = encode_sentence(question, self.max_example_len, self.tokenizer)
