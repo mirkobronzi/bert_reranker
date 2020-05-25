@@ -4,7 +4,7 @@ import math
 
 from tqdm import tqdm
 
-from bert_reranker.data.data_loader import _get_passages_by_source, _encode_passages, \
+from bert_reranker.data.data_loader import get_passages_by_source, _encode_passages, \
     get_passage_text
 
 logger = logging.getLogger(__name__)
@@ -27,7 +27,7 @@ def generate_predictions(ret_trainee, json_file, predict_to):
     indices_of_correct_passage = []
     out_stream = open(predict_to, 'w') if predict_to else None
 
-    source2passages, passage_id2source, passage_id2index = _get_passages_by_source(json_data)
+    source2passages, passage_id2source, passage_id2index = get_passages_by_source(json_data)
     source2encoded_passages, _, _ = _encode_passages(
         source2passages, ret_trainee.retriever.max_question_len, ret_trainee.retriever.tokenizer)
     for example in tqdm(json_data['examples']):

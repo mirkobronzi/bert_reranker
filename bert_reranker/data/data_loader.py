@@ -18,7 +18,7 @@ def encode_sentence(sentence, max_length, tokenizer):
             'tt': input_question['token_type_ids'].squeeze(0)}
 
 
-def _get_passages_by_source(json_data):
+def get_passages_by_source(json_data):
     source2passages = defaultdict(list)
     pid2passage = {}
     pid2index = {}
@@ -29,8 +29,14 @@ def _get_passages_by_source(json_data):
         source2passages[source].append(passage)
         if passage_id in pid2passage:
             raise ValueError('duplicate passage id: {}'.format(passage_id))
+
+        if is_in_distribution(passage):
+            pid2index[passage_id] = len(source2passages[source]) - 1
+        else:
+            pid2index[passage_id] = -1
+
         pid2passage[passage_id] = passage
-        pid2index[passage_id] = len(source2passages[source]) - 1
+
     return source2passages, pid2passage, pid2index
 
 
@@ -84,7 +90,7 @@ class ReRankerDataset(Dataset):
         with open(json_file, 'r', encoding='utf-8') as in_stream:
             json_data = json.load(in_stream)
 
-        source2passages, pid2passage, pid2index = _get_passages_by_source(
+        source2passages, pid2passage, pid2index = get_passages_by_source(
             json_data)
 
         self.encoded_source2passages, source2id, source2ood = _encode_passages(
