@@ -67,16 +67,25 @@ def generate_predictions(ret_trainee, json_file, predict_to):
 
 def compute_result_at_threshold(predictions, indices_of_correct_passage, normalized_scores,
                                 threshold):
+    count = len(indices_of_correct_passage)
+    ood_count = sum([x == -1 for x in indices_of_correct_passage])
+    id_count = count - ood_count
     correct = 0
-    count = 0
-    not_considered = 0
+    id_correct = 0
+    ood_correct = 0
+
     for i, prediction in enumerate(predictions):
         if normalized_scores[i] >= threshold:
-            correct += int(prediction == indices_of_correct_passage[i])
-            count += 1
+            after_threshold_pred = prediction
+            id_correct += int(after_threshold_pred == indices_of_correct_passage[i])
         else:
-            not_considered += 1
-    acc = correct / count * 100 if count > 0 else math.nan
-    return "threshold {:1.3f}: entries included: {:4} (filtered out :{:4}) - correct " \
-           "(among the included): {:4} - accuracy is {:3.2f}".format(
-               threshold, count, not_considered, correct, acc)
+            after_threshold_pred = -1
+            ood_correct += int(after_threshold_pred == indices_of_correct_passage[i])
+        correct += int(after_threshold_pred == indices_of_correct_passage[i])
+    acc = ((correct / count) * 100) if count > 0 else math.nan
+    id_acc = ((id_correct / id_count) * 100) if id_count > 0 else math.nan
+    ood_acc = ((ood_correct / ood_count) * 100) if ood_count > 0 else math.nan
+    return "threshold {:1.3f}: overall correct: {:3}/{:3}={:3.2f} - in-distribution correct" \
+           "{:3}/{:3}={:3.2f} - out-of-distribution: {:3}/{:3}={:3.2f}".format(
+               threshold, correct, count, acc, id_correct, id_count, id_acc, ood_correct, ood_count,
+               ood_acc)
