@@ -77,6 +77,10 @@ def get_passage_text(passage, return_error_for_ood=False):
         return '__out-of-distribution__'
 
 
+def get_question(example):
+    return example['question']
+
+
 class ReRankerDataset(Dataset):
 
     def __init__(self, json_file, max_example_len, max_passage_len, tokenizer):
@@ -109,7 +113,7 @@ class ReRankerDataset(Dataset):
 
     def __getitem__(self, idx):
         example = self.examples[idx]
-        question = example['question']
+        question = get_question(example)
         passage_id = example['passage_id']  # this is the related passage
         encoded_question = encode_sentence(question, self.max_example_len, self.tokenizer)
 

@@ -9,7 +9,7 @@ from tqdm import tqdm
 from bert_reranker.data.data_loader import (
     get_passages_by_source,
     _encode_passages,
-    get_passage_text,
+    get_passage_text, get_question,
 )
 
 logger = logging.getLogger(__name__)
@@ -83,92 +83,16 @@ def generate_predictions(ret_trainee, json_file, predict_to):
 
 
 def generate_embeddings(ret_trainee, input_file, out_file):
-    if input_file.endswith(".csv"):
-        data = pd.read_csv(input_file)
-        if "samasource" in input_file:
-            not_user_health_related = 1 - (
-                data.samasource_annotation == "USER_HEALTH_RELATED"
-            )
-            not_user_health_related = not_user_health_related.astype("bool")
-            data = data.loc[not_user_health_related, :]
+    with open(input_file, "r", encoding="utf-8") as f:
+        json_data = json.load(f)
+    embs = []
+    for example in tqdm(json_data["examples"]):
+        emb = ret_trainee.retriever.embed_question(get_question(example))
+        embs.append(emb)
 
-            q_embs = []
-            questions = []
-            clusters = []
-            samasource_annotations = []
-            for question, cluster, sam_ant in tqdm(
-                zip(data.question_processed, data.cluster, data.samasource_annotation)
-            ):
-                q_emb = ret_trainee.retriever.embed_question(question)
-                q_embs.append(q_emb)
-                questions.append(question)
-                clusters.append(cluster)
-                samasource_annotations.append(sam_ant)
-
-            dct = {
-                "embs": q_embs,
-                "questions": questions,
-                "clusters": clusters,
-                "annotations": samasource_annotations,
-            }
-            with open(out_file, "wb") as out_stream:
-                pickle.dump(dct, out_stream)
-
-        else:
-
-            q_embs = []
-            vals = []
-            topics = []
-            gt_questions = []
-            for question, validation, topic, gt_question in tqdm(
-                zip(data.question, data.validation, data.topic, data.gt_question),
-                total=len(data),
-            ):
-                q_emb = ret_trainee.retriever.embed_question(question)
-                q_embs.append(q_emb)
-                vals.append(validation)
-                topics.append(topic)
-                gt_questions.append(gt_question)
-
-            dct = {
-                "embs": q_embs,
-                "vals": vals,
-                "topics": topics,
-                "gt_questions": gt_questions,
-            }
-            with open("QUESTION_" + out_file, "wb") as out_stream:
-                pickle.dump(dct, out_stream)
-
-            logger.info(
-                "embedded {} questions - now embedding {} gt_questions".format(
-                    len(q_embs), len(gt_questions)
-                )
-            )
-            p_embs = []
-
-            for gt_question in tqdm(set(gt_questions)):
-                p_emb = ret_trainee.retriever.embed_paragraph(gt_question)
-                p_embs.append(p_emb)
-            dct_gt = {"embs": p_embs, "gt_questions": set(gt_questions)}
-            with open("GT_QUESTION_" + out_file, "wb") as out_stream:
-                pickle.dump(dct_gt, out_stream)
-
-    elif input_file.endswith("json"):
-        data = pd.read_json(input_file)
-
-        gt_questions = list(data.iloc[:, 0].values)
-
-        p_embs = []
-        for gt_question in tqdm(gt_questions):
-            p_emb = ret_trainee.retriever.embed_paragraph(gt_question)
-            p_embs.append(p_emb)
-
-        dct_gt = {"embs": p_embs, "gt_questions": (gt_questions)}
-        with open(out_file, "wb") as out_stream:
-            pickle.dump(dct_gt, out_stream)
-
-    else:
-        raise ValueError("I do not support that extension, go somewhere else")
+    dct_gt = {"questions": embs}
+    with open(out_file, "wb") as out_stream:
+        pickle.dump(dct_gt, out_stream)
 
 
 def compute_result_at_threshold(
