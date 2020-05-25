@@ -1,12 +1,12 @@
 import logging
-from typing import List
 
 import torch
 import torch.nn as nn
+from torch.utils.checkpoint import checkpoint
 
+from bert_reranker.data.data_loader import encode_sentence
 from bert_reranker.models.bert_encoder import get_ffw_layers
 from bert_reranker.utils.hp_utils import check_and_log_hp
-from torch.utils.checkpoint import checkpoint
 
 logger = logging.getLogger(__name__)
 
@@ -38,36 +38,22 @@ class Retriever(nn.Module):
         """
         raise ValueError('not implemented - use a subclass.')
 
-    def compute_embeddings(
-            self, input_ids_question, attention_mask_question, token_type_ids_question,
-            batch_input_ids_paragraphs, batch_attention_mask_paragraphs,
-            batch_token_type_ids_paragraphs):
+    def compute_embeddings(self, question, passages):
 
-        batch_size, num_document, max_len_size = batch_input_ids_paragraphs.size()
-
-        if self.debug:
-            for i in range(batch_size):
-                question = self.tokenizer.convert_ids_to_tokens(
-                    input_ids_question.cpu().numpy()[i])
-                logger.info('>> {}'.format(question))
-                for j in range(num_document):
-                    answer = self.tokenizer.convert_ids_to_tokens(
-                        batch_input_ids_paragraphs.cpu().numpy()[i][j])
-                    logger.info('>>>> {}'.format(answer))
-
+        num_document = len(passages)
         h_question = checkpoint(
             self.bert_question_encoder,
-            input_ids_question,
-            attention_mask_question,
-            token_type_ids_question,
+            question['ids'],
+            question['am'],
+            question['tt'],
             self.dummy_tensor)
 
         h_paragraph_list = []
         for i in range(num_document):
             h_paragraph = checkpoint(self.bert_paragraph_encoder,
-                                     batch_input_ids_paragraphs[:, i, :],
-                                     batch_attention_mask_paragraphs[:, i, :],
-                                     batch_token_type_ids_paragraphs[:, i, :],
+                                     passages[i]['ids'],
+                                     passages[i]['am'],
+                                     passages[i]['tt'],
                                      self.dummy_tensor)
             h_paragraph_list.append(h_paragraph)
 
@@ -99,42 +85,26 @@ class Retriever(nn.Module):
             question_embedding = self.bert_question_encoder(**inputs)
         return question_embedding
 
-    def predict(self, question_str: str, batch_paragraph_strs: List[str]):
+    def predict(self, question, enc_passages):
+        """
+
+        :param question: a string (to encode)
+        :param enc_passages: a list of passages (already encoded)
+        :return: the prediction (index) and the normalized score.
+        """
         self.eval()
         with torch.no_grad():
             # TODO this is only a single batch
+            enc_question = encode_sentence(question, self.max_question_len, self.tokenizer)
+            enc_question = _add_batch_dim(enc_question)
+            enc_passages = [_add_batch_dim(enc_passage) for enc_passage in enc_passages]
 
-            paragraph_inputs = self.tokenizer.batch_encode_plus(
-                 batch_paragraph_strs,
-                 add_special_tokens=True,
-                 pad_to_max_length=True,
-                 max_length=self.max_paragraph_len,
-                 return_tensors='pt'
-             )
-
-            tmp_device = next(self.bert_paragraph_encoder.parameters()).device
-            p_inputs = {k: v.to(tmp_device).unsqueeze(0) for k, v in paragraph_inputs.items()}
-
-            question_inputs = self.tokenizer.encode_plus(
-                question_str, add_special_tokens=True, max_length=self.max_question_len,
-                pad_to_max_length=True, return_tensors='pt')
-            q_inputs = {k: v.to(tmp_device) for k, v in question_inputs.items()}
-
-            relevance_scores = self.compute_score(
-                q_ids=q_inputs['input_ids'], q_am=q_inputs['attention_mask'],
-                q_tt=q_inputs['token_type_ids'], p_ids=p_inputs['input_ids'],
-                p_am=p_inputs['attention_mask'], p_tt=p_inputs['token_type_ids']
-            ).squeeze(0)
+            relevance_scores = self.compute_score(question=enc_question, passages=enc_passages)
+            relevance_scores = relevance_scores.squeeze(0)  # no batch dimension
 
             normalized_scores = self.softmax(relevance_scores)
-            rerank_index = torch.argsort(-relevance_scores)
-            relevance_scores_numpy = relevance_scores.detach().cpu().numpy()
-            rerank_index_numpy = rerank_index.detach().cpu().numpy()
-            reranked_paragraphs = [batch_paragraph_strs[i] for i in rerank_index_numpy]
-            reranked_relevance_scores = relevance_scores_numpy[rerank_index_numpy]
-            reranked_normalized_scores = [normalized_scores[i] for i in rerank_index_numpy]
-            return (reranked_paragraphs, reranked_relevance_scores, rerank_index_numpy,
-                    reranked_normalized_scores)
+            highest_norm_score, prediction = torch.max(normalized_scores, 0)
+            return prediction, highest_norm_score
 
 
 class EmbeddingRetriever(Retriever):
@@ -146,12 +116,19 @@ class EmbeddingRetriever(Retriever):
             max_paragraph_len, debug)
         self.returns_embeddings = True
 
-    def forward(self, q_ids, q_am, q_tt, p_ids, p_am, p_tt):
-        return self.compute_embeddings(q_ids, q_am, q_tt, p_ids, p_am, p_tt)
+    def forward(self, question, passages):
+        return self.compute_embeddings(question, passages)
 
     def compute_score(self, **kwargs):
         q_emb, p_embs = self.forward(**kwargs)
         return torch.bmm(q_emb.unsqueeze(1), p_embs.transpose(2, 1)).squeeze(1)
+
+
+def _add_batch_dim(tensor):
+    new_tensor = {}
+    for k, v in tensor.items():
+        new_tensor[k] = torch.unsqueeze(v, 0)
+    return new_tensor
 
 
 class FeedForwardRetriever(Retriever):
@@ -182,4 +159,4 @@ class FeedForwardRetriever(Retriever):
         return logits.squeeze(dim=2)
 
     def compute_score(self, **kwargs):
-        q_emb, p_embs = self.forward(**kwargs)
+        return self.forward(**kwargs)
