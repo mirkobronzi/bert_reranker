@@ -6,6 +6,8 @@ predictions.txt
 experiment_logs
 orion_db.pkl*
 orion_working_dir
+*.npy
+*_TEMP
 
 # Ignore example outputs
 examples/*/output/

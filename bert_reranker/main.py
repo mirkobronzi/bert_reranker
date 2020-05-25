@@ -82,7 +82,7 @@ def main():
         action="store_true",
     )
     parser.add_argument(
-        "--num_workers", help="number of workers - default 2", type=int, default=2
+        "--num-workers", help="number of workers - default 2", type=int, default=0
     )
 
     parser.add_argument(
@@ -149,9 +149,8 @@ def main():
         ret_trainee.load_state_dict(model_ckpt["state_dict"])
         generate_predictions(
             ret_trainee,
-            qa_pairs_json_file=args.predict,
-            predict_to=args.predict_to,
-            ground_truth_available=args.ground_truth_available,
+            json_file=args.predict,
+            predict_to=args.predict_to
         )
     elif args.save_weights_to is not None:
         torch.save(ret_trainee.retriever.state_dict(), args.save_weights_to)

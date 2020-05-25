@@ -1,7 +1,6 @@
 train_file: 'data_small.json'
 dev_files:
   dev_file_1: 'data_small.json'
-  dev_file_2: 'data_small.json'
 test_file: 'data_small.json'
 cache_folder: 'cached_natq'
 tokenizer_name: 'bert-base-uncased'
@@ -32,7 +31,7 @@ model:
 #  dropout: 0.0
 #  normalize_model_result: true
 
-loss_type: 'classification'
+loss_type: 'classification_with_uniform_ood'
 
 # Logging
 logging:
