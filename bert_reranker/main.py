@@ -9,7 +9,6 @@ from logging.handlers import WatchedFileHandler
 import numpy as np
 import pytorch_lightning as pl
 import torch
-import torch.multiprocessing
 import yaml
 from orion.client import report_results
 from pytorch_lightning import loggers
@@ -83,7 +82,7 @@ def main():
         action="store_true",
     )
     parser.add_argument(
-        "--num-workers", help="number of workers - default 2", type=int, default=2
+        "--num-workers", help="number of workers - default 2", type=int, default=0
     )
 
     parser.add_argument(
@@ -102,9 +101,6 @@ def main():
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.INFO)
-
-    # Fix for num_workers > 0
-    # torch.multiprocessing.set_sharing_strategy('file_system')
 
     # will log to a file if provided (useful for orion on cluster)
     if args.log is not None:
