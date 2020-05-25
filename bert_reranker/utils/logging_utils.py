@@ -5,7 +5,7 @@ class LoggerWriter:
         self.printer = printer
 
     def write(self, message):
-        if message != '\n':
+        if message != "\n":
             self.printer(message)
 
     def flush(self):

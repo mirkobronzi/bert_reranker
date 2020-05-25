@@ -21,9 +21,9 @@ def main():
         all_candidates |= set(candidates)
 
     with open(args.output, "w", encoding="utf-8") as out_stream:
-        out_stream.write('\n'.join(all_candidates))
+        out_stream.write("\n".join(all_candidates))
 
-    logger.info('collect {} candidates'.format(len(all_candidates)))
+    logger.info("collect {} candidates".format(len(all_candidates)))
 
 
 if __name__ == "__main__":

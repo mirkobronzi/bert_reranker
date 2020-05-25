@@ -24,15 +24,15 @@ def main():
             label_data = data.loc[data[args.group_by] == label]
             _write_data(args.output, label, label_data)
     else:
-        _write_data(args.output, 'output', data)
+        _write_data(args.output, "output", data)
 
 
 def _write_data(output, label, data):
-    coutput = os.path.join(output, label) + '.txt'
+    coutput = os.path.join(output, label) + ".txt"
     with open(coutput, "w", encoding="utf-8") as out_stream:
         for question in data.question:
-            out_stream.write(question + '\n')
-    logger.info('writing result to {}'.format(coutput))
+            out_stream.write(question + "\n")
+    logger.info("writing result to {}".format(coutput))
 
 
 if __name__ == "__main__":

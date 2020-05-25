@@ -12,7 +12,8 @@ logger = logging.getLogger(__name__)
 
 
 def get_ffw_layers(
-        prev_hidden_size, dropout, layer_sizes, append_relu_and_dropout_after_last_layer):
+    prev_hidden_size, dropout, layer_sizes, append_relu_and_dropout_after_last_layer
+):
     result = []
     for i, size in enumerate(layer_sizes):
         result.append(nn.Linear(prev_hidden_size, size))
@@ -28,57 +29,61 @@ def hashable(input_id):
 
 
 class BertEncoder(GeneralEncoder):
-
-    def __init__(self, hyper_params, bert_model, name=''):
-        model_hparams = hyper_params['model']
-        check_and_log_hp(
-            ['bert_base', 'dropout_bert', 'freeze_bert'],
-            model_hparams)
+    def __init__(self, hyper_params, bert_model, name=""):
+        model_hparams = hyper_params["model"]
+        check_and_log_hp(["bert_base", "dropout_bert", "freeze_bert"], model_hparams)
         if bert_model is None:
-            bert = AutoModel.from_pretrained(model_hparams['bert_base'])
+            bert = AutoModel.from_pretrained(model_hparams["bert_base"])
         else:
             bert = bert_model
         super(BertEncoder, self).__init__(hyper_params, bert.config.hidden_size)
         self.bert = bert
         self.name = name
 
-        bert_dropout = model_hparams['dropout_bert']
+        bert_dropout = model_hparams["dropout_bert"]
         if bert_dropout is not None:
-            logger.info('setting bert dropout to {}'.format(bert_dropout))
+            logger.info("setting bert dropout to {}".format(bert_dropout))
             self.bert.config.attention_probs_dropout_prob = bert_dropout
             self.bert.config.hidden_dropout_prob = bert_dropout
         else:
-            logger.info('using the original bert model dropout')
+            logger.info("using the original bert model dropout")
 
-        self.freeze_bert = model_hparams['freeze_bert']
+        self.freeze_bert = model_hparams["freeze_bert"]
 
     def get_encoder_hidden_states(self, input_ids, attention_mask, token_type_ids):
 
         if self.freeze_bert:
             with torch.no_grad():
-                bert_hs, _ = self.bert(input_ids=input_ids, attention_mask=attention_mask,
-                                       token_type_ids=token_type_ids)
+                bert_hs, _ = self.bert(
+                    input_ids=input_ids,
+                    attention_mask=attention_mask,
+                    token_type_ids=token_type_ids,
+                )
         else:
-            bert_hs, _ = self.bert(input_ids=input_ids, attention_mask=attention_mask,
-                                   token_type_ids=token_type_ids)
+            bert_hs, _ = self.bert(
+                input_ids=input_ids,
+                attention_mask=attention_mask,
+                token_type_ids=token_type_ids,
+            )
         return bert_hs
 
 
 class CachedBertEncoder(BertEncoder):
-
-    def __init__(self, hyper_params, bert_model, name=''):
-        model_hparams = hyper_params['model']
+    def __init__(self, hyper_params, bert_model, name=""):
+        model_hparams = hyper_params["model"]
         check_and_log_hp(
-            ['bert_base', 'dropout_bert', 'freeze_bert', 'cache_size'],
-            model_hparams)
+            ["bert_base", "dropout_bert", "freeze_bert", "cache_size"], model_hparams
+        )
         super(CachedBertEncoder, self).__init__(hyper_params, bert_model, name=name)
 
-        if not model_hparams['freeze_bert'] or not model_hparams['dropout_bert'] == 0.0:
-            raise ValueError('to cache results, set freeze_bert=True and dropout_bert=0.0')
+        if not model_hparams["freeze_bert"] or not model_hparams["dropout_bert"] == 0.0:
+            raise ValueError(
+                "to cache results, set freeze_bert=True and dropout_bert=0.0"
+            )
         self.cache = {}
         self.cache_hit = 0
         self.cache_miss = 0
-        self.max_cache_size = model_hparams['cache_size']
+        self.max_cache_size = model_hparams["cache_size"]
 
     def _search_in_cache(self, input_ids, attention_mask, token_type_ids):
         results = []
@@ -96,7 +101,9 @@ class CachedBertEncoder(BertEncoder):
                 still_to_compute_tti.append(token_type_ids[i])
         return results, still_to_compute_iids, still_to_compute_am, still_to_compute_tti
 
-    def _store_in_cache_and_get_results(self, cache_results, bert_hs, still_to_compute_iids):
+    def _store_in_cache_and_get_results(
+        self, cache_results, bert_hs, still_to_compute_iids
+    ):
         final_results = []
         non_cached_result_index = 0
         for cache_result in cache_results:
@@ -104,8 +111,9 @@ class CachedBertEncoder(BertEncoder):
                 non_cached_result = bert_hs[non_cached_result_index]
                 final_results.append(non_cached_result)
                 if len(self.cache) < self.max_cache_size:
-                    self.cache[hashable(still_to_compute_iids[non_cached_result_index])] = \
-                        non_cached_result.cpu()
+                    self.cache[
+                        hashable(still_to_compute_iids[non_cached_result_index])
+                    ] = non_cached_result.cpu()
                 non_cached_result_index += 1
             else:
                 final_results.append(cache_result)
@@ -114,8 +122,12 @@ class CachedBertEncoder(BertEncoder):
 
     def get_encoder_hidden_states(self, input_ids, attention_mask, token_type_ids):
 
-        cache_results, still_to_compute_iids, still_to_compute_am, still_to_compute_tti = \
-            self._search_in_cache(input_ids, attention_mask, token_type_ids)
+        (
+            cache_results,
+            still_to_compute_iids,
+            still_to_compute_am,
+            still_to_compute_tti,
+        ) = self._search_in_cache(input_ids, attention_mask, token_type_ids)
         self.cache_hit += input_ids.shape[0] - len(still_to_compute_iids)
         self.cache_miss += len(still_to_compute_iids)
         if len(still_to_compute_iids) == 0:
@@ -127,15 +139,22 @@ class CachedBertEncoder(BertEncoder):
 
         if self.freeze_bert:
             with torch.no_grad():
-                bert_hs, _ = self.bert(input_ids=input_ids, attention_mask=attention_mask,
-                                       token_type_ids=token_type_ids)
+                bert_hs, _ = self.bert(
+                    input_ids=input_ids,
+                    attention_mask=attention_mask,
+                    token_type_ids=token_type_ids,
+                )
         else:
-            bert_hs, _ = self.bert(input_ids=input_ids, attention_mask=attention_mask,
-                                   token_type_ids=token_type_ids)
+            bert_hs, _ = self.bert(
+                input_ids=input_ids,
+                attention_mask=attention_mask,
+                token_type_ids=token_type_ids,
+            )
 
         if self.cache is not None:
             bert_hs = self._store_in_cache_and_get_results(
-                cache_results, bert_hs, still_to_compute_iids)
+                cache_results, bert_hs, still_to_compute_iids
+            )
 
         return bert_hs
 
@@ -149,5 +168,8 @@ class CachedBertEncoder(BertEncoder):
         return len(self.cache)
 
     def print_stats_to(self, print_function):
-        print_function('{}: cache size {} / cache hits {} / cache misses {}'.format(
-            self.name, len(self.cache), self.cache_hit, self.cache_miss))
+        print_function(
+            "{}: cache size {} / cache hits {} / cache misses {}".format(
+                self.name, len(self.cache), self.cache_hit, self.cache_miss
+            )
+        )

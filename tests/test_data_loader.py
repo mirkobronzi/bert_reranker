@@ -25,7 +25,9 @@ SIMPLE_JSON = """
 
 
 def test_get_passages_by_source__simple():
-    source2passages, pid2passage, pid2index = get_passages_by_source(json.loads(SIMPLE_JSON))
+    source2passages, pid2passage, pid2index = get_passages_by_source(
+        json.loads(SIMPLE_JSON)
+    )
     assert pid2index == {0: 0}
 
 
@@ -63,5 +65,7 @@ ID_AND_OOD_JSON = """
 
 
 def test_get_passages_by_source__id_and_ood():
-    source2passages, pid2passage, pid2index = get_passages_by_source(json.loads(ID_AND_OOD_JSON))
+    source2passages, pid2passage, pid2index = get_passages_by_source(
+        json.loads(ID_AND_OOD_JSON)
+    )
     assert pid2index == {0: 0, 12: -1}

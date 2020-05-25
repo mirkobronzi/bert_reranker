@@ -42,7 +42,7 @@ def main():
         "--gpu",
         help="list of gpu ids to use. default is cpu. example: --gpu 0 1",
         type=int,
-        nargs="+"
+        nargs="+",
     )
     parser.add_argument(
         "--validation-interval",
@@ -102,7 +102,7 @@ def main():
         help="will print stats on the data",
         action="store_true",
     )
-    parser.add_argument('--log', help='log to this file (in addition to stdout/err)')
+    parser.add_argument("--log", help="log to this file (in addition to stdout/err)")
     parser.add_argument("--debug", help="will log more info", action="store_true")
     args = parser.parse_args()
 
@@ -123,8 +123,8 @@ def main():
     with open(args.config, "r") as stream:
         hyper_params = load(stream, Loader=yaml.FullLoader)
 
-    if args.gpu is None and 'GPU' in os.environ:
-        gpu_string = os.environ['GPU']
+    if args.gpu is None and "GPU" in os.environ:
+        gpu_string = os.environ["GPU"]
         gpu = [int(x) for x in gpu_string.strip().split()]
     else:
         gpu = args.gpu
@@ -137,36 +137,37 @@ def main():
         gpu,
         args.no_model_restoring,
         args.debug,
-        args.print_sentence_stats
+        args.print_sentence_stats,
     )
 
     if args.train:
         trainer.fit(ret_trainee)
         best_dev_result = float(trainer.early_stop_callback.best.cpu().numpy())
-        report_results([dict(
-            name='dev_metric',
-            type='objective',
-            # note the minus - cause orion is always trying to minimize (cit. from the guide)
-            value=-float(best_dev_result))])
+        report_results(
+            [
+                dict(
+                    name="dev_metric",
+                    type="objective",
+                    # note the minus - cause orion is always trying to minimize (cit. from the guide)
+                    value=-float(best_dev_result),
+                )
+            ]
+        )
     elif args.validate:
         trainer.test(ret_trainee)
     elif args.predict:
         model_ckpt = torch.load(ckpt_to_resume, map_location=torch.device("cpu"))
         ret_trainee.load_state_dict(model_ckpt["state_dict"])
         generate_predictions(
-            ret_trainee,
-            json_file=args.predict,
-            predict_to=args.predict_to
+            ret_trainee, json_file=args.predict, predict_to=args.predict_to
         )
     elif args.file_to_emb:
         if args.write_emb_to is None:
-            raise ValueError('please specify also --write-emb-to')
+            raise ValueError("please specify also --write-emb-to")
         model_ckpt = torch.load(ckpt_to_resume, map_location=torch.device("cpu"))
         ret_trainee.load_state_dict(model_ckpt["state_dict"])
         generate_embeddings(
-            ret_trainee,
-            csv_input_file=args.file_to_emb,
-            out_file=args.write_emb_to
+            ret_trainee, csv_input_file=args.file_to_emb, out_file=args.write_emb_to
         )
     elif args.save_weights_to is not None:
         torch.save(ret_trainee.retriever.state_dict(), args.save_weights_to)
@@ -182,7 +183,7 @@ def init_model(
     gpu,
     no_model_restoring,
     debug,
-    print_sentence_stats
+    print_sentence_stats,
 ):
 
     check_and_log_hp(
@@ -254,7 +255,7 @@ def init_model(
         for hparam in list(hyper_params):
             pl_logger.experiment.add_text(hparam, str(hyper_params[hparam]))
     elif hyper_params["logging"]["logger"] == "wandb":
-        orion_trial_id = os.environ.get('ORION_TRIAL_ID')
+        orion_trial_id = os.environ.get("ORION_TRIAL_ID")
         name = orion_trial_id if orion_trial_id else hyper_params["logging"]["name"]
         pl_logger = WandbLogger(
             name=name,

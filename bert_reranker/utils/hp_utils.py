@@ -16,11 +16,11 @@ def check_hp(names, hps, allow_extra=True):
     extra = hps.keys() - names
 
     if len(missing) > 0:
-        logger.error('please add the missing hyper-parameters: {}'.format(missing))
+        logger.error("please add the missing hyper-parameters: {}".format(missing))
     if len(extra) > 0 and not allow_extra:
-        logger.error('please remove the extra hyper-parameters: {}'.format(extra))
+        logger.error("please remove the extra hyper-parameters: {}".format(extra))
     if len(missing) > 0 or (len(extra) > 0 and not allow_extra):
-        raise ValueError('fix according to the error message above')
+        raise ValueError("fix according to the error message above")
 
 
 def log_hp(names, hps):

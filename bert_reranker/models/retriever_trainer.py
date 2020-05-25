@@ -18,20 +18,24 @@ def prepare_soft_targets(target_ints, num_classes):
     modified_target_ints = inverted_mask * target_ints
     oh_modified_target_ints = one_hot(modified_target_ints, num_classes=num_classes)
     modified_soft_targets = oh_modified_target_ints.double()
-    repeated_inverted_mask = inverted_mask.unsqueeze(1).repeat((1, num_classes)).reshape(
-        [inverted_mask.shape[0], num_classes])
+    repeated_inverted_mask = (
+        inverted_mask.unsqueeze(1)
+        .repeat((1, num_classes))
+        .reshape([inverted_mask.shape[0], num_classes])
+    )
     soft_targets = (modified_soft_targets * repeated_inverted_mask).float()
-    repeated_mask = mask.unsqueeze(1).repeat((1, num_classes)).reshape(
-        [mask.shape[0], num_classes])
+    repeated_mask = (
+        mask.unsqueeze(1).repeat((1, num_classes)).reshape([mask.shape[0], num_classes])
+    )
     uniform_targets = (1 / num_classes) * repeated_mask
     soft_targets += uniform_targets
     return soft_targets
 
 
 class RetrieverTrainer(pl.LightningModule):
-
-    def __init__(self, retriever, train_data, dev_data, test_data, loss_type,
-                 optimizer_type):
+    def __init__(
+        self, retriever, train_data, dev_data, test_data, loss_type, optimizer_type
+    ):
         super(RetrieverTrainer, self).__init__()
         self.retriever = retriever
         self.train_data = train_data
@@ -40,7 +44,7 @@ class RetrieverTrainer(pl.LightningModule):
         self.loss_type = loss_type
         self.optimizer_type = optimizer_type
 
-        if loss_type == 'classification':
+        if loss_type == "classification":
             self.cross_entropy = nn.CrossEntropyLoss()
         self.softmax = nn.Softmax(dim=1)
         self.val_metrics = {}
@@ -49,41 +53,48 @@ class RetrieverTrainer(pl.LightningModule):
         return self.retriever(**kwargs)
 
     def step_helper(self, batch):
-        inputs = {k: v for k, v in batch.items() if k != 'target_idx'}
-        targets = batch['target_idx']
+        inputs = {k: v for k, v in batch.items() if k != "target_idx"}
+        targets = batch["target_idx"]
 
-        if self.loss_type == 'classification':
+        if self.loss_type == "classification":
             logits = self.retriever.compute_score(**inputs)
             loss = self.cross_entropy(logits, targets)
-        elif self.loss_type == 'classification_with_uniform_ood':
+        elif self.loss_type == "classification_with_uniform_ood":
             logits = self.retriever.compute_score(**inputs)
             soft_targets = prepare_soft_targets(targets, logits.shape[1])
             loss = soft_cross_entropy(logits, soft_targets)
         else:
-            raise ValueError('loss_type {} not supported. Please choose between classification and'
-                             ' classification_with_uniform_ood')
+            raise ValueError(
+                "loss_type {} not supported. Please choose between classification and"
+                " classification_with_uniform_ood"
+            )
         all_prob = self.softmax(logits)
         return loss, all_prob
 
     def training_step(self, batch, batch_idx):
         train_loss, _ = self.step_helper(batch)
         # logs
-        tensorboard_logs = {'train_loss': train_loss}
-        return {'loss': train_loss, 'log': tensorboard_logs}
+        tensorboard_logs = {"train_loss": train_loss}
+        return {"loss": train_loss, "log": tensorboard_logs}
 
     def training_step_end(self, outputs):
-        loss_value = outputs['loss'].mean()
-        tensorboard_logs = {'train_loss': loss_value}
-        return {'loss': loss_value, 'log': tensorboard_logs}
+        loss_value = outputs["loss"].mean()
+        tensorboard_logs = {"train_loss": loss_value}
+        return {"loss": loss_value, "log": tensorboard_logs}
 
     def validation_step(self, batch, batch_idx, dataset_number=0):
         # if self.dev_data is a dataloader, there is no provided
         # dataset_number, hence the default value at 0
         loss, predictions = self.compute_predictions(batch)
-        targets = batch['target_idx']
-        val_acc = torch.tensor(accuracy_score(targets.cpu(), predictions.cpu())).to(targets.device)
+        targets = batch["target_idx"]
+        val_acc = torch.tensor(accuracy_score(targets.cpu(), predictions.cpu())).to(
+            targets.device
+        )
 
-        return {'val_loss_' + str(dataset_number): loss, 'val_acc_' + str(dataset_number): val_acc}
+        return {
+            "val_loss_" + str(dataset_number): loss,
+            "val_acc_" + str(dataset_number): val_acc,
+        }
 
     def compute_predictions(self, batch):
         loss, all_prob = self.step_helper(batch)
@@ -112,20 +123,21 @@ class RetrieverTrainer(pl.LightningModule):
             # Evaluate all validation sets (if there is more than 1)
             val_metrics = {}
             for dataset_index in range(len(self.dev_data)):
-                avg_val_loss = self._comput_mean_for_metric(dataset_index, 'val_loss_', outputs)
-                avg_val_acc = self._comput_mean_for_metric(dataset_index, 'val_acc_', outputs)
-                val_metrics['val_acc_' + str(dataset_index)] = avg_val_acc
-                val_metrics['val_loss_' + str(dataset_index)] = avg_val_loss
+                avg_val_loss = self._comput_mean_for_metric(
+                    dataset_index, "val_loss_", outputs
+                )
+                avg_val_acc = self._comput_mean_for_metric(
+                    dataset_index, "val_acc_", outputs
+                )
+                val_metrics["val_acc_" + str(dataset_index)] = avg_val_acc
+                val_metrics["val_loss_" + str(dataset_index)] = avg_val_loss
         else:  # only one dev set provided
-            avg_val_loss = self._comput_mean_for_metric(None, 'val_loss_', outputs)
-            avg_val_acc = self._comput_mean_for_metric(None, 'val_acc_', outputs)
+            avg_val_loss = self._comput_mean_for_metric(None, "val_loss_", outputs)
+            avg_val_acc = self._comput_mean_for_metric(None, "val_acc_", outputs)
 
-            val_metrics = {'val_acc_0': avg_val_acc, 'val_loss_0': avg_val_loss}
+            val_metrics = {"val_acc_0": avg_val_acc, "val_loss_0": avg_val_loss}
 
-        results = {
-            'progress_bar': val_metrics,
-            'log': val_metrics
-        }
+        results = {"progress_bar": val_metrics, "log": val_metrics}
         return results
 
     def _comput_mean_for_metric(self, dataset_index, metric_name, outputs):

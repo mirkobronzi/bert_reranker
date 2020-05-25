@@ -28,12 +28,12 @@ def make_qa_pairs_faq(json_file, n_wrong_answers, seed):
             answer_size = len(wrong_answers)
 
         if answer_size != len(wrong_answers):
-            raise ValueError('different number of answers')
+            raise ValueError("different number of answers")
 
         candidate_answers.extend(wrong_answers)
         qa_pairs.append([question, candidate_answers])
 
-    logger.info('every question has {} wrong answers'.format(answer_size))
+    logger.info("every question has {} wrong answers".format(answer_size))
     return qa_pairs
 
 
@@ -66,27 +66,46 @@ def collapse_jsons(json_files):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--input", help="input json (in natq format)", required=True, nargs='+')
+    parser.add_argument(
+        "--input", help="input json (in natq format)", required=True, nargs="+"
+    )
     parser.add_argument("--output-train", help="output json for train")
-    parser.add_argument("--output-answers", help="output txt containing the answer list")
-    parser.add_argument("--output-questions", help="output txt containing the question list")
-    parser.add_argument("--output-questions2answers", help="output txt containing both questions "
-                                                           "and answers")
-    parser.add_argument("--rounds", help="how many times we use the same question", type=int,
-                        default=10)
-    parser.add_argument("--wrong-answers", help="how many wrong answers for a given question."
-                                                " -1 means to keep all the available ones.",
-                        type=int, default=2)
-    parser.add_argument("--max-size", help="max size for the questions. Default: take all of them",
-                        type=int, default=-1)
+    parser.add_argument(
+        "--output-answers", help="output txt containing the answer list"
+    )
+    parser.add_argument(
+        "--output-questions", help="output txt containing the question list"
+    )
+    parser.add_argument(
+        "--output-questions2answers",
+        help="output txt containing both questions " "and answers",
+    )
+    parser.add_argument(
+        "--rounds", help="how many times we use the same question", type=int, default=10
+    )
+    parser.add_argument(
+        "--wrong-answers",
+        help="how many wrong answers for a given question."
+        " -1 means to keep all the available ones.",
+        type=int,
+        default=2,
+    )
+    parser.add_argument(
+        "--max-size",
+        help="max size for the questions. Default: take all of them",
+        type=int,
+        default=-1,
+    )
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.INFO)
 
     collapsed_json = collapse_jsons(args.input)
-    logger.info('collapsed {} files into a single dict with {} elements'.format(
-        len(args.input), len(collapsed_json)
-    ))
+    logger.info(
+        "collapsed {} files into a single dict with {} elements".format(
+            len(args.input), len(collapsed_json)
+        )
+    )
 
     if args.output_train is not None:
         create_train_output(args, collapsed_json)
@@ -104,37 +123,46 @@ def main():
 def create_answer_output(args, collapsed_json):
     answers, _, _ = collect_answers(collapsed_json)
     answers_uniq = set(answers)
-    logger.info('found {} questions - {} remaining after uniq'.format(
-        len(answers), len(answers_uniq)))
+    logger.info(
+        "found {} questions - {} remaining after uniq".format(
+            len(answers), len(answers_uniq)
+        )
+    )
     with open(args.output_answers, "w", encoding="utf-8") as out_stream:
-        out_stream.write('\n'.join(answers))
+        out_stream.write("\n".join(answers))
 
 
 def create_question_output(args, collapsed_json):
     _, _, q2a = collect_answers(collapsed_json)
     q2a_uniq = set(q2a.keys())
-    logger.info('found {} questions - {} remaining after uniq'.format(len(q2a), len(q2a_uniq)))
+    logger.info(
+        "found {} questions - {} remaining after uniq".format(len(q2a), len(q2a_uniq))
+    )
     with open(args.output_questions, "w", encoding="utf-8") as out_stream:
-        out_stream.write('\n'.join(q2a_uniq))
+        out_stream.write("\n".join(q2a_uniq))
 
 
 def create_question2answer_output(args, collapsed_json):
     _, _, q2a = collect_answers(collapsed_json)
-    logger.info('found {} questions2answer'.format(len(q2a)))
+    logger.info("found {} questions2answer".format(len(q2a)))
     with open(args.output_questions2answers, "w", encoding="utf-8") as out_stream:
-        out_stream.write('\n'.join(['{} => {}'.format(k, v) for k, v in q2a.items()]))
+        out_stream.write("\n".join(["{} => {}".format(k, v) for k, v in q2a.items()]))
 
 
 def create_train_output(args, collapsed_json):
     if args.max_size > 0:
-        logger.info('keeping only {} questions'.format(args.max_size))
-        collapsed_json = {k: v for k, v in list(collapsed_json.items())[:args.max_size]}
+        logger.info("keeping only {} questions".format(args.max_size))
+        collapsed_json = {
+            k: v for k, v in list(collapsed_json.items())[: args.max_size]
+        }
     qa_pairs = []
     for seed in range(args.rounds):
         qa_pairs.extend(
-            make_qa_pairs_faq(collapsed_json, n_wrong_answers=args.wrong_answers, seed=seed)
+            make_qa_pairs_faq(
+                collapsed_json, n_wrong_answers=args.wrong_answers, seed=seed
+            )
         )
-    logger.info('final json contains {} examples'.format(len(qa_pairs)))
+    logger.info("final json contains {} examples".format(len(qa_pairs)))
     with open(args.output_train, "w", encoding="utf-8") as out_stream:
         json.dump(qa_pairs, out_stream, indent=4, ensure_ascii=False)
 

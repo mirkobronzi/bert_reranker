@@ -23,7 +23,9 @@ def compute_average_with_padding(tensor, padding):
     return torch.sum(padded_tensor, axis=1) / entry_sizes
 
 
-def _get_layers(prev_hidden_size, dropout, layer_sizes, append_relu_and_dropout_after_last_layer):
+def _get_layers(
+    prev_hidden_size, dropout, layer_sizes, append_relu_and_dropout_after_last_layer
+):
     result = []
     for i, size in enumerate(layer_sizes):
         result.append(nn.Linear(prev_hidden_size, size))
@@ -35,48 +37,70 @@ def _get_layers(prev_hidden_size, dropout, layer_sizes, append_relu_and_dropout_
 
 
 class GeneralEncoder(nn.Module):
-
     def __init__(self, hyper_params, encoder_hidden_size):
         super(GeneralEncoder, self).__init__()
 
-        model_hparams = hyper_params['model']
+        model_hparams = hyper_params["model"]
         check_and_log_hp(
-            ['layers_pre_pooling', 'layers_post_pooling', 'dropout',
-             'normalize_model_result', 'pooling_type'],
-            model_hparams)
+            [
+                "layers_pre_pooling",
+                "layers_post_pooling",
+                "dropout",
+                "normalize_model_result",
+                "pooling_type",
+            ],
+            model_hparams,
+        )
 
-        self.pooling_type = model_hparams['pooling_type']
-        self.normalize_model_result = model_hparams['normalize_model_result']
+        self.pooling_type = model_hparams["pooling_type"]
+        self.normalize_model_result = model_hparams["normalize_model_result"]
 
-        pre_pooling_seq = _get_layers(encoder_hidden_size, model_hparams['dropout'],
-                                      model_hparams['layers_pre_pooling'],
-                                      True)
+        pre_pooling_seq = _get_layers(
+            encoder_hidden_size,
+            model_hparams["dropout"],
+            model_hparams["layers_pre_pooling"],
+            True,
+        )
         self.pre_pooling_net = nn.Sequential(*pre_pooling_seq)
 
-        pre_pooling_last_hidden_size = model_hparams['layers_pre_pooling'][-1] if \
-            model_hparams['layers_pre_pooling'] else encoder_hidden_size
-        post_pooling_seq = _get_layers(pre_pooling_last_hidden_size, model_hparams['dropout'],
-                                       model_hparams['layers_post_pooling'],
-                                       False)
-        self.post_pooling_last_hidden_size = model_hparams['layers_post_pooling'][-1] if \
-            model_hparams['layers_post_pooling'] else pre_pooling_last_hidden_size
+        pre_pooling_last_hidden_size = (
+            model_hparams["layers_pre_pooling"][-1]
+            if model_hparams["layers_pre_pooling"]
+            else encoder_hidden_size
+        )
+        post_pooling_seq = _get_layers(
+            pre_pooling_last_hidden_size,
+            model_hparams["dropout"],
+            model_hparams["layers_post_pooling"],
+            False,
+        )
+        self.post_pooling_last_hidden_size = (
+            model_hparams["layers_post_pooling"][-1]
+            if model_hparams["layers_post_pooling"]
+            else pre_pooling_last_hidden_size
+        )
         self.post_pooling_net = nn.Sequential(*post_pooling_seq)
 
     def get_encoder_hidden_states(self, input_ids, attention_mask, token_type_ids):
-        raise ValueError('not implemented - use a subclass')
+        raise ValueError("not implemented - use a subclass")
 
     def forward(self, input_ids, attention_mask, token_type_ids, dummy_tensor=None):
-        hs = self.get_encoder_hidden_states(input_ids=input_ids, attention_mask=attention_mask,
-                                            token_type_ids=token_type_ids)
+        hs = self.get_encoder_hidden_states(
+            input_ids=input_ids,
+            attention_mask=attention_mask,
+            token_type_ids=token_type_ids,
+        )
 
         pre_pooling_hs = self.pre_pooling_net(hs)
 
-        if self.pooling_type == 'cls':
+        if self.pooling_type == "cls":
             result_pooling = pre_pooling_hs[:, 0, :]
-        elif self.pooling_type == 'avg':
-            result_pooling = compute_average_with_padding(pre_pooling_hs, attention_mask)
+        elif self.pooling_type == "avg":
+            result_pooling = compute_average_with_padding(
+                pre_pooling_hs, attention_mask
+            )
         else:
-            raise ValueError('pooling {} not supported.'.format(self.pooling_type))
+            raise ValueError("pooling {} not supported.".format(self.pooling_type))
 
         post_pooling_hs = self.post_pooling_net(result_pooling)
 

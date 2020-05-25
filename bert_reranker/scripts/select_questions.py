@@ -9,8 +9,13 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--input", help="input json", required=True)
     parser.add_argument("--output", help="output json", required=True)
-    parser.add_argument("--indices", help="indices of elements to keep", required=True,
-                        type=int, nargs='+')
+    parser.add_argument(
+        "--indices",
+        help="indices of elements to keep",
+        required=True,
+        type=int,
+        nargs="+",
+    )
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.INFO)

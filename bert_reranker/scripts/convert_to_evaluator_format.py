@@ -59,12 +59,18 @@ def main():
     ordered_answers_index = sorted(answers_to_index.items(), key=lambda item: item[1])
     ordered_answers = [(i, x[0]) for i, x in enumerate(ordered_answers_index)]
 
-    converted = {'questions': question_to_correct_answer_index, 'answers': ordered_answers}
+    converted = {
+        "questions": question_to_correct_answer_index,
+        "answers": ordered_answers,
+    }
     with open(args.output, "w", encoding="utf-8") as out_stream:
         json.dump(converted, out_stream, indent=4, ensure_ascii=False)
 
-    logger.info('converted {} questions and {} answers'.format(
-        len(question_to_correct_answer_index), len(ordered_answers)))
+    logger.info(
+        "converted {} questions and {} answers".format(
+            len(question_to_correct_answer_index), len(ordered_answers)
+        )
+    )
 
 
 if __name__ == "__main__":
