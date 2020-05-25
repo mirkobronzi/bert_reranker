@@ -3,13 +3,12 @@ import logging
 import math
 import pickle
 
-import pandas as pd
 from tqdm import tqdm
 
 from bert_reranker.data.data_loader import (
     get_passages_by_source,
     _encode_passages,
-    get_passage_text, get_question,
+    get_passage_text, get_question, get_passage_id, is_in_distribution,
 )
 
 logger = logging.getLogger(__name__)
@@ -32,7 +31,7 @@ def generate_predictions(ret_trainee, json_file, predict_to):
     indices_of_correct_passage = []
     out_stream = open(predict_to, "w") if predict_to else None
 
-    source2passages, passage_id2source, passage_id2index = get_passages_by_source(
+    source2passages, _, passage_id2index = get_passages_by_source(
         json_data
     )
     source2encoded_passages, _, _ = _encode_passages(
@@ -85,14 +84,21 @@ def generate_predictions(ret_trainee, json_file, predict_to):
 def generate_embeddings(ret_trainee, input_file, out_file):
     with open(input_file, "r", encoding="utf-8") as f:
         json_data = json.load(f)
+
+    _, pid2passage, _ = get_passages_by_source(json_data)
+
     embs = []
+    labels = []
     for example in tqdm(json_data["examples"]):
+        pid = get_passage_id(example)
+        passage = pid2passage[pid]
+        labels.append('id' if is_in_distribution(passage) else 'ood')
         emb = ret_trainee.retriever.embed_question(get_question(example))
         embs.append(emb)
 
-    dct_gt = {"questions": embs}
+    to_serialize = {"questions": embs, "labels": labels}
     with open(out_file, "wb") as out_stream:
-        pickle.dump(dct_gt, out_stream)
+        pickle.dump(to_serialize, out_stream)
 
 
 def compute_result_at_threshold(

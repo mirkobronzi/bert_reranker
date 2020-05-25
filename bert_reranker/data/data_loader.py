@@ -81,6 +81,10 @@ def get_question(example):
     return example['question']
 
 
+def get_passage_id(example):
+    return example['passage_id']
+
+
 class ReRankerDataset(Dataset):
 
     def __init__(self, json_file, max_example_len, max_passage_len, tokenizer):
