@@ -8,8 +8,8 @@ from bert_reranker.models.optimizer import get_optimizer
 
 
 def soft_cross_entropy(logits, soft_targets):
-    t = torch.nn.functional.log_softmax(logits)
-    return torch.sum(-soft_targets * t, dim=1)
+    probs = torch.nn.functional.log_softmax(logits, dim=1)
+    return torch.sum(-soft_targets * probs, dim=1)
 
 
 def prepare_soft_targets(target_ints, num_classes):
