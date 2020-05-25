@@ -1,13 +1,12 @@
 import logging
-from typing import List
 
 import torch
 import torch.nn as nn
+from torch.utils.checkpoint import checkpoint
 
 from bert_reranker.data.data_loader import encode_sentence
 from bert_reranker.models.bert_encoder import get_ffw_layers
 from bert_reranker.utils.hp_utils import check_and_log_hp
-from torch.utils.checkpoint import checkpoint
 
 logger = logging.getLogger(__name__)
 
@@ -86,17 +85,17 @@ class Retriever(nn.Module):
             question_embedding = self.bert_question_encoder(**inputs)
         return question_embedding
 
-    def predict(self, question: str, passages: List[str]):
+    def predict(self, question, enc_passages):
+        """
+
+        :param question: a string (to encode)
+        :param enc_passages: a list of passages (already encoded)
+        :return: the prediction (index) and the normalized score.
+        """
         self.eval()
         with torch.no_grad():
             # TODO this is only a single batch
-
             enc_question = encode_sentence(question, self.max_question_len, self.tokenizer)
-            enc_passages = []
-            for passage in passages:
-                enc_passage = encode_sentence(passage, self.max_paragraph_len, self.tokenizer)
-                enc_passages.append(enc_passage)
-
             enc_question = _add_batch_dim(enc_question)
             enc_passages = [_add_batch_dim(enc_passage) for enc_passage in enc_passages]
 
@@ -104,14 +103,8 @@ class Retriever(nn.Module):
             relevance_scores = relevance_scores.squeeze(0)  # no batch dimension
 
             normalized_scores = self.softmax(relevance_scores)
-            rerank_index = torch.argsort(-relevance_scores)
-            relevance_scores_numpy = relevance_scores.detach().cpu().numpy()
-            rerank_index_numpy = rerank_index.detach().cpu().numpy()
-            reranked_paragraphs = [passages[i] for i in rerank_index_numpy]
-            reranked_relevance_scores = relevance_scores_numpy[rerank_index_numpy]
-            reranked_normalized_scores = [normalized_scores[i] for i in rerank_index_numpy]
-            return (reranked_paragraphs, reranked_relevance_scores, rerank_index_numpy,
-                    reranked_normalized_scores)
+            highest_norm_score, prediction = torch.max(normalized_scores, 0)
+            return prediction, highest_norm_score
 
 
 class EmbeddingRetriever(Retriever):

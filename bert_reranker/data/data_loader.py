@@ -40,19 +40,35 @@ def is_in_distribution(passage):
 
 
 def _encode_passages(source2passages, max_passage_length, tokenizer):
+    """
+    note - this will only encode in-distribution passages.
+    :param source2passages:
+    :param max_passage_length:
+    :param tokenizer:
+    :return:
+    """
     source2encoded_passages = defaultdict(list)
     source2id = defaultdict(int)
     source2ood = defaultdict(int)
     for source, passages in source2passages.items():
         for passage in passages:
             if is_in_distribution(passage):
-                passage_text = passage['reference']['section_headers'][0]
+                passage_text = get_passage_text(passage)
                 encoded_passage = encode_sentence(passage_text, max_passage_length, tokenizer)
                 source2encoded_passages[source].append(encoded_passage)
                 source2id[source] += 1
             else:
                 source2ood[source] += 1
     return source2encoded_passages, source2id, source2ood
+
+
+def get_passage_text(passage, return_error_for_ood=False):
+    if is_in_distribution(passage):
+        return passage['reference']['section_headers'][0]
+    elif return_error_for_ood:
+        raise ValueError('passage is ood')
+    else:
+        return '__out-of-distribution__'
 
 
 class ReRankerDataset(Dataset):
