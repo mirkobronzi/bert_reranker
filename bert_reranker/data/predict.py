@@ -28,6 +28,7 @@ class Predictor:
         self.max_question_len = self.retriever_trainee.retriever.max_question_len
         self.tokenizer = self.retriever_trainee.retriever.tokenizer
         self.retriever = retriever_trainee.retriever
+        self.no_candidate_warnings = 0
 
     def generate_predictions(self, json_file, predict_to, multiple_thresholds):
 
@@ -73,9 +74,14 @@ class Predictor:
             indices_of_correct_passage.append(index_of_correct_passage)
 
     def make_single_prediction(self, question, source, source2encoded_passages):
-        return self.retriever.predict(
-            question, source2encoded_passages[source]
-        )
+        candidates = source2encoded_passages[source]
+        if candidates:
+            return self.retriever.predict(question, candidates)
+        else:
+            self.no_candidate_warnings += 1
+            logger.warning('no candidates for source {} - returning 0 by default (so far, this '
+                           'happened {} times'.format(source, self.no_candidate_warnings))
+            return 0, 1.0
 
 
 class PredictorWithOutlierDetector(Predictor):
