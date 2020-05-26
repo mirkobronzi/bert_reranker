@@ -8,6 +8,7 @@ orion_db.pkl*
 orion_working_dir
 *.npy
 *_TEMP
+*.pkl
 
 # Ignore example outputs
 examples/*/output/
