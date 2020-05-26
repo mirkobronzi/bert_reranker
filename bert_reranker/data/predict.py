@@ -80,7 +80,7 @@ class Predictor:
         else:
             self.no_candidate_warnings += 1
             logger.warning('no candidates for source {} - returning 0 by default (so far, this '
-                           'happened {} times'.format(source, self.no_candidate_warnings))
+                           'happened {} times)'.format(source, self.no_candidate_warnings))
             return 0, 1.0
 
 
