@@ -126,9 +126,10 @@ def generate_embeddings(ret_trainee, input_file, out_file):
         emb = ret_trainee.retriever.embed_question(get_question(example))
         embs.append(emb)
 
-    to_serialize = {"questions": embs, "labels": labels}
+    to_serialize = {"embeddings": embs, "labels": labels}
     with open(out_file, "wb") as out_stream:
         pickle.dump(to_serialize, out_stream)
+    logger.info('saved {} embeddings'.format(len(embs)))
 
 
 def compute_result_at_threshold(
