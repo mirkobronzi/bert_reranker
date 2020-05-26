@@ -179,6 +179,8 @@ def compute_result_at_threshold(
     correct = 0
     id_correct = 0
     ood_correct = 0
+    id_misclassified_as_ood = 0
+    id_misclassified_as_id = 0
 
     for i, prediction in enumerate(predictions):
         if normalized_scores[i] >= threshold:
@@ -188,22 +190,25 @@ def compute_result_at_threshold(
             after_threshold_pred = -1
             ood_correct += int(after_threshold_pred == indices_of_correct_passage[i])
         correct += int(after_threshold_pred == indices_of_correct_passage[i])
+        if indices_of_correct_passage[i] != -1 and after_threshold_pred == -1:
+            id_misclassified_as_ood += 1
+        elif (indices_of_correct_passage[i] != -1 and
+              indices_of_correct_passage[i] != after_threshold_pred):
+            id_misclassified_as_id += 1
     acc = ((correct / count) * 100) if count > 0 else math.nan
     id_acc = ((id_correct / id_count) * 100) if id_count > 0 else math.nan
     ood_acc = ((ood_correct / ood_count) * 100) if ood_count > 0 else math.nan
     threshold_msg = "threshold {:1.3f}: ".format(threshold) if log_threshold else ""
-    return (
-        "{}overall: {:3}/{}={:3.2f}% - in-distribution: "
-        "{:3}/{}={:3.2f}% - out-of-distribution: {:3}/{}={:3.2f}%".format(
-            threshold_msg,
-            correct,
-            count,
-            acc,
-            id_correct,
-            id_count,
-            id_acc,
-            ood_correct,
-            ood_count,
-            ood_acc,
-        )
-    )
+
+    result_message = "\n{}overall: {:3}/{}={:3.2f}%".format(threshold_msg, correct, count, acc)
+    result_message += "\nin-distribution: {:3}/{}={:3.2f}%".format(id_correct, id_count, id_acc)
+    result_message += "\n\twrong because marked ood: {:3}/{}={:3.2f}%".format(
+        id_misclassified_as_ood, id_count,
+        ((id_misclassified_as_ood / id_count) * 100) if id_count > 0 else math.nan)
+    result_message += "\n\tmarked id and wrong candidate: {:3}/{}={:3.2f}%".format(
+        id_misclassified_as_id, id_count,
+        ((id_misclassified_as_id / id_count) * 100) if id_count > 0 else math.nan)
+    result_message += "\nout-of-distribution: {:3}/{}={:3.2f}%".format(
+        ood_correct, ood_count, ood_acc)
+
+    return result_message
