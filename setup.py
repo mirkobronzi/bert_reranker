@@ -17,7 +17,8 @@ setup(
         'orion @ git+git://github.com/Epistimio/orion.git@develop#egg=orion'],
     entry_points={
         'console_scripts': [
-            'main=bert_reranker.main:main'
+            'main=bert_reranker.main:main',
+            'train_outlier_detector=bert_reranker.models.sklearn_outliers_model:main'
         ],
     }
 )
