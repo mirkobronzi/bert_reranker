@@ -101,6 +101,11 @@ def main():
         help="will print stats on the data",
         action="store_true",
     )
+    parser.add_argument(
+        "--multiple-thresholds",
+        help="will print results for various thresholds",
+        action="store_true",
+    )
     parser.add_argument('--log', help='log to this file (in addition to stdout/err)')
     parser.add_argument("--debug", help="will log more info", action="store_true")
     args = parser.parse_args()
@@ -160,7 +165,8 @@ def main():
             predictor = Predictor(ret_trainee)
         predictor.generate_predictions(
             json_file=args.predict,
-            predict_to=args.predict_to
+            predict_to=args.predict_to,
+            multiple_thresholds=args.multiple_thresholds
         )
     elif args.file_to_emb:
         if args.write_emb_to is None:
