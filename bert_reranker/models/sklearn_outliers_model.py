@@ -2,6 +2,7 @@
 
 import argparse
 import logging
+import os
 import pickle
 
 import numpy as np
@@ -9,11 +10,14 @@ from sklearn.neighbors import LocalOutlierFactor
 
 logger = logging.getLogger(__name__)
 
+SKLEARN_MODEL_FILE_NAME = 'sklearn_outlier_model.pkl'
+
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--embeddings', help='numpy file with embeddings', required=True)
-    parser.add_argument('--output', help='will store the model output here', required=True)
+    parser.add_argument('--output', help='will store the model output in this folder',
+                        required=True)
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.INFO)
@@ -25,7 +29,7 @@ def main():
 
     questions = np.concatenate(questions_and_labels['questions'])
     clf.fit(questions)
-    with open(args.output, "wb") as out_stream:
+    with open(os.path.join(args.output, SKLEARN_MODEL_FILE_NAME), "wb") as out_stream:
         pickle.dump(clf, out_stream)
 
 
