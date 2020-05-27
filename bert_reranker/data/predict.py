@@ -9,7 +9,7 @@ from tqdm import tqdm
 from bert_reranker.data.data_loader import (
     get_passages_by_source,
     _encode_passages,
-    get_passage_text, get_question, get_passage_id, is_in_distribution, )
+    get_passage_last_header, get_question, get_passage_id, is_in_distribution, )
 
 logger = logging.getLogger(__name__)
 
@@ -139,12 +139,12 @@ def log_results_to_file(indices_of_correct_passage, normalized_scores, out_strea
             "\n\t{}\n".format(
                 prediction == index_of_correct_passage,
                 norm_score,
-                get_passage_text(source2passages[source][prediction]),
+                get_passage_last_header(source2passages[source][prediction]),
             )
         )
         out_stream.write(
             "ground truth:\n\t{}\n\n".format(
-                get_passage_text(source2passages[source][index_of_correct_passage])
+                get_passage_last_header(source2passages[source][index_of_correct_passage])
             )
         )
 
@@ -153,21 +153,36 @@ def generate_embeddings(ret_trainee, input_file, out_file):
     with open(input_file, "r", encoding="utf-8") as f:
         json_data = json.load(f)
 
-    _, pid2passage, _ = get_passages_by_source(json_data)
+    source2passages, pid2passage, _ = get_passages_by_source(json_data)
 
-    embs = []
+    question_embs = []
     labels = []
     for example in tqdm(json_data["examples"]):
         pid = get_passage_id(example)
         passage = pid2passage[pid]
         labels.append('id' if is_in_distribution(passage) else 'ood')
         emb = ret_trainee.retriever.embed_question(get_question(example))
-        embs.append(emb)
+        question_embs.append(emb)
 
-    to_serialize = {"embeddings": embs, "labels": labels}
+    passage_header_embs = []
+    ood = 0
+    for _, passages in source2passages.items():
+        for passage in passages:
+            if is_in_distribution(passage):
+                emb = ret_trainee.retriever.embed_paragraph(
+                    get_passage_last_header(passage, return_error_for_ood=True))
+                passage_header_embs.append(emb)
+            else:
+                ood += 1
+
+    to_serialize = {"question_embs": question_embs, "passage_header_embs": passage_header_embs,
+                    "question_labels": labels}
     with open(out_file, "wb") as out_stream:
         pickle.dump(to_serialize, out_stream)
-    logger.info('saved {} embeddings'.format(len(embs)))
+    logger.info(
+        'saved {} question embeddings and {} passage header embeddings ({} skipped because '
+        'out-of-distribution)'.format(
+            len(question_embs), len(passage_header_embs), ood))
 
 
 def compute_result_at_threshold(
