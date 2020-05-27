@@ -221,7 +221,7 @@ def compute_result_at_threshold(
     result_message += "\n\t\twrong because marked ood: {:3}/{}={:3.2f}% err".format(
         id_misclassified_as_ood, id_count,
         ((id_misclassified_as_ood / id_count) * 100) if id_count > 0 else math.nan)
-    result_message += "\n\t\tmarked id and wrong candidate: {:3}/{}={:3.2f}% err".format(
+    result_message += "\n\t\tmarked id but wrong candidate: {:3}/{}={:3.2f}% err".format(
         id_misclassified_as_id, id_count,
         ((id_misclassified_as_id / id_count) * 100) if id_count > 0 else math.nan)
     result_message += "\n\tout-of-distribution: {:3}/{}={:3.2f}% acc".format(
