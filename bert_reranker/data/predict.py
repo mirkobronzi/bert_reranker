@@ -179,22 +179,37 @@ def compute_result_at_threshold(
     correct = 0
     id_correct = 0
     ood_correct = 0
+    ood_misclassified_as_id = 0
     id_misclassified_as_ood = 0
     id_misclassified_as_id = 0
 
     for i, prediction in enumerate(predictions):
         if normalized_scores[i] >= threshold:
             after_threshold_pred = prediction
-            id_correct += int(after_threshold_pred == indices_of_correct_passage[i])
+            # id_correct += int(after_threshold_pred == indices_of_correct_passage[i])
         else:
             after_threshold_pred = -1
-            ood_correct += int(after_threshold_pred == indices_of_correct_passage[i])
+            # ood_correct += int(after_threshold_pred == indices_of_correct_passage[i])
         correct += int(after_threshold_pred == indices_of_correct_passage[i])
         if indices_of_correct_passage[i] != -1 and after_threshold_pred == -1:
+            # target id - prediction ood
             id_misclassified_as_ood += 1
         elif (indices_of_correct_passage[i] != -1 and
               indices_of_correct_passage[i] != after_threshold_pred):
+            # target id - prediction id but wrong
             id_misclassified_as_id += 1
+        elif (indices_of_correct_passage[i] != -1 and
+              indices_of_correct_passage[i] == after_threshold_pred):
+            # target id - prediction id and correct
+            id_correct += 1
+        elif indices_of_correct_passage[i] == -1 and after_threshold_pred == -1:
+            # target ood - prediction ood
+            ood_correct += 1
+        elif indices_of_correct_passage[i] == -1 and after_threshold_pred != -1:
+            # target ood - prediction id
+            ood_misclassified_as_id += 1
+        else:
+            raise ValueError()
     acc = ((correct / count) * 100) if count > 0 else math.nan
     id_acc = ((id_correct / id_count) * 100) if id_count > 0 else math.nan
     ood_acc = ((ood_correct / ood_count) * 100) if ood_count > 0 else math.nan
