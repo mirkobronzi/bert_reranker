@@ -134,16 +134,31 @@ def log_results_to_file(indices_of_correct_passage, normalized_scores, out_strea
         source = sources[i]
         out_stream.write("-------------------------\n")
         out_stream.write("question:\n\t{}\n".format(question))
+
+        if prediction == index_of_correct_passage and prediction == -1:
+            pred_outcome = "OOD_CORRECT"
+        elif prediction == index_of_correct_passage and prediction >= 0:
+            pred_outcome = "ID_CORRECT"
+        elif prediction != index_of_correct_passage and index_of_correct_passage == -1:
+            pred_outcome = "OOD_MISCLASSIFIED_AS_ID"
+        elif prediction == -1 and index_of_correct_passage >= 0:
+            pred_outcome = "ID_MISCLASSIFIED_AS_OOD"
+        elif (prediction >= 0 and index_of_correct_passage >= 0 and
+              prediction != index_of_correct_passage):
+            pred_outcome = "ID_MISCLASSIFIED_AS_ANOTHER_ID"
+        else:
+            raise ValueError('wrong prediction/target combination')
+
         out_stream.write(
-            "prediction: correct? {} / norm score {:3.3} / answer content:"
+            "prediction: {} / norm score {:3.3}\nprediction content:"
             "\n\t{}\n".format(
-                prediction == index_of_correct_passage,
+                pred_outcome,
                 norm_score,
                 get_passage_last_header(source2passages[source][prediction]),
             )
         )
         out_stream.write(
-            "ground truth:\n\t{}\n\n".format(
+            "target content:\n\t{}\n\n".format(
                 get_passage_last_header(source2passages[source][index_of_correct_passage])
             )
         )
