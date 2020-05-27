@@ -7,4 +7,4 @@ cd ${DIR}/../../examples/local/
 main --config config.yaml --output output --train
 # TODO: fix the following one
 #main --config config.yaml --output output --validate
-main --config config.yaml --output output --predict data_small.json
+main --config config.yaml --output output --predict data_small.json --predict-to predictions.txt

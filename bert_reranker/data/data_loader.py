@@ -59,7 +59,7 @@ def _encode_passages(source2passages, max_passage_length, tokenizer):
     for source, passages in source2passages.items():
         for passage in passages:
             if is_in_distribution(passage):
-                passage_text = get_passage_text(passage)
+                passage_text = get_passage_last_header(passage)
                 encoded_passage = encode_sentence(passage_text, max_passage_length, tokenizer)
                 source2encoded_passages[source].append(encoded_passage)
                 source2id[source] += 1
@@ -68,13 +68,21 @@ def _encode_passages(source2passages, max_passage_length, tokenizer):
     return source2encoded_passages, source2id, source2ood
 
 
-def get_passage_text(passage, return_error_for_ood=False):
+def get_passage_last_header(passage, return_error_for_ood=False):
     if is_in_distribution(passage):
         return passage['reference']['section_headers'][0]
     elif return_error_for_ood:
         raise ValueError('passage is ood')
     else:
         return '__out-of-distribution__'
+
+
+def get_question(example):
+    return example['question']
+
+
+def get_passage_id(example):
+    return example['passage_id']
 
 
 class ReRankerDataset(Dataset):
@@ -109,7 +117,7 @@ class ReRankerDataset(Dataset):
 
     def __getitem__(self, idx):
         example = self.examples[idx]
-        question = example['question']
+        question = get_question(example)
         passage_id = example['passage_id']  # this is the related passage
         encoded_question = encode_sentence(question, self.max_example_len, self.tokenizer)
 

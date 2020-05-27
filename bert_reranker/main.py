@@ -3,6 +3,7 @@
 import argparse
 import logging
 import os
+import pickle
 import sys
 from logging.handlers import WatchedFileHandler
 
@@ -18,11 +19,12 @@ from transformers import AutoTokenizer
 from yaml import load
 
 from bert_reranker.data.data_loader import generate_dataloader
-from bert_reranker.data.predict import generate_predictions
+from bert_reranker.data.predict import generate_embeddings, Predictor, PredictorWithOutlierDetector
 from bert_reranker.models.cache_manager import CacheManagerCallback
 from bert_reranker.models.load_model import load_model
 from bert_reranker.models.pl_model_loader import try_to_restore_model_weights
 from bert_reranker.models.retriever_trainer import RetrieverTrainer
+from bert_reranker.models.sklearn_outliers_model import SKLEARN_MODEL_FILE_NAME
 from bert_reranker.utils.hp_utils import check_and_log_hp
 from bert_reranker.utils.logging_utils import LoggerWriter
 from bert_reranker.scripts.tokenizer_cutoff import evaluate_tokenizer_cutoff
@@ -71,6 +73,16 @@ def main():
         "--predict", help="will predict on the json file you provide as an arg"
     )
     parser.add_argument(
+        "--predict-outliers", help="will use the sklearn model to predict outliers",
+        action="store_true"
+    )
+    parser.add_argument(
+        "--file-to-emb", help="will use this file as input to generate embeddings"
+    )
+    parser.add_argument(
+        "--write-emb-to", help="will write question embeddings to this file"
+    )
+    parser.add_argument(
         "--save-weights-to",
         help="will save ONLY the model weights (not the pytorch lightning object)"
         " to this file",
@@ -84,16 +96,14 @@ def main():
     parser.add_argument(
         "--num-workers", help="number of workers - default 2", type=int, default=0
     )
-
-    parser.add_argument(
-        "--ground-truth-available",
-        help="will assume the order in the data is the ground truth (when doing "
-        "--predict)",
-        action="store_true",
-    )
     parser.add_argument(
         "--print-sentence-stats",
         help="will print stats on the data",
+        action="store_true",
+    )
+    parser.add_argument(
+        "--multiple-thresholds",
+        help="will print results for various thresholds",
         action="store_true",
     )
     parser.add_argument('--log', help='log to this file (in addition to stdout/err)')
@@ -145,12 +155,31 @@ def main():
     elif args.validate:
         trainer.test(ret_trainee)
     elif args.predict:
+        if not args.predict_to:
+            raise ValueError('--predict also requires --predict-to')
+
         model_ckpt = torch.load(ckpt_to_resume, map_location=torch.device("cpu"))
         ret_trainee.load_state_dict(model_ckpt["state_dict"])
-        generate_predictions(
-            ret_trainee,
+        if args.predict_outliers:
+            with open(os.path.join(args.output, SKLEARN_MODEL_FILE_NAME), 'rb') as file:
+                sklearn_model = pickle.load(file)
+            predictor = PredictorWithOutlierDetector(ret_trainee, sklearn_model)
+        else:
+            predictor = Predictor(ret_trainee)
+        predictor.generate_predictions(
             json_file=args.predict,
-            predict_to=args.predict_to
+            predict_to=args.predict_to,
+            multiple_thresholds=args.multiple_thresholds
+        )
+    elif args.file_to_emb:
+        if args.write_emb_to is None:
+            raise ValueError('please specify also --write-emb-to')
+        model_ckpt = torch.load(ckpt_to_resume, map_location=torch.device("cpu"))
+        ret_trainee.load_state_dict(model_ckpt["state_dict"])
+        generate_embeddings(
+            ret_trainee,
+            input_file=args.file_to_emb,
+            out_file=args.write_emb_to
         )
     elif args.save_weights_to is not None:
         torch.save(ret_trainee.retriever.state_dict(), args.save_weights_to)
