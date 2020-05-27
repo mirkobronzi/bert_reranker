@@ -155,6 +155,9 @@ def main():
     elif args.validate:
         trainer.test(ret_trainee)
     elif args.predict:
+        if not args.predict_to:
+            raise ValueError('--predict also requires --predict-to')
+
         model_ckpt = torch.load(ckpt_to_resume, map_location=torch.device("cpu"))
         ret_trainee.load_state_dict(model_ckpt["state_dict"])
         if args.predict_outliers:
