@@ -39,7 +39,7 @@ def main():
         embeddings = embeddings_and_labels['embeddings']
     embedding_array = np.concatenate(embeddings)
 
-    clf = LocalOutlierFactor(n_neighbors=4, novelty=True)
+    clf = LocalOutlierFactor(n_neighbors=4, novelty=True, contamination=0.1)
     clf.fit(embedding_array)
 
     with open(os.path.join(args.output, SKLEARN_MODEL_FILE_NAME), "wb") as out_stream:
