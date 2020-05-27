@@ -166,7 +166,7 @@ def generate_embeddings(ret_trainee, input_file, out_file):
 
     passage_header_embs = []
     ood = 0
-    for _, passages in source2passages.items():
+    for _, passages in tqdm(source2passages.items()):
         for passage in passages:
             if is_in_distribution(passage):
                 emb = ret_trainee.retriever.embed_paragraph(
