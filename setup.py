@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='bert_reranker',
-    version='0.1.1',
+    version='0.2.0',
     packages=find_packages(include=['bert_reranker', 'bert_reranker.*']),
     license='MIT',
     author='Mirko Bronzi',
