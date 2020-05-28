@@ -181,8 +181,9 @@ def generate_embeddings(ret_trainee, input_file, out_file):
 
     passage_header_embs = []
     ood = 0
-    for _, passages in tqdm(source2passages.items()):
-        for passage in passages:
+    for source, passages in source2passages.items():
+        logger.info('embedding passages for source {}'.format(source))
+        for passage in tqdm(passages):
             if is_in_distribution(passage):
                 emb = ret_trainee.retriever.embed_paragraph(
                     get_passage_last_header(passage, return_error_for_ood=True))
