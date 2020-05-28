@@ -31,3 +31,6 @@ Enable flake8 check before commit:
 (run from the root of the repository)
 
     cd .git/hooks/ && ln -s ../../config/hooks/pre-commit . && cd -
+
+### To release:
+(see https://medium.com/@joel.barmettler/how-to-upload-your-python-package-to-pypi-65edc5fe9c56 )
