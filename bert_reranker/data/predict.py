@@ -44,14 +44,15 @@ class Predictor:
         source2passages, _, passage_id2index = get_passages_by_source(
             json_data
         )
-        source2encoded_passages, _, _ = _encode_passages(
+        source2passages, _, _ = _encode_passages(
             source2passages,
             self.max_question_len,
             self.tokenizer,
+            do_not_encode=True
         )
 
         self.compute_results(indices_of_correct_passage, json_data, normalized_scores,
-                             passage_id2index, predictions, questions, source2encoded_passages,
+                             passage_id2index, predictions, questions, source2passages,
                              sources)
         generate_and_log_results(indices_of_correct_passage, normalized_scores, predict_to,
                                  predictions, questions, source2passages, sources,
@@ -154,12 +155,12 @@ def log_results_to_file(indices_of_correct_passage, normalized_scores, out_strea
             "\n\t{}\n".format(
                 pred_outcome,
                 norm_score,
-                get_passage_last_header(source2passages[source][prediction]),
+                source2passages[source][prediction]
             )
         )
         out_stream.write(
             "target content:\n\t{}\n\n".format(
-                get_passage_last_header(source2passages[source][index_of_correct_passage])
+                source2passages[source][index_of_correct_passage]
             )
         )
 

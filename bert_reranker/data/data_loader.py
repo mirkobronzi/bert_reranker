@@ -45,7 +45,7 @@ def is_in_distribution(passage):
     return reference_type.lower().startswith('faq')
 
 
-def _encode_passages(source2passages, max_passage_length, tokenizer):
+def _encode_passages(source2passages, max_passage_length, tokenizer, do_not_encode=False):
     """
     note - this will only encode in-distribution passages.
     :param source2passages:
@@ -60,8 +60,11 @@ def _encode_passages(source2passages, max_passage_length, tokenizer):
         for passage in passages:
             if is_in_distribution(passage):
                 passage_text = get_passage_last_header(passage)
-                encoded_passage = encode_sentence(passage_text, max_passage_length, tokenizer)
-                source2encoded_passages[source].append(encoded_passage)
+                if do_not_encode:
+                    source2encoded_passages[source].append(passage_text)
+                else:
+                    encoded_passage = encode_sentence(passage_text, max_passage_length, tokenizer)
+                    source2encoded_passages[source].append(encoded_passage)
                 source2id[source] += 1
             else:
                 source2ood[source] += 1
