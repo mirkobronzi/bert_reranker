@@ -87,26 +87,29 @@ class Retriever(nn.Module):
     def predict(self, question, passages):
         """
 
-        :param question: a question (to encode)
-        :param enc_passages: list[dict{ids: tensor, am: tensor, tt:tensor}]:
-                             a list of passages (already encoded)
+        :param question: str - a question (to encode)
+        :param passages: list[str]: a list of passages
         :return: the prediction (index) and the normalized score.
         """
         self.eval()
         with torch.no_grad():
             # TODO this is only a single batch
-            p_embs = []
-            for passage in passages:
-                p_embs.append(self.embed_paragraph(passage))
-            p_embs = torch.stack(p_embs, dim=1)
+            p_embs = self.embed_paragrphs(passages)
             q_emb = self.embed_question(question)
 
-            relevance_scores = torch.bmm(q_emb.unsqueeze(1), p_embs.transpose(2, 1)).squeeze(1)
+            relevance_scores = embs_dot_product(p_embs, q_emb)
             relevance_scores = relevance_scores.squeeze(0)  # no batch dimension
 
             normalized_scores = self.softmax(relevance_scores)
             _, prediction = torch.max(relevance_scores, 0)
             return prediction, normalized_scores[prediction]
+
+    def embed_paragrphs(self, passages):
+        p_embs = []
+        for passage in passages:
+            p_embs.append(self.embed_paragraph(passage))
+        p_embs = torch.stack(p_embs, dim=1)
+        return p_embs
 
 
 class EmbeddingRetriever(Retriever):
@@ -123,7 +126,11 @@ class EmbeddingRetriever(Retriever):
 
     def compute_score(self, **kwargs):
         q_emb, p_embs = self.forward(**kwargs)
-        return torch.bmm(q_emb.unsqueeze(1), p_embs.transpose(2, 1)).squeeze(1)
+        return embs_dot_product(p_embs, q_emb)
+
+
+def embs_dot_product(p_embs, q_emb):
+    return torch.bmm(q_emb.unsqueeze(1), p_embs.transpose(2, 1)).squeeze(1)
 
 
 def _add_batch_dim(tensor):
