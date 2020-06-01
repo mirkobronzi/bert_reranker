@@ -7,6 +7,8 @@ from torch.utils.data import DataLoader, Dataset
 
 logger = logging.getLogger(__name__)
 
+OOD_STRING = '__out-of-distribution__'
+
 
 def encode_sentence(sentence, max_length, tokenizer):
     input_question = tokenizer.encode_plus(sentence, add_special_tokens=True,
@@ -81,7 +83,7 @@ def get_passage_last_header(passage, return_error_for_ood=False):
     elif return_error_for_ood:
         raise ValueError('passage is ood')
     else:
-        return '__out-of-distribution__'
+        return OOD_STRING
 
 
 def get_question(example):

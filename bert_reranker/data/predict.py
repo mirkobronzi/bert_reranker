@@ -9,7 +9,7 @@ from tqdm import tqdm
 from bert_reranker.data.data_loader import (
     get_passages_by_source,
     _encode_passages,
-    get_passage_last_header, get_question, get_passage_id, is_in_distribution, )
+    get_passage_last_header, get_question, get_passage_id, is_in_distribution, OOD_STRING, )
 
 logger = logging.getLogger(__name__)
 
@@ -155,12 +155,13 @@ def log_results_to_file(indices_of_correct_passage, normalized_scores, out_strea
             "\n\t{}\n".format(
                 pred_outcome,
                 norm_score,
-                source2passages[source][prediction]
+                source2passages[source][prediction] if prediction >= 0 else OOD_STRING
             )
         )
         out_stream.write(
             "target content:\n\t{}\n\n".format(
-                source2passages[source][index_of_correct_passage]
+                source2passages[source][index_of_correct_passage] if index_of_correct_passage >= 0
+                else OOD_STRING
             )
         )
 
