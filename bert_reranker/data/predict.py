@@ -83,11 +83,13 @@ class Predictor:
             normalized_scores.append(norm_score)
             indices_of_correct_passage.append(index_of_correct_passage)
 
-    def make_single_prediction(self, question, source, source2embedded_passages):
+    def make_single_prediction(self, question, source, source2embedded_passages,
+                               question_already_embedded=False):
         embedded_candidates = source2embedded_passages[source]
         if embedded_candidates is not None:
             return self.retriever.predict(question, embedded_candidates,
-                                          passages_already_embedded=True)
+                                          passages_already_embedded=True,
+                                          question_already_embedded=question_already_embedded)
         else:
             self.no_candidate_warnings += 1
             logger.warning('no candidates for source {} - returning 0 by default (so far, this '
@@ -107,7 +109,7 @@ class PredictorWithOutlierDetector(Predictor):
         in_domain = np.squeeze(in_domain)
         if in_domain == 1:  # in-domain
             return super(PredictorWithOutlierDetector, self).make_single_prediction(
-                question, source, source2embedded_passages)
+                emb_question, source, source2embedded_passages, question_already_embedded=True)
         else:
             return -1, 1.0
 

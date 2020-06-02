@@ -84,7 +84,8 @@ class Retriever(nn.Module):
             question_embedding = self.bert_question_encoder(**inputs)
         return question_embedding
 
-    def predict(self, question, passages, passages_already_embedded=False):
+    def predict(self, question, passages, passages_already_embedded=False,
+                question_already_embedded=False):
         """
 
         :param question: str - a question (to encode)
@@ -98,7 +99,11 @@ class Retriever(nn.Module):
                 p_embs = passages
             else:
                 p_embs = self.embed_paragrphs(passages)
-            q_emb = self.embed_question(question)
+
+            if question_already_embedded:
+                q_emb = question
+            else:
+                q_emb = self.embed_question(question)
 
             relevance_scores = embs_dot_product(p_embs, q_emb)
             relevance_scores = relevance_scores.squeeze(0)  # no batch dimension
