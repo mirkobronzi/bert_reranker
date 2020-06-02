@@ -60,6 +60,15 @@ class Predictor:
 
     def compute_results(self, indices_of_correct_passage, json_data, normalized_scores,
                         passage_id2index, predictions, questions, source2encoded_passages, sources):
+
+        source2embedded_passages = {}
+        for source, encoded_passages in source2encoded_passages.items():
+            if encoded_passages:
+                embedded_passages = self.retriever.embed_paragrphs(encoded_passages)
+                source2embedded_passages[source] = embedded_passages
+            else:
+                source2embedded_passages[source] = None
+
         for example in tqdm(json_data["examples"]):
             question = example["question"]
             questions.append(question)
@@ -68,21 +77,22 @@ class Predictor:
             index_of_correct_passage = passage_id2index[example["passage_id"]]
 
             prediction, norm_score = self.make_single_prediction(question, source,
-                                                                 source2encoded_passages)
+                                                                 source2embedded_passages)
 
             predictions.append(prediction)
             normalized_scores.append(norm_score)
             indices_of_correct_passage.append(index_of_correct_passage)
 
-    def make_single_prediction(self, question, source, source2encoded_passages):
-        candidates = source2encoded_passages[source]
-        if candidates:
-            return self.retriever.predict(question, candidates)
+    def make_single_prediction(self, question, source, source2embedded_passages):
+        embedded_candidates = source2embedded_passages[source]
+        if embedded_candidates is not None:
+            return self.retriever.predict(question, embedded_candidates,
+                                          passages_already_embedded=True)
         else:
             self.no_candidate_warnings += 1
             logger.warning('no candidates for source {} - returning 0 by default (so far, this '
                            'happened {} times)'.format(source, self.no_candidate_warnings))
-            return 0, 1.0
+            return -2, 1.0
 
 
 class PredictorWithOutlierDetector(Predictor):
@@ -91,13 +101,13 @@ class PredictorWithOutlierDetector(Predictor):
         super(PredictorWithOutlierDetector, self).__init__(retriever_trainee)
         self.outlier_detector_model = outlier_detector_model
 
-    def make_single_prediction(self, question, source, source2encoded_passages):
+    def make_single_prediction(self, question, source, source2embedded_passages):
         emb_question = self.retriever.embed_question(question)
         in_domain = self.outlier_detector_model.predict(emb_question)
         in_domain = np.squeeze(in_domain)
         if in_domain == 1:  # in-domain
             return super(PredictorWithOutlierDetector, self).make_single_prediction(
-                question, source, source2encoded_passages)
+                question, source, source2embedded_passages)
         else:
             return -1, 1.0
 

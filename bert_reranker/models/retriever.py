@@ -84,7 +84,7 @@ class Retriever(nn.Module):
             question_embedding = self.bert_question_encoder(**inputs)
         return question_embedding
 
-    def predict(self, question, passages):
+    def predict(self, question, passages, passages_already_embedded=False):
         """
 
         :param question: str - a question (to encode)
@@ -94,7 +94,10 @@ class Retriever(nn.Module):
         self.eval()
         with torch.no_grad():
             # TODO this is only a single batch
-            p_embs = self.embed_paragrphs(passages)
+            if passages_already_embedded:
+                p_embs = passages
+            else:
+                p_embs = self.embed_paragrphs(passages)
             q_emb = self.embed_question(question)
 
             relevance_scores = embs_dot_product(p_embs, q_emb)
