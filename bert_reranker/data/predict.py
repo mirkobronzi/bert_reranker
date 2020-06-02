@@ -87,8 +87,8 @@ class Predictor:
 
     def make_single_prediction(self, question, source, source2embedded_passages,
                                question_already_embedded=False):
-        embedded_candidates = source2embedded_passages[source]
-        if embedded_candidates is not None:
+        if source in source2embedded_passages and source2embedded_passages[source] is not None:
+            embedded_candidates = source2embedded_passages[source]
             return self.retriever.predict(question, embedded_candidates,
                                           passages_already_embedded=True,
                                           question_already_embedded=question_already_embedded)
