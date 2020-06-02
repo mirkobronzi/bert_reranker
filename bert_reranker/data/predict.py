@@ -62,9 +62,11 @@ class Predictor:
                         passage_id2index, predictions, questions, source2encoded_passages, sources):
 
         source2embedded_passages = {}
-        for source, encoded_passages in tqdm(source2encoded_passages.items()):
+        for source, encoded_passages in source2encoded_passages.items():
+            logger.info('encoding source {}'.format(source))
             if encoded_passages:
-                embedded_passages = self.retriever.embed_paragrphs(encoded_passages)
+                embedded_passages = self.retriever.embed_paragrphs(encoded_passages,
+                                                                   progressbar=True)
                 source2embedded_passages[source] = embedded_passages
             else:
                 source2embedded_passages[source] = None

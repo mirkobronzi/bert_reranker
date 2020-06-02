@@ -2,6 +2,7 @@ import logging
 
 import torch
 import torch.nn as nn
+import tqdm
 from torch.utils.checkpoint import checkpoint
 
 from bert_reranker.models.bert_encoder import get_ffw_layers
@@ -112,9 +113,10 @@ class Retriever(nn.Module):
             _, prediction = torch.max(relevance_scores, 0)
             return prediction, normalized_scores[prediction]
 
-    def embed_paragrphs(self, passages):
+    def embed_paragrphs(self, passages, progressbar=False):
         p_embs = []
-        for passage in passages:
+        pg_fun = tqdm.tqdm if progressbar else lambda x: x
+        for passage in pg_fun(passages):
             p_embs.append(self.embed_paragraph(passage))
         p_embs = torch.stack(p_embs, dim=1)
         return p_embs
