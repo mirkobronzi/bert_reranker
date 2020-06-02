@@ -217,6 +217,7 @@ def init_model(
             "accumulate_grad_batches",
             "seed",
             "logging",
+            "keep_ood"
         ],
         hyper_params,
     )
@@ -330,6 +331,7 @@ def get_data_loaders(hyper_params, num_workers, tokenizer):
         hyper_params["batch_size"],
         num_workers=num_workers,
         shuffle=True,
+        keep_ood=hyper_params["keep_ood"]
     )
     dev_dataloaders = []
     for dev_file in hyper_params["dev_files"].values():
@@ -342,6 +344,7 @@ def get_data_loaders(hyper_params, num_workers, tokenizer):
                 hyper_params["batch_size"],
                 num_workers=num_workers,
                 shuffle=False,
+                keep_ood=hyper_params["keep_ood"]
             )
         )
     test_dataloader = generate_dataloader(
@@ -352,6 +355,7 @@ def get_data_loaders(hyper_params, num_workers, tokenizer):
         hyper_params["batch_size"],
         num_workers=num_workers,
         shuffle=False,
+        keep_ood=hyper_params["keep_ood"]
     )
     return dev_dataloaders, test_dataloader, train_dataloader
 

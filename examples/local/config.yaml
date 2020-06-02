@@ -4,6 +4,7 @@ dev_files:
 test_file: 'data_small.json'
 cache_folder: 'cached_natq'
 tokenizer_name: 'bert-base-uncased'
+keep_ood: true
 
 batch_size: 2
 accumulate_grad_batches: 1

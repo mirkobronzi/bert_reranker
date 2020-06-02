@@ -9,7 +9,7 @@ from tqdm import tqdm
 from bert_reranker.data.data_loader import (
     get_passages_by_source,
     _encode_passages,
-    get_passage_last_header, get_question, get_passage_id, is_in_distribution, )
+    get_passage_last_header, get_question, get_passage_id, is_in_distribution, OOD_STRING, )
 
 logger = logging.getLogger(__name__)
 
@@ -35,30 +35,40 @@ class Predictor:
         with open(json_file, "r", encoding="utf-8") as f:
             json_data = json.load(f)
 
+        source2passages, _, passage_id2index = get_passages_by_source(
+            json_data
+        )
+        source2passages, _, _ = _encode_passages(
+            source2passages,
+            self.max_question_len,
+            self.tokenizer,
+            do_not_encode=True
+        )
+
+        res = self.compute_results(json_data, passage_id2index, source2passages)
+        predictions, questions, sources, normalized_scores, indices_of_correct_passage = res
+        generate_and_log_results(indices_of_correct_passage, normalized_scores, predict_to,
+                                 predictions, questions, source2passages, sources,
+                                 multiple_thresholds=multiple_thresholds)
+
+    def compute_results(self, json_data, passage_id2index, source2passages):
+
         predictions = []
         questions = []
         sources = []
         normalized_scores = []
         indices_of_correct_passage = []
 
-        source2passages, _, passage_id2index = get_passages_by_source(
-            json_data
-        )
-        source2encoded_passages, _, _ = _encode_passages(
-            source2passages,
-            self.max_question_len,
-            self.tokenizer,
-        )
+        source2embedded_passages = {}
+        for source, passages in source2passages.items():
+            logger.info('encoding source {}'.format(source))
+            if passages:
+                embedded_passages = self.retriever.embed_paragrphs(passages,
+                                                                   progressbar=True)
+                source2embedded_passages[source] = embedded_passages
+            else:
+                source2embedded_passages[source] = None
 
-        self.compute_results(indices_of_correct_passage, json_data, normalized_scores,
-                             passage_id2index, predictions, questions, source2encoded_passages,
-                             sources)
-        generate_and_log_results(indices_of_correct_passage, normalized_scores, predict_to,
-                                 predictions, questions, source2passages, sources,
-                                 multiple_thresholds=multiple_thresholds)
-
-    def compute_results(self, indices_of_correct_passage, json_data, normalized_scores,
-                        passage_id2index, predictions, questions, source2encoded_passages, sources):
         for example in tqdm(json_data["examples"]):
             question = example["question"]
             questions.append(question)
@@ -67,21 +77,26 @@ class Predictor:
             index_of_correct_passage = passage_id2index[example["passage_id"]]
 
             prediction, norm_score = self.make_single_prediction(question, source,
-                                                                 source2encoded_passages)
+                                                                 source2embedded_passages)
 
             predictions.append(prediction)
             normalized_scores.append(norm_score)
             indices_of_correct_passage.append(index_of_correct_passage)
 
-    def make_single_prediction(self, question, source, source2encoded_passages):
-        candidates = source2encoded_passages[source]
-        if candidates:
-            return self.retriever.predict(question, candidates)
+        return predictions, questions, sources, normalized_scores, indices_of_correct_passage
+
+    def make_single_prediction(self, question, source, source2embedded_passages,
+                               question_already_embedded=False):
+        if source in source2embedded_passages and source2embedded_passages[source] is not None:
+            embedded_candidates = source2embedded_passages[source]
+            return self.retriever.predict(question, embedded_candidates,
+                                          passages_already_embedded=True,
+                                          question_already_embedded=question_already_embedded)
         else:
             self.no_candidate_warnings += 1
             logger.warning('no candidates for source {} - returning 0 by default (so far, this '
                            'happened {} times)'.format(source, self.no_candidate_warnings))
-            return 0, 1.0
+            return -2, 1.0
 
 
 class PredictorWithOutlierDetector(Predictor):
@@ -90,13 +105,13 @@ class PredictorWithOutlierDetector(Predictor):
         super(PredictorWithOutlierDetector, self).__init__(retriever_trainee)
         self.outlier_detector_model = outlier_detector_model
 
-    def make_single_prediction(self, question, source, source2encoded_passages):
+    def make_single_prediction(self, question, source, source2embedded_passages):
         emb_question = self.retriever.embed_question(question)
         in_domain = self.outlier_detector_model.predict(emb_question)
         in_domain = np.squeeze(in_domain)
         if in_domain == 1:  # in-domain
             return super(PredictorWithOutlierDetector, self).make_single_prediction(
-                question, source, source2encoded_passages)
+                emb_question, source, source2embedded_passages, question_already_embedded=True)
         else:
             return -1, 1.0
 
@@ -154,12 +169,13 @@ def log_results_to_file(indices_of_correct_passage, normalized_scores, out_strea
             "\n\t{}\n".format(
                 pred_outcome,
                 norm_score,
-                get_passage_last_header(source2passages[source][prediction]),
+                source2passages[source][prediction] if prediction >= 0 else OOD_STRING
             )
         )
         out_stream.write(
             "target content:\n\t{}\n\n".format(
-                get_passage_last_header(source2passages[source][index_of_correct_passage])
+                source2passages[source][index_of_correct_passage] if index_of_correct_passage >= 0
+                else OOD_STRING
             )
         )
 

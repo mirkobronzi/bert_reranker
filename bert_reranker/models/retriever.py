@@ -2,9 +2,9 @@ import logging
 
 import torch
 import torch.nn as nn
+import tqdm
 from torch.utils.checkpoint import checkpoint
 
-from bert_reranker.data.data_loader import encode_sentence
 from bert_reranker.models.bert_encoder import get_ffw_layers
 from bert_reranker.utils.hp_utils import check_and_log_hp
 
@@ -85,26 +85,41 @@ class Retriever(nn.Module):
             question_embedding = self.bert_question_encoder(**inputs)
         return question_embedding
 
-    def predict(self, question, enc_passages):
+    def predict(self, question, passages, passages_already_embedded=False,
+                question_already_embedded=False):
         """
 
-        :param question: a string (to encode)
-        :param enc_passages: a list of passages (already encoded)
+        :param question: str - a question (to encode)
+        :param passages: list[str]: a list of passages
         :return: the prediction (index) and the normalized score.
         """
         self.eval()
         with torch.no_grad():
             # TODO this is only a single batch
-            enc_question = encode_sentence(question, self.max_question_len, self.tokenizer)
-            enc_question = _add_batch_dim(enc_question)
-            enc_passages = [_add_batch_dim(enc_passage) for enc_passage in enc_passages]
+            if passages_already_embedded:
+                p_embs = passages
+            else:
+                p_embs = self.embed_paragrphs(passages)
 
-            relevance_scores = self.compute_score(question=enc_question, passages=enc_passages)
+            if question_already_embedded:
+                q_emb = question
+            else:
+                q_emb = self.embed_question(question)
+
+            relevance_scores = embs_dot_product(p_embs, q_emb)
             relevance_scores = relevance_scores.squeeze(0)  # no batch dimension
 
             normalized_scores = self.softmax(relevance_scores)
-            highest_norm_score, prediction = torch.max(normalized_scores, 0)
-            return prediction, highest_norm_score
+            _, prediction = torch.max(relevance_scores, 0)
+            return prediction, normalized_scores[prediction]
+
+    def embed_paragrphs(self, passages, progressbar=False):
+        p_embs = []
+        pg_fun = tqdm.tqdm if progressbar else lambda x: x
+        for passage in pg_fun(passages):
+            p_embs.append(self.embed_paragraph(passage))
+        p_embs = torch.stack(p_embs, dim=1)
+        return p_embs
 
 
 class EmbeddingRetriever(Retriever):
@@ -121,7 +136,11 @@ class EmbeddingRetriever(Retriever):
 
     def compute_score(self, **kwargs):
         q_emb, p_embs = self.forward(**kwargs)
-        return torch.bmm(q_emb.unsqueeze(1), p_embs.transpose(2, 1)).squeeze(1)
+        return embs_dot_product(p_embs, q_emb)
+
+
+def embs_dot_product(p_embs, q_emb):
+    return torch.bmm(q_emb.unsqueeze(1), p_embs.transpose(2, 1)).squeeze(1)
 
 
 def _add_batch_dim(tensor):
