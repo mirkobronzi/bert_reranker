@@ -35,12 +35,6 @@ class Predictor:
         with open(json_file, "r", encoding="utf-8") as f:
             json_data = json.load(f)
 
-        predictions = []
-        questions = []
-        sources = []
-        normalized_scores = []
-        indices_of_correct_passage = []
-
         source2passages, _, passage_id2index = get_passages_by_source(
             json_data
         )
@@ -51,21 +45,25 @@ class Predictor:
             do_not_encode=True
         )
 
-        self.compute_results(indices_of_correct_passage, json_data, normalized_scores,
-                             passage_id2index, predictions, questions, source2passages,
-                             sources)
+        res = self.compute_results(json_data, passage_id2index, source2passages)
+        predictions, questions, sources, normalized_scores, indices_of_correct_passage = res
         generate_and_log_results(indices_of_correct_passage, normalized_scores, predict_to,
                                  predictions, questions, source2passages, sources,
                                  multiple_thresholds=multiple_thresholds)
 
-    def compute_results(self, indices_of_correct_passage, json_data, normalized_scores,
-                        passage_id2index, predictions, questions, source2encoded_passages, sources):
+    def compute_results(self, json_data, passage_id2index, source2passages):
+
+        predictions = []
+        questions = []
+        sources = []
+        normalized_scores = []
+        indices_of_correct_passage = []
 
         source2embedded_passages = {}
-        for source, encoded_passages in source2encoded_passages.items():
+        for source, passages in source2passages.items():
             logger.info('encoding source {}'.format(source))
-            if encoded_passages:
-                embedded_passages = self.retriever.embed_paragrphs(encoded_passages,
+            if passages:
+                embedded_passages = self.retriever.embed_paragrphs(passages,
                                                                    progressbar=True)
                 source2embedded_passages[source] = embedded_passages
             else:
@@ -84,6 +82,8 @@ class Predictor:
             predictions.append(prediction)
             normalized_scores.append(norm_score)
             indices_of_correct_passage.append(index_of_correct_passage)
+
+        return predictions, questions, sources, normalized_scores, indices_of_correct_passage
 
     def make_single_prediction(self, question, source, source2embedded_passages,
                                question_already_embedded=False):
