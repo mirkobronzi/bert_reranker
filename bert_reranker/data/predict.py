@@ -30,7 +30,7 @@ class Predictor:
         self.retriever = retriever_trainee.retriever
         self.no_candidate_warnings = 0
 
-    def generate_predictions(self, json_file, predict_to, multiple_thresholds):
+    def generate_predictions(self, json_file, predict_to, multiple_thresholds, write_csv):
 
         with open(json_file, "r", encoding="utf-8") as f:
             json_data = json.load(f)
@@ -49,7 +49,7 @@ class Predictor:
         predictions, questions, sources, normalized_scores, indices_of_correct_passage = res
         generate_and_log_results(indices_of_correct_passage, normalized_scores, predict_to,
                                  predictions, questions, source2passages, sources,
-                                 multiple_thresholds=multiple_thresholds)
+                                 multiple_thresholds=multiple_thresholds, write_csv=write_csv)
 
     def compute_results(self, json_data, passage_id2index, source2passages):
 
@@ -118,10 +118,16 @@ class PredictorWithOutlierDetector(Predictor):
 
 def generate_and_log_results(indices_of_correct_passage, normalized_scores, predict_to,
                              predictions, questions, source2passages, sources,
-                             multiple_thresholds=False):
+                             multiple_thresholds=False, write_csv=False):
     with open(predict_to, "w") as out_stream:
-        log_results_to_file(indices_of_correct_passage, normalized_scores, out_stream,
-                            predictions, questions, source2passages, sources)
+        if write_csv:
+            with open(predict_to + '.csv', 'w') as csv_stream:
+                csv_stream.write('question,target,prediction\n')
+                log_results_to_file(indices_of_correct_passage, normalized_scores, out_stream,
+                                    predictions, questions, source2passages, sources, csv_stream)
+        else:
+            log_results_to_file(indices_of_correct_passage, normalized_scores, out_stream,
+                                predictions, questions, source2passages, sources, None)
 
         out_stream.write('results:\n\n')
         if multiple_thresholds:
@@ -140,7 +146,7 @@ def generate_and_log_results(indices_of_correct_passage, normalized_scores, pred
 
 
 def log_results_to_file(indices_of_correct_passage, normalized_scores, out_stream,
-                        predictions, questions, source2passages, sources):
+                        predictions, questions, source2passages, sources, csv_stream):
     for i in range(len(predictions)):
         question = questions[i]
         prediction = predictions[i]
@@ -164,20 +170,25 @@ def log_results_to_file(indices_of_correct_passage, normalized_scores, out_strea
         else:
             raise ValueError('wrong prediction/target combination')
 
+        prediction_content = source2passages[source][prediction] if prediction >= 0 else OOD_STRING
         out_stream.write(
             "prediction: {} / norm score {:3.3}\nprediction content:"
             "\n\t{}\n".format(
                 pred_outcome,
                 norm_score,
-                source2passages[source][prediction] if prediction >= 0 else OOD_STRING
+                prediction_content
             )
         )
+        target_content = source2passages[source][
+            index_of_correct_passage] if index_of_correct_passage >= 0 else OOD_STRING
         out_stream.write(
             "target content:\n\t{}\n\n".format(
-                source2passages[source][index_of_correct_passage] if index_of_correct_passage >= 0
-                else OOD_STRING
+                target_content
             )
         )
+        if csv_stream is not None:
+            csv_stream.write('"{}","{}","{}"\n'.format(
+                question, target_content, prediction_content))
 
 
 def generate_embeddings(ret_trainee, input_file, out_file):
