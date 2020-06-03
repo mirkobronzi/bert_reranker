@@ -128,7 +128,7 @@ def generate_and_log_results(indices_of_correct_passage, normalized_scores, pred
                                     source2passage2index)
         else:
             log_results_to_file(indices_of_correct_passage, normalized_scores, out_stream,
-                                predictions, questions, source2passages, sources, None)
+                                predictions, questions, source2passages, sources, None, None)
 
         out_stream.write('results:\n\n')
         if multiple_thresholds:

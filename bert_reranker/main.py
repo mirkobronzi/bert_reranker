@@ -27,7 +27,7 @@ from bert_reranker.models.retriever_trainer import RetrieverTrainer
 from bert_reranker.models.sklearn_outliers_model import SKLEARN_MODEL_FILE_NAME
 from bert_reranker.utils.hp_utils import check_and_log_hp
 from bert_reranker.utils.logging_utils import LoggerWriter
-from bert_reranker.scripts.tokenizer_cutoff import evaluate_tokenizer_cutoff
+from bert_reranker.scripts.OLD.tokenizer_cutoff import evaluate_tokenizer_cutoff
 
 logger = logging.getLogger(__name__)
 
