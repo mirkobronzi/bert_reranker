@@ -122,9 +122,10 @@ def generate_and_log_results(indices_of_correct_passage, normalized_scores, pred
     with open(predict_to, "w") as out_stream:
         if write_csv:
             with open(predict_to + '.csv', 'w') as csv_stream:
-                csv_stream.write('question,target,prediction\n')
+                source2passage2index = log_passages(csv_stream, source2passages)
                 log_results_to_file(indices_of_correct_passage, normalized_scores, out_stream,
-                                    predictions, questions, source2passages, sources, csv_stream)
+                                    predictions, questions, source2passages, sources, csv_stream,
+                                    source2passage2index)
         else:
             log_results_to_file(indices_of_correct_passage, normalized_scores, out_stream,
                                 predictions, questions, source2passages, sources, None)
@@ -145,8 +146,26 @@ def generate_and_log_results(indices_of_correct_passage, normalized_scores, pred
             out_stream.write(result_message + "\n")
 
 
+def log_passages(csv_stream, source2passages):
+    source_index = 0
+    source2passage2index = {}
+    for source, passages in source2passages.items():
+        csv_stream.write('{}|{}\n'.format(source_index, source))
+        passage_index = 0
+        source2passage2index[source] = {}
+        source2passage2index[source][OOD_STRING] = -1
+        for passage in passages:
+            csv_stream.write('\t{}|{}\n'.format(passage_index, passage))
+            source2passage2index[source][passage] = passage_index
+            passage_index += 1
+        source_index += 1
+    csv_stream.write('\n')
+    return source2passage2index
+
+
 def log_results_to_file(indices_of_correct_passage, normalized_scores, out_stream,
-                        predictions, questions, source2passages, sources, csv_stream):
+                        predictions, questions, source2passages, sources, csv_stream,
+                        source2passage2index):
     for i in range(len(predictions)):
         question = questions[i]
         prediction = predictions[i]
@@ -187,8 +206,11 @@ def log_results_to_file(indices_of_correct_passage, normalized_scores, out_strea
             )
         )
         if csv_stream is not None:
-            csv_stream.write('"{}","{}","{}"\n'.format(
-                question, target_content, prediction_content))
+            csv_stream.write('Q:{}\n'.format(question))
+            csv_stream.write('T:{}|{}\n'.format(
+                source2passage2index[source][target_content], target_content))
+            csv_stream.write('P:{}|{}\n\n'.format(
+                source2passage2index[source][prediction_content], prediction_content))
 
 
 def generate_embeddings(ret_trainee, input_file, out_file):
