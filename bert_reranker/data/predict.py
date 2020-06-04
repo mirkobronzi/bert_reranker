@@ -205,6 +205,7 @@ def log_results_to_file(indices_of_correct_passage, normalized_scores, out_strea
         )
         if fix_json is not None:
             new_entry = {}
+            new_entry['source'] = source
             new_entry['question'] = question
             target_pid = passage_content2pid[source][target_content]
             new_entry['target'] = (target_pid, target_content)
