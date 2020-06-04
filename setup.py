@@ -18,7 +18,8 @@ setup(
     entry_points={
         'console_scripts': [
             'main=bert_reranker.main:main',
-            'train_outlier_detector=bert_reranker.models.sklearn_outliers_model:main'
+            'train_outlier_detector=bert_reranker.models.sklearn_outliers_model:main',
+            'fix_annotations=bert_reranker.scripts.fix_annotations:main'
         ],
     }
 )
