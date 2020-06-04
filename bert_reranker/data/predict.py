@@ -9,7 +9,8 @@ from tqdm import tqdm
 from bert_reranker.data.data_loader import (
     get_passages_by_source,
     _encode_passages,
-    get_passage_last_header, get_question, get_passage_id, is_in_distribution, OOD_STRING, )
+    get_passage_last_header, get_question, get_passage_id, is_in_distribution, OOD_STRING,
+    get_passage_content2pid, )
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +31,7 @@ class Predictor:
         self.retriever = retriever_trainee.retriever
         self.no_candidate_warnings = 0
 
-    def generate_predictions(self, json_file, predict_to, multiple_thresholds, write_csv):
+    def generate_predictions(self, json_file, predict_to, multiple_thresholds, write_fix_report):
 
         with open(json_file, "r", encoding="utf-8") as f:
             json_data = json.load(f)
@@ -49,7 +50,9 @@ class Predictor:
         predictions, questions, sources, normalized_scores, indices_of_correct_passage = res
         generate_and_log_results(indices_of_correct_passage, normalized_scores, predict_to,
                                  predictions, questions, source2passages, sources,
-                                 multiple_thresholds=multiple_thresholds, write_csv=write_csv)
+                                 multiple_thresholds=multiple_thresholds,
+                                 write_fix_report=write_fix_report,
+                                 json_data=json_data)
 
     def compute_results(self, json_data, passage_id2index, source2passages):
 
@@ -116,16 +119,28 @@ class PredictorWithOutlierDetector(Predictor):
             return -1, 1.0
 
 
+def make_readable(passages):
+    result = []
+    for passage in passages:
+        new_entry = {'passage_id': passage['passage_id'], 'source': passage['source'],
+                     'reference_type': passage['reference_type'],
+                     'section_headers': passage['reference']['section_headers']}
+        result.append(new_entry)
+    return result
+
+
 def generate_and_log_results(indices_of_correct_passage, normalized_scores, predict_to,
                              predictions, questions, source2passages, sources,
-                             multiple_thresholds=False, write_csv=False):
+                             multiple_thresholds, write_fix_report, json_data):
     with open(predict_to, "w") as out_stream:
-        if write_csv:
-            with open(predict_to + '.csv', 'w') as csv_stream:
-                source2passage2index = log_passages(csv_stream, source2passages)
-                log_results_to_file(indices_of_correct_passage, normalized_scores, out_stream,
-                                    predictions, questions, source2passages, sources, csv_stream,
-                                    source2passage2index)
+        if write_fix_report:
+            fix_json = {'passages': make_readable(json_data['passages']), 'fixes': []}
+            passage_content2pid = get_passage_content2pid(json_data['passages'])
+            log_results_to_file(indices_of_correct_passage, normalized_scores, out_stream,
+                                predictions, questions, source2passages, sources, fix_json,
+                                passage_content2pid)
+            with open(predict_to + '_fix.json', 'w', encoding="utf-8") as ostream:
+                json.dump(fix_json, ostream, indent=4, ensure_ascii=False)
         else:
             log_results_to_file(indices_of_correct_passage, normalized_scores, out_stream,
                                 predictions, questions, source2passages, sources, None, None)
@@ -146,26 +161,9 @@ def generate_and_log_results(indices_of_correct_passage, normalized_scores, pred
             out_stream.write(result_message + "\n")
 
 
-def log_passages(csv_stream, source2passages):
-    source_index = 0
-    source2passage2index = {}
-    for source, passages in source2passages.items():
-        csv_stream.write('{}|{}\n'.format(source_index, source))
-        passage_index = 0
-        source2passage2index[source] = {}
-        source2passage2index[source][OOD_STRING] = -1
-        for passage in passages:
-            csv_stream.write('\t{}|{}\n'.format(passage_index, passage))
-            source2passage2index[source][passage] = passage_index
-            passage_index += 1
-        source_index += 1
-    csv_stream.write('\n')
-    return source2passage2index
-
-
 def log_results_to_file(indices_of_correct_passage, normalized_scores, out_stream,
-                        predictions, questions, source2passages, sources, csv_stream,
-                        source2passage2index):
+                        predictions, questions, source2passages, sources, fix_json=None,
+                        passage_content2pid=None):
     for i in range(len(predictions)):
         question = questions[i]
         prediction = predictions[i]
@@ -205,12 +203,15 @@ def log_results_to_file(indices_of_correct_passage, normalized_scores, out_strea
                 target_content
             )
         )
-        if csv_stream is not None:
-            csv_stream.write('Q:{}\n'.format(question))
-            csv_stream.write('T:{}|{}\n'.format(
-                source2passage2index[source][target_content], target_content))
-            csv_stream.write('P:{}|{}\n\n'.format(
-                source2passage2index[source][prediction_content], prediction_content))
+        if fix_json is not None:
+            new_entry = {}
+            new_entry['question'] = question
+            target_pid = passage_content2pid[source][target_content]
+            new_entry['target'] = (target_pid, target_content)
+            prediction_pid = passage_content2pid[source][prediction_content]
+            new_entry['prediction'] = (prediction_pid, prediction_content)
+            new_entry['fix'] = target_pid
+            fix_json['fixes'].append(new_entry)
 
 
 def generate_embeddings(ret_trainee, input_file, out_file):

@@ -77,6 +77,19 @@ def _encode_passages(source2passages, max_passage_length, tokenizer, do_not_enco
     return source2encoded_passages, source2id, source2ood
 
 
+def get_passage_content2pid(passages):
+    result = defaultdict(dict)
+    for passage in passages:
+        source_dict = result[passage['source']]
+        passage_last_header = get_passage_last_header(passage)
+        if passage_last_header in source_dict:
+            raise ValueError('duplicate passage last header for source {}: "{}"'.format(
+                passage['source'], passage_last_header
+            ))
+        source_dict[passage_last_header] = get_passage_id(passage)
+    return result
+
+
 def get_passage_last_header(passage, return_error_for_ood=False):
     if is_in_distribution(passage):
         return passage['reference']['section_headers'][0]

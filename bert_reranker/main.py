@@ -73,7 +73,7 @@ def main():
         "--predict", help="will predict on the json file you provide as an arg"
     )
     parser.add_argument(
-        "--predict-as-csv", help="will also generate a csv (useful to help with annotation)",
+        "--write-fix-report", help="will also generate a json useful to help with annotation fix",
         action="store_true"
     )
     parser.add_argument(
@@ -174,7 +174,7 @@ def main():
             json_file=args.predict,
             predict_to=args.predict_to,
             multiple_thresholds=args.multiple_thresholds,
-            write_csv=args.predict_as_csv
+            write_fix_report=args.write_fix_report
         )
     elif args.file_to_emb:
         if args.write_emb_to is None:
