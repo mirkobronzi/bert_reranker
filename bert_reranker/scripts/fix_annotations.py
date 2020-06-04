@@ -24,12 +24,18 @@ def main():
     parser.add_argument("--input-json", help="original json file", required=True)
     parser.add_argument("--input-manually-fixed-json", help="file with manual fixes", required=True)
     parser.add_argument("--output", help="folder where to write the output", required=True)
+    parser.add_argument("--format-input-json-to",
+                        help="will copy and reformat the input json to this file (useful for diff")
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.INFO)
 
     with open(args.input_json, 'r', encoding='utf-8') as in_stream:
         input_data = json.load(in_stream)
+
+    if args.format_input_json_to is not None:
+        with open(args.format_input_json_to, "w", encoding="utf-8") as ostream:
+            json.dump(input_data, ostream, indent=4, ensure_ascii=False)
 
     with open(args.input_manually_fixed_json, 'r', encoding='utf-8') as in_stream:
         input_manually_fixed_data = json.load(in_stream)
