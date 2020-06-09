@@ -6,6 +6,7 @@ import os
 import pickle
 
 import numpy as np
+from sklearn.ensemble import IsolationForest
 from sklearn.neighbors import LocalOutlierFactor
 
 logger = logging.getLogger(__name__)
@@ -17,6 +18,8 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--embeddings', help='numpy file with embeddings', required=True)
     parser.add_argument('--output', help='will store the model output in this folder',
+                        required=True)
+    parser.add_argument('--model', help='the model type', default='local_outlier_factor',
                         required=True)
     parser.add_argument('--keep-ood-for-questions',
                         help='will keep ood embeddings for questions- by default, they are '
@@ -48,7 +51,12 @@ def main():
     logger.info('final size of the collected embeddings: {}'.format(len(embeddings)))
     embedding_array = np.concatenate(embeddings)
 
-    clf = LocalOutlierFactor(n_neighbors=4, novelty=True, contamination=0.1)
+    if args.model == 'local_outlier_factor':
+        clf = LocalOutlierFactor(n_neighbors=4, novelty=True, contamination=0.1)
+    elif args.model == 'isolation_forest':
+        clf = IsolationForest()
+    else:
+        raise ValueError('model {} not supported'.format(args.model))
     clf.fit(embedding_array)
 
     with open(os.path.join(args.output, SKLEARN_MODEL_FILE_NAME), "wb") as out_stream:
