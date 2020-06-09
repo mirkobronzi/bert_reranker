@@ -54,7 +54,7 @@ def main():
     if args.model == 'local_outlier_factor':
         clf = LocalOutlierFactor(n_neighbors=4, novelty=True, contamination=0.1)
     elif args.model == 'isolation_forest':
-        clf = IsolationForest()
+        clf = IsolationForest(contamination=0.1)
     else:
         raise ValueError('model {} not supported'.format(args.model))
     clf.fit(embedding_array)
