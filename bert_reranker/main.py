@@ -27,7 +27,7 @@ from bert_reranker.models.retriever_trainer import RetrieverTrainer
 from bert_reranker.models.sklearn_outliers_model import SKLEARN_MODEL_FILE_NAME
 from bert_reranker.utils.hp_utils import check_and_log_hp
 from bert_reranker.utils.logging_utils import LoggerWriter
-from bert_reranker.scripts.tokenizer_cutoff import evaluate_tokenizer_cutoff
+from bert_reranker.scripts.OLD.tokenizer_cutoff import evaluate_tokenizer_cutoff
 
 logger = logging.getLogger(__name__)
 
@@ -71,6 +71,10 @@ def main():
     )
     parser.add_argument(
         "--predict", help="will predict on the json file you provide as an arg"
+    )
+    parser.add_argument(
+        "--write-fix-report", help="will also generate a json useful to help with annotation fix",
+        action="store_true"
     )
     parser.add_argument(
         "--predict-outliers", help="will use the sklearn model to predict outliers",
@@ -169,7 +173,8 @@ def main():
         predictor.generate_predictions(
             json_file=args.predict,
             predict_to=args.predict_to,
-            multiple_thresholds=args.multiple_thresholds
+            multiple_thresholds=args.multiple_thresholds,
+            write_fix_report=args.write_fix_report
         )
     elif args.file_to_emb:
         if args.write_emb_to is None:
