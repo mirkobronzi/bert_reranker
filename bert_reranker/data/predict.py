@@ -308,5 +308,9 @@ def compute_result_at_threshold(
         ((id_misclassified_as_id / id_count) * 100) if id_count > 0 else math.nan)
     result_message += "\n\tout-of-distribution: {:3}/{}={:3.2f}% acc".format(
         ood_correct, ood_count, ood_acc)
+    result_message += "\n\t(OOD/ID classifier): correct {:3}(ID) " \
+                      "+ {:3}(OOD) / {:3} = {:3.2f}% acc".format(
+                          ood_correct, id_count - id_misclassified_as_ood, count,
+                          100 * ((ood_correct + (id_count - id_misclassified_as_ood)) / count))
 
     return result_message
