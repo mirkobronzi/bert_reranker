@@ -8,6 +8,7 @@ import pickle
 import numpy as np
 from sklearn.ensemble import IsolationForest
 from sklearn.neighbors import LocalOutlierFactor
+from sklearn.svm import OneClassSVM
 
 logger = logging.getLogger(__name__)
 
@@ -54,6 +55,8 @@ def main():
         clf = LocalOutlierFactor(n_neighbors=4, novelty=True, contamination=0.1)
     elif args.model == 'isolation_forest':
         clf = IsolationForest(contamination=0.1)
+    elif args.model == 'svm':
+        clf = OneClassSVM(kernel='linear')
     else:
         raise ValueError('model {} not supported'.format(args.model))
     clf.fit(embedding_array)
