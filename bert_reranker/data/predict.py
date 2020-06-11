@@ -223,22 +223,28 @@ def generate_embeddings(ret_trainee, input_file, out_file):
 
     question_embs = []
     labels = []
+    question_texts = []
     for example in tqdm(json_data["examples"]):
         pid = get_passage_id(example)
         passage = pid2passage[pid]
         labels.append('id' if is_in_distribution(passage) else 'ood')
-        emb = ret_trainee.retriever.embed_question(get_question(example))
+        question = get_question(example)
+        emb = ret_trainee.retriever.embed_question(question)
         question_embs.append(emb)
+        question_texts.append(question)
 
     passage_header_embs = []
     ood = 0
+    passage_texts = []
     for source, passages in source2passages.items():
         logger.info('embedding passages for source {}'.format(source))
         for passage in tqdm(passages):
             if is_in_distribution(passage):
+                passage_text = get_passage_last_header(passage, return_error_for_ood=True)
                 emb = ret_trainee.retriever.embed_paragraph(
-                    get_passage_last_header(passage, return_error_for_ood=True))
+                    passage_text)
                 passage_header_embs.append(emb)
+                passage_texts.append(passage_text)
             else:
                 ood += 1
 
