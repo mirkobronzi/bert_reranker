@@ -249,7 +249,8 @@ def generate_embeddings(ret_trainee, input_file, out_file):
                 ood += 1
 
     to_serialize = {"question_embs": question_embs, "passage_header_embs": passage_header_embs,
-                    "question_labels": labels}
+                    "question_labels": labels, "passage_texts": passage_texts,
+                    "question_texts": question_texts}
     with open(out_file, "wb") as out_stream:
         pickle.dump(to_serialize, out_stream)
     logger.info(
