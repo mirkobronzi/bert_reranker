@@ -40,6 +40,7 @@ def get_model_and_params(model_name):
         base_clf = OneClassSVM()
         parameters = {
             "kernel": ["linear", "poly", "rbf"],
+            "gamma": [0.001, 0.005, 0.01, 0.1]
         }
     elif model_name == "elliptic_env":
         base_clf = EllipticEnvelope()
@@ -102,6 +103,7 @@ def main():
 
     def scoring(estimator, X, y=None, args=args):
         from sklearn.metrics import accuracy_score
+        from sklearn.metrics import confusion_matrix
 
         # Load testing embeddings
         with open(args.test_embeddings, "rb") as in_stream:
@@ -109,7 +111,13 @@ def main():
         question_embeddings = np.concatenate(data["question_embs"])
         labels = [1 if label == "id" else -1 for label in data["question_labels"]]
         preds = estimator.predict(question_embeddings)
-        acc = accuracy_score(preds, labels)
+        acc = accuracy_score(labels, preds)
+        conf_mat = confusion_matrix(labels, preds)
+
+        print("estimator params", estimator)
+        print("Accuracy:", acc)
+        print(conf_mat)
+        print("="*50)
         return acc
 
     models = ["lof", "isolation_forest", "ocsvm", "elliptic_env"]
