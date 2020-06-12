@@ -74,8 +74,8 @@ def main():
     )
     parser.add_argument(
         "--use-original-model-parameters",
-        help="to use with predict - it iwll not load the fine-tuned parameters (only the"
-             "pre-trained ones)"
+        help="to use with predict/generat eembeddings - it iwll not load the fine-tuned parameters "
+             "(only the pre-trained ones)"
     )
     parser.add_argument(
         "--write-fix-report", help="will also generate a json useful to help with annotation fix",
@@ -188,8 +188,13 @@ def main():
     elif args.file_to_emb:
         if args.write_emb_to is None:
             raise ValueError('please specify also --write-emb-to')
-        model_ckpt = torch.load(ckpt_to_resume, map_location=torch.device("cpu"))
-        ret_trainee.load_state_dict(model_ckpt["state_dict"])
+
+        if not args.use_original_model_parameters:
+            model_ckpt = torch.load(ckpt_to_resume, map_location=torch.device("cpu"))
+            ret_trainee.load_state_dict(model_ckpt["state_dict"])
+        else:
+            logger.warning("will NOT load the model parameters - just use the pre-trained model")
+
         generate_embeddings(
             ret_trainee,
             input_file=args.file_to_emb,
