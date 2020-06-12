@@ -3,6 +3,7 @@ mlruns
 lightning_logs
 cached_natq
 predictions.txt
+predictions.txt.csv
 experiment_logs
 orion_db.pkl*
 orion_working_dir
