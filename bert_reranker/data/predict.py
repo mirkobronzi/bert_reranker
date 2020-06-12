@@ -223,27 +223,34 @@ def generate_embeddings(ret_trainee, input_file, out_file):
 
     question_embs = []
     labels = []
+    question_texts = []
     for example in tqdm(json_data["examples"]):
         pid = get_passage_id(example)
         passage = pid2passage[pid]
         labels.append('id' if is_in_distribution(passage) else 'ood')
-        emb = ret_trainee.retriever.embed_question(get_question(example))
+        question = get_question(example)
+        emb = ret_trainee.retriever.embed_question(question)
         question_embs.append(emb)
+        question_texts.append(question)
 
     passage_header_embs = []
     ood = 0
+    passage_texts = []
     for source, passages in source2passages.items():
         logger.info('embedding passages for source {}'.format(source))
         for passage in tqdm(passages):
             if is_in_distribution(passage):
+                passage_text = get_passage_last_header(passage, return_error_for_ood=True)
                 emb = ret_trainee.retriever.embed_paragraph(
-                    get_passage_last_header(passage, return_error_for_ood=True))
+                    passage_text)
                 passage_header_embs.append(emb)
+                passage_texts.append(passage_text)
             else:
                 ood += 1
 
     to_serialize = {"question_embs": question_embs, "passage_header_embs": passage_header_embs,
-                    "question_labels": labels}
+                    "question_labels": labels, "passage_texts": passage_texts,
+                    "question_texts": question_texts}
     with open(out_file, "wb") as out_stream:
         pickle.dump(to_serialize, out_stream)
     logger.info(
@@ -308,5 +315,14 @@ def compute_result_at_threshold(
         ((id_misclassified_as_id / id_count) * 100) if id_count > 0 else math.nan)
     result_message += "\n\tout-of-distribution: {:3}/{}={:3.2f}% acc".format(
         ood_correct, ood_count, ood_acc)
+    result_message += "\n\t------\n\t(OOD/ID classifier): correct {:3}(ID) " \
+                      "+ {:3}(OOD) / {:3} = {:3.2f}% acc".format(
+                          ood_correct, id_count - id_misclassified_as_ood, count,
+                          100 * ((ood_correct + (id_count - id_misclassified_as_ood)) / count))
+    tot_seen_by_id_classifier = id_count - id_misclassified_as_ood
+    result_message += "\n\t(ID classifier): correct {:3}/{:3} = {:3.2f}% acc\n\n".format(
+        tot_seen_by_id_classifier - id_misclassified_as_id, tot_seen_by_id_classifier,
+        100 * ((tot_seen_by_id_classifier - id_misclassified_as_id) / tot_seen_by_id_classifier)
+        if tot_seen_by_id_classifier > 0 else math.nan)
 
     return result_message
