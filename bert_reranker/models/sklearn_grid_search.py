@@ -12,6 +12,8 @@ from sklearn.svm import OneClassSVM
 from sklearn.covariance import EllipticEnvelope
 from sklearn.model_selection import GridSearchCV
 
+from bert_reranker.models.sklearn_outliers_model import collect_question_embeddings
+
 logger = logging.getLogger(__name__)
 
 SKLEARN_MODEL_FILE_NAME = "sklearn_outlier_model.pkl"
@@ -88,7 +90,7 @@ def main():
         data = pickle.load(in_stream)
 
     if args.train_on_questions:
-        embeddings, labels = collect_question_embeddings(args, data)
+        embeddings = collect_question_embeddings(args, data)
 
     elif args.train_on_passage_headers:
         embeddings = data["passage_header_embs"]
@@ -136,27 +138,6 @@ def main():
                 os.path.join(args.output, SKLEARN_MODEL_FILE_NAME), "wb"
             ) as out_stream:
                 pickle.dump(clf.best_estimator_, out_stream)
-
-
-def collect_question_embeddings(args, data):
-    question_embeddings = data["question_embs"]
-    question_labels = data["question_labels"]
-    logger.info("found {} question embeddings".format(len(question_embeddings)))
-    if not args.keep_ood_for_questions:
-        embeddings = []
-        labels = []
-        for i, embedding in enumerate(question_embeddings):
-            if question_labels[i] == "id":
-                embeddings.append(embedding)
-                labels.append(1)
-
-        logger.info(
-            "\t{} question embeddings remain after filtering".format(len(embeddings))
-        )
-    else:
-        embeddings = question_embeddings
-        labels = [1 if label == "id" else -1 for label in question_labels]
-    return embeddings, labels
 
 
 if __name__ == "__main__":
