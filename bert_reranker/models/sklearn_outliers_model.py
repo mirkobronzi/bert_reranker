@@ -21,6 +21,7 @@ def main():
     parser.add_argument('--output', help='will store the model output in this folder',
                         required=True)
     parser.add_argument('--model', help='the model type', default='local_outlier_factor')
+    parser.add_argument('--n-neighbour', default=4)
     parser.add_argument('--keep-ood-for-questions',
                         help='will keep ood embeddings for questions- by default, they are '
                              'filtered out',
@@ -52,7 +53,8 @@ def main():
     embedding_array = np.concatenate(embeddings)
 
     if args.model == 'local_outlier_factor':
-        clf = LocalOutlierFactor(n_neighbors=4, novelty=True, contamination=0.1)
+        logger.info('using local outlier factor with n_neighbour {}'.format(args.n_neighbour))
+        clf = LocalOutlierFactor(n_neighbors=args.n_neighbour, novelty=True, contamination=0.1)
     elif args.model == 'isolation_forest':
         clf = IsolationForest(contamination=0.1)
     elif args.model == 'svm':
