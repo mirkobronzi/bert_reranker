@@ -73,6 +73,11 @@ def main():
         "--predict", help="will predict on the json file you provide as an arg"
     )
     parser.add_argument(
+        "--use-original-model-parameters",
+        help="to use with predict - it iwll not load the fine-tuned parameters (only the"
+             "pre-trained ones)"
+    )
+    parser.add_argument(
         "--write-fix-report", help="will also generate a json useful to help with annotation fix",
         action="store_true"
     )
@@ -162,8 +167,12 @@ def main():
         if not args.predict_to:
             raise ValueError('--predict also requires --predict-to')
 
-        model_ckpt = torch.load(ckpt_to_resume, map_location=torch.device("cpu"))
-        ret_trainee.load_state_dict(model_ckpt["state_dict"])
+        if not args.use_original_model_parameters:
+            model_ckpt = torch.load(ckpt_to_resume, map_location=torch.device("cpu"))
+            ret_trainee.load_state_dict(model_ckpt["state_dict"])
+        else:
+            logger.warning("will NOT load the model parameters - just use the pre-trained model")
+
         if args.predict_outliers:
             with open(os.path.join(args.output, SKLEARN_MODEL_FILE_NAME), 'rb') as file:
                 sklearn_model = pickle.load(file)
