@@ -96,7 +96,7 @@ def main():
         passage_header_embs = data["passage_header_embs"]
         embeddings.extend(passage_header_embs)
         logger.info("found {} passage headers embs".format(len(passage_header_embs)))
-        labels = np.ones(len(embeddings))
+        #  labels = np.ones(len(embeddings))
 
     logger.info("final size of the collected embeddings: {}".format(len(embeddings)))
     embedding_array = np.concatenate(embeddings)
@@ -108,7 +108,7 @@ def main():
         with open(args.test_embeddings, "rb") as in_stream:
             data = pickle.load(in_stream)
         question_embeddings = np.concatenate(data["question_embs"])
-        labels = [1 if l == "id" else -1 for l in data["question_labels"]]
+        labels = [1 if label == "id" else -1 for label in data["question_labels"]]
         preds = estimator.predict(question_embeddings)
         acc = accuracy_score(preds, labels)
         return acc
@@ -158,7 +158,7 @@ def collect_question_embeddings(args, data):
         )
     else:
         embeddings = question_embeddings
-        labels = [1 if l == "id" else -1 for l in question_labels]
+        labels = [1 if label == "id" else -1 for label in question_labels]
     return embeddings, labels
 
 
