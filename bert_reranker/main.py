@@ -75,7 +75,8 @@ def main():
     parser.add_argument(
         "--use-original-model-parameters",
         help="to use with predict/generat eembeddings - it iwll not load the fine-tuned parameters "
-             "(only the pre-trained ones)"
+             "(only the pre-trained ones)",
+        action="store_true"
     )
     parser.add_argument(
         "--write-fix-report", help="will also generate a json useful to help with annotation fix",
