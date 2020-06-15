@@ -60,11 +60,12 @@ def main():
 def get_faq_contents(faq_file):
     _, faq_pid2passage, _ = get_passages_by_source(faq_file, keep_ood=True)
     faq_passages = list(faq_pid2passage.values())
-    source2faq_contents = get_passage_content2pid(faq_passages)
+    source2faq_contents = get_passage_content2pid(faq_passages, duplicates_are_ok=True)
 
     all_source_contents = []
     for source_contents in source2faq_contents.values():
         all_source_contents.extend(source_contents)
+    all_source_contents = set(all_source_contents)
 
     logger.info('passages in reference file: {}'.format(len(all_source_contents)))
     return all_source_contents

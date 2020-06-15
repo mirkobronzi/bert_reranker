@@ -77,12 +77,12 @@ def _encode_passages(source2passages, max_passage_length, tokenizer, do_not_enco
     return source2encoded_passages, source2id, source2ood
 
 
-def get_passage_content2pid(passages):
+def get_passage_content2pid(passages, duplicates_are_ok=False):
     result = defaultdict(dict)
     for passage in passages:
         source_dict = result[passage['source']]
         passage_last_header = get_passage_last_header(passage)
-        if passage_last_header in source_dict:
+        if passage_last_header in source_dict and not duplicates_are_ok:
             raise ValueError('duplicate passage last header for source {}: "{}"'.format(
                 passage['source'], passage_last_header
             ))
