@@ -222,16 +222,17 @@ def generate_embeddings(ret_trainee, input_file, out_file):
     source2passages, pid2passage, _ = get_passages_by_source(json_data)
 
     question_embs = []
-    labels = []
     question_texts = []
-    for example in tqdm(json_data["examples"]):
-        pid = get_passage_id(example)
-        passage = pid2passage[pid]
-        labels.append('id' if is_in_distribution(passage) else 'ood')
-        question = get_question(example)
-        emb = ret_trainee.retriever.embed_question(question)
-        question_embs.append(emb)
-        question_texts.append(question)
+    labels = []
+    if json_data.get("examples"):
+        for example in tqdm(json_data["examples"]):
+            pid = get_passage_id(example)
+            passage = pid2passage[pid]
+            labels.append('id' if is_in_distribution(passage) else 'ood')
+            question = get_question(example)
+            emb = ret_trainee.retriever.embed_question(question)
+            question_embs.append(emb)
+            question_texts.append(question)
 
     passage_header_embs = []
     ood = 0
@@ -257,6 +258,8 @@ def generate_embeddings(ret_trainee, input_file, out_file):
         'saved {} question embeddings and {} passage header embeddings ({} skipped because '
         'out-of-distribution)'.format(
             len(question_embs), len(passage_header_embs), ood))
+
+    return to_serialize
 
 
 def compute_result_at_threshold(

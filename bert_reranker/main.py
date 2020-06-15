@@ -181,7 +181,7 @@ def main():
             raise ValueError('please specify also --write-emb-to')
         model_ckpt = torch.load(ckpt_to_resume, map_location=torch.device("cpu"))
         ret_trainee.load_state_dict(model_ckpt["state_dict"])
-        generate_embeddings(
+        _ = generate_embeddings(
             ret_trainee,
             input_file=args.file_to_emb,
             out_file=args.write_emb_to
