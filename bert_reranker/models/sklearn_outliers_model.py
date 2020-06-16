@@ -21,7 +21,7 @@ def main():
     parser.add_argument('--output', help='will store the model output in this folder',
                         required=True)
     parser.add_argument('--model', help='the model type', default='local_outlier_factor')
-    parser.add_argument('--n-neighbour', default=4)
+    parser.add_argument('--n-neighbour', default=4, type=int)
     parser.add_argument('--keep-ood-for-questions',
                         help='will keep ood embeddings for questions- by default, they are '
                              'filtered out',
