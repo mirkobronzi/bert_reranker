@@ -47,14 +47,24 @@ def main():
     filtered = []
     _, pid2passages, _ = get_passages_by_source(input_data)
 
+    id_kept = 0
+    ood_kept = 0
+    total = 0
+
     for example in get_examples(input_data, True):
         example_pid = get_passage_id(example)
         related_passage = pid2passages[example_pid]
         is_id = is_in_distribution(related_passage)
         if is_id and args.keep_id:
             filtered.append(example)
+            id_kept += 1
         elif not is_id and args.keep_ood:
             filtered.append(example)
+            ood_kept += 1
+        total += 1
+
+    logger.info('kept {} ID and {} OOD (from a total of {} examples)'.format(
+        id_kept, ood_kept, total))
 
     with open(args.output, "w", encoding="utf-8") as ostream:
         json.dump({'examples': filtered, 'passages': input_data['passages']}, ostream, indent=4,
