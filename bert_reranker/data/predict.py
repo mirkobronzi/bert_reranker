@@ -319,10 +319,5 @@ def compute_result_at_threshold(
                       "+ {:3}(OOD) / {:3} = {:3.2f}% acc".format(
                           ood_correct, id_count - id_misclassified_as_ood, count,
                           100 * ((ood_correct + (id_count - id_misclassified_as_ood)) / count))
-    tot_seen_by_id_classifier = id_count - id_misclassified_as_ood
-    result_message += "\n\t(ID classifier): correct {:3}/{:3} = {:3.2f}% acc\n\n".format(
-        tot_seen_by_id_classifier - id_misclassified_as_id, tot_seen_by_id_classifier,
-        100 * ((tot_seen_by_id_classifier - id_misclassified_as_id) / tot_seen_by_id_classifier)
-        if tot_seen_by_id_classifier > 0 else math.nan)
 
     return result_message
