@@ -104,7 +104,7 @@ def main():
         action="store_true",
     )
     parser.add_argument(
-        "--num-workers", help="number of workers - default 2", type=int, default=0
+        "--num-workers", help="number of workers - default 0", type=int, default=0
     )
     parser.add_argument(
         "--print-sentence-stats",
