@@ -12,6 +12,12 @@ logger = logging.getLogger(__name__)
 
 
 class Retriever(nn.Module):
+
+    """
+    A retriever is a combination of two encoder (may be - or not - based on the same encoder),
+    and it is used to generate the score between a question and a candidate.
+    """
+
     def __init__(self, bert_question_encoder, bert_paragraph_encoder, tokenizer,
                  max_question_len, max_paragraph_len, debug):
         super(Retriever, self).__init__()
