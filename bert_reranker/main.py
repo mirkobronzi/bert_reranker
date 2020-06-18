@@ -42,9 +42,8 @@ def main():
     )
     parser.add_argument(
         "--gpu",
-        help="list of gpu ids to use. default is cpu. example: --gpu 0 1",
+        help="gpu id to use. default is cpu. example: --gpu 0",
         type=int,
-        nargs="+"
     )
     parser.add_argument(
         "--validation-interval",
@@ -56,17 +55,12 @@ def main():
     parser.add_argument("--output", help="where to store models", required=True)
     parser.add_argument(
         "--no-model-restoring",
-        help="will not restore any previous model weights (" "even if present)",
+        help="will not restore any previous model weights (even if present)",
         action="store_true",
     )
     parser.add_argument(
         "--train",
-        help="will not train - will just evaluate on dev",
-        action="store_true",
-    )
-    parser.add_argument(
-        "--validate",
-        help="will not train - will just evaluate on dev",
+        help="will train a model",
         action="store_true",
     )
     parser.add_argument(
@@ -74,7 +68,7 @@ def main():
     )
     parser.add_argument(
         "--use-original-model-parameters",
-        help="to use with predict/generat eembeddings - it iwll not load the fine-tuned parameters "
+        help="to use with predict/generate embeddings - it will not load the fine-tuned parameters "
              "(only the pre-trained ones)",
         action="store_true"
     )
@@ -97,14 +91,11 @@ def main():
         help="will save ONLY the model weights (not the pytorch lightning object)"
         " to this file",
     )
-    parser.add_argument("--predict-to", help="(optional) write predictions here)")
+    parser.add_argument("--predict-to", help="write predictions here)")
     parser.add_argument(
         "--redirect-log",
         help="will intercept any stdout/err and log it",
         action="store_true",
-    )
-    parser.add_argument(
-        "--num-workers", help="number of workers - default 0", type=int, default=0
     )
     parser.add_argument(
         "--print-sentence-stats",
@@ -113,7 +104,7 @@ def main():
     )
     parser.add_argument(
         "--multiple-thresholds",
-        help="will print results for various thresholds",
+        help="will print results for various thresholds (when doing --predict)",
         action="store_true",
     )
     parser.add_argument('--log', help='log to this file (in addition to stdout/err)')
@@ -145,7 +136,7 @@ def main():
 
     ckpt_to_resume, ret_trainee, trainer = init_model(
         hyper_params,
-        args.num_workers,
+        0,
         args.output,
         args.validation_interval,
         gpu,
@@ -162,8 +153,6 @@ def main():
             type='objective',
             # note the minus - cause orion is always trying to minimize (cit. from the guide)
             value=-float(best_dev_result))])
-    elif args.validate:
-        trainer.test(ret_trainee)
     elif args.predict:
         if not args.predict_to:
             raise ValueError('--predict also requires --predict-to')
@@ -204,7 +193,7 @@ def main():
     elif args.save_weights_to is not None:
         torch.save(ret_trainee.retriever.state_dict(), args.save_weights_to)
     else:
-        logger.warning("please select one between --train / --validate / --test")
+        logger.warning("please select one between --train / --predict / --file_to_emb")
 
 
 def init_model(
