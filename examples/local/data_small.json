@@ -3,31 +3,31 @@
         {
             "id": 0,
             "source": "my_source",
-            "question": "What should happen if there's a change in custody of a child during the pandemic?",
+            "question": "What should I do?",
             "passage_id": 4
         },
         {
             "id": 1,
             "source": "my_source",
-            "question": "What is the protocol for my food business?",
+            "question": "What is this?",
             "passage_id": 5
         },
         {
             "id": 2,
             "source": "my_source",
-            "question": "Will warm weather deter the spread of COVID-19?",
+            "question": "Where are we going?",
             "passage_id": 6
         },
         {
             "id": 3,
             "source": "my_source",
-            "question": "Should municipalities be obliged to buy facemasks and other equipment for the well being of their employees?",
+            "question": "What time is it now?",
             "passage_id": 4
         },
         {
             "id": 4,
             "source": "my_source",
-            "question": "this is an OOD stuqestion - see the related passage",
+            "question": "this is an OOD question",
             "passage_id": 10
         }
     ],
@@ -35,42 +35,42 @@
         {
             "passage_id": 4,
             "source": "my_source",
-            "uri": "https://any_uri/quebec-en-faq-7.json",
+            "uri": "no_uri",
             "reference_type": "faq",
             "reference": {
-                "page_title": "Questions and answers concerning the municipalities during the COVID-19 pandemic",
+                "page_title": null,
                 "section_headers": [
-                    "Should referendum votes be held?"
+                    "master question #1"
                 ],
-                "section_content": "No, they should not. Pursuant to order 2020-008 of March 22, 2020, any procedure involving the movement or gathering of citizens that is part of the decision-making process of a municipal body, including a referendum process, must be suspended or replaced.  The government requests that no referendum vote or notice of such a vote be held or issued until further notice. This is consistent with the postponement of municipal by-elections. Further decisions by the government could have the effect of extending the period during which no referendum vote is to be held.",
+                "section_content": null,
                 "selected_span": null
             }
         },
         {
             "passage_id": 5,
             "source": "my_source",
-            "uri": "https://any_uri/quebec-en-faq-3.json",
+            "uri": "no_uri",
             "reference_type": "faq",
             "reference": {
-                "page_title": "Questions and answers pertaining to employers and workers during the COVID-19 pandemic",
+                "page_title": null,
                 "section_headers": [
-                    "my gt_question"
+                    "master question #2"
                 ],
-                "section_content": "Financial assistance to businesses, granted under the programs administered by the ministère de l'Agriculture, des Pêcheries et de l'Alimentation, is maintained as are essential services. ",
+                "section_content": null,
                 "selected_span": null
             }
         },
         {
             "passage_id": 6,
             "source": "my_source",
-            "uri": "https://any_uri/quebec-en-faq-3.json",
+            "uri": "no_uri",
             "reference_type": "faq",
             "reference": {
-                "page_title": "third question",
+                "page_title": null,
                 "section_headers": [
-                    "my 3rd gt_question"
+                    "master question #3"
                 ],
-                "section_content": "any content will do..",
+                "section_content": null,
                 "selected_span": null
             }
         },
