@@ -49,22 +49,32 @@ def main():
         embeddings.extend(passage_header_embs)
         logger.info('found {} passage headers embs'.format(len(passage_header_embs)))
 
+    _ = fit_sklearn_model(embeddings,
+                          args.model,
+                          os.path.join(args.output, SKLEARN_MODEL_FILE_NAME),
+                          n_neighbors=args.n_neighbour)
+
+
+def fit_sklearn_model(embeddings, model_name, output_filename, n_neighbors=4):
     logger.info('final size of the collected embeddings: {}'.format(len(embeddings)))
     embedding_array = np.concatenate(embeddings)
 
-    if args.model == 'local_outlier_factor':
-        logger.info('using local outlier factor with n_neighbour {}'.format(args.n_neighbour))
-        clf = LocalOutlierFactor(n_neighbors=args.n_neighbour, novelty=True, contamination=0.1)
-    elif args.model == 'isolation_forest':
+    if model_name == 'local_outlier_factor':
+        logger.info('using local outlier factor with n_neighbour {}'.format(n_neighbors))
+        clf = LocalOutlierFactor(n_neighbors=n_neighbors, novelty=True, contamination=0.1)
+    elif model_name == 'isolation_forest':
         clf = IsolationForest(contamination=0.1)
-    elif args.model == 'svm':
+    elif model_name == 'svm':
         clf = OneClassSVM(kernel='linear')
     else:
-        raise ValueError('model {} not supported'.format(args.model))
+        raise ValueError('model {} not supported'.format(model_name))
     clf.fit(embedding_array)
 
-    with open(os.path.join(args.output, SKLEARN_MODEL_FILE_NAME), "wb") as out_stream:
+    logger.info('Saving OOD model to {}'.format(output_filename))
+    with open(output_filename, "wb") as out_stream:
         pickle.dump(clf, out_stream)
+
+    return clf
 
 
 def collect_question_embeddings(args, data):
