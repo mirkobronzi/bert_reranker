@@ -215,7 +215,8 @@ def log_results_to_file(indices_of_correct_passage, normalized_scores, out_strea
             fix_json['fixes'].append(new_entry)
 
 
-def generate_embeddings(ret_trainee, input_file=None, out_file=None, json_data=None, embed_passages=True):
+def generate_embeddings(ret_trainee, input_file=None, out_file=None, json_data=None,
+                        embed_passages=True):
     if input_file:
         with open(input_file, "r", encoding="utf-8") as f:
             json_data = json.load(f)
