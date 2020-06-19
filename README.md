@@ -25,6 +25,7 @@ So, putting everything together, the process is basically a pipeline:
 
 The expected data format is a json file that is a dictionary with two components:
 `examples` and `passages`.
+You can see an example in `examples/local/data_small.json`
 
 ### Examples
 
@@ -73,6 +74,61 @@ The code mainly supports 3 operations:
 
 Note that all the 3 operations are mostly based on a config file that specify the
 model's architecture. You can see an example in `examples/local/config.yaml`.
+
+### Train
+
+To train, you can use the following command:
+
+    main --config config.yaml --output output --train
+
+This will create a new model in the `output` folder.
+
+Use `--help` to see the other available options.
+
+### Predict
+
+After training, you can use a model to predict (and evaluate) on a json file with the format
+that was described above. To do this:
+
+    main --config config.yaml --output output --predict data_small.json --predict-to predictions.txt
+
+This will use the model store in `output` to generate predictions on the file `data_small.json`, and
+the results will be store in the file `predictions.txt`.
+
+Note the `config.yaml` file is the same as the one used in training.
+
+Use `--help` to see the other available options.
+
+### Generate embeddings
+
+This step can be used (after training) to generate embeddings for some `examples` and/or `passages`.
+This can be useful for training the outlier detector. (see next section)
+
+To do this, the command is:
+
+    main --config config.yaml --output output --file-to-emb=data_small.json --write-emb-to=emb.npy
+
+This will use the model in `output` to generate embeddings for the data in `data_small.json`, and these
+embeddings will be written to `emb.npy`.
+
+Use `--help` to see the other available options.
+
+### Train the outlier detector
+
+To train the outlier detector (which is a sklearn model), you will need to generate the embedding
+first (see previous section).
+
+One this is done, you can train the outliser model as:
+
+    train_outlier_detector --embeddings=emb.npy --output=output --train-on-passage-headers
+
+This will use the embeddings in `emb.npy` to train the model. In this example, only the passages
+will be used (see `--train-on-passage-headers`). To use also the user questions to train the model,
+the command is:
+
+    train_outlier_detector --embeddings=emb.npy --output=output --train-on-passage-headers --train-on-questions
+
+Use `--help` to see the other available options.
 
 ### Hyper-parameter search with Orion
 
