@@ -129,11 +129,12 @@ def main():
     with open(args.config, "r") as stream:
         hyper_params = load(stream, Loader=yaml.FullLoader)
 
-    if args.gpu is None and 'GPU' in os.environ:
-        gpu_string = os.environ['GPU']
-        gpu = [int(x) for x in gpu_string.strip().split()]
+    if args.gpu is not None:
+        # PyTorch Lightning wants a list
+        gpu = [args.gpu]
     else:
-        gpu = args.gpu
+        gpu = None
+    logger.info('using GPU {}'.format(gpu))
 
     ckpt_to_resume, ret_trainee, trainer = init_model(
         hyper_params,
