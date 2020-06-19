@@ -225,48 +225,59 @@ def log_results_to_file(indices_of_correct_passage, normalized_scores, out_strea
             fix_json['fixes'].append(new_entry)
 
 
-def generate_embeddings(ret_trainee, input_file, out_file):
-    with open(input_file, "r", encoding="utf-8") as f:
-        json_data = json.load(f)
+def generate_embeddings(ret_trainee, input_file=None, out_file=None, json_data=None,
+                        embed_passages=True):
+    if input_file:
+        with open(input_file, "r", encoding="utf-8") as f:
+            json_data = json.load(f)
+    elif json_data:
+        pass
+    else:
+        raise ValueError("You should specify either the input file or the json_data")
 
     source2passages, pid2passage, _ = get_passages_by_source(json_data)
 
     question_embs = []
-    labels = []
     question_texts = []
-    for example in tqdm(json_data["examples"]):
-        pid = get_passage_id(example)
-        passage = pid2passage[pid]
-        labels.append('id' if is_in_distribution(passage) else 'ood')
-        question = get_question(example)
-        emb = ret_trainee.retriever.embed_question(question)
-        question_embs.append(emb)
-        question_texts.append(question)
+    labels = []
+    if json_data.get("examples"):
+        for example in tqdm(json_data["examples"]):
+            pid = get_passage_id(example)
+            passage = pid2passage[pid]
+            labels.append('id' if is_in_distribution(passage) else 'ood')
+            question = get_question(example)
+            emb = ret_trainee.retriever.embed_question(question)
+            question_embs.append(emb)
+            question_texts.append(question)
 
     passage_header_embs = []
     ood = 0
     passage_texts = []
-    for source, passages in source2passages.items():
-        logger.info('embedding passages for source {}'.format(source))
-        for passage in tqdm(passages):
-            if is_in_distribution(passage):
-                passage_text = get_passage_last_header(passage, return_error_for_ood=True)
-                emb = ret_trainee.retriever.embed_paragraph(
-                    passage_text)
-                passage_header_embs.append(emb)
-                passage_texts.append(passage_text)
-            else:
-                ood += 1
+    if embed_passages:
+        for source, passages in source2passages.items():
+            logger.info('embedding passages for source {}'.format(source))
+            for passage in tqdm(passages):
+                if is_in_distribution(passage):
+                    passage_text = get_passage_last_header(passage, return_error_for_ood=True)
+                    emb = ret_trainee.retriever.embed_paragraph(
+                        passage_text)
+                    passage_header_embs.append(emb)
+                    passage_texts.append(passage_text)
+                else:
+                    ood += 1
 
     to_serialize = {"question_embs": question_embs, "passage_header_embs": passage_header_embs,
                     "question_labels": labels, "passage_texts": passage_texts,
                     "question_texts": question_texts}
-    with open(out_file, "wb") as out_stream:
-        pickle.dump(to_serialize, out_stream)
+    if out_file:
+        with open(out_file, "wb") as out_stream:
+            pickle.dump(to_serialize, out_stream)
     logger.info(
-        'saved {} question embeddings and {} passage header embeddings ({} skipped because '
+        'generated {} question embeddings and {} passage header embeddings ({} skipped because '
         'out-of-distribution)'.format(
             len(question_embs), len(passage_header_embs), ood))
+
+    return to_serialize
 
 
 def compute_result_at_threshold(

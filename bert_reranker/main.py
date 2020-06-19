@@ -186,7 +186,7 @@ def main():
         else:
             logger.warning("will NOT load the model parameters - just use the pre-trained model")
 
-        generate_embeddings(
+        _ = generate_embeddings(
             ret_trainee,
             input_file=args.file_to_emb,
             out_file=args.write_emb_to

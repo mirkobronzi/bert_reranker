@@ -11,7 +11,13 @@ logger = logging.getLogger(__name__)
 
 
 def filter_user_questions(input_to_filter, faq_contents):
+    '''
+    This function takes the data from the input_to_filter json file, and only
+    returns the examples that align with the faq_contents.
 
+    input_to_filer: str, filename of the json to filter
+    faq_contents: set, all faq questions in a set.
+    '''
     with open(input_to_filter, 'r', encoding='utf-8') as in_stream:
         input_data = json.load(in_stream)
 
