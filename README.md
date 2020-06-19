@@ -25,7 +25,7 @@ So, putting everything together, the process is basically a pipeline:
 
 The expected data format is a json file that is a dictionary with two components:
 `examples` and `passages`.
-You can see an example in `examples/local/data_small.json`
+You can see an example in `examples/local/data_small.json`.
 
 ### Examples
 
@@ -151,6 +151,38 @@ It mainly takes care of assembling together the various part of the code, in par
 
 Data is handled in `bert_reranker/data/data_loader.py`. This file provides a PyTorch DataSet
 implementation that is able to wrap the data in the format we specified above.
+
+This file also contains all the utilities to deal with the this data format.
+It would be best to re-use them instead to deal with the json directly (so that we can keep
+all the procedure in a centralized place).
+
+### Creating the models
+
+Models are created by using the file `bert_reranker/models/load_model.py`.
+This file is mainly a dispatcher that will call the appropriate method to for the model that
+the user want to use. In particular, most of the time the model that will be used will be BERT,
+and the related code is in `bert_reranker/models/bert_encoder.py`. Note that this file contains
+various version of the BERT encoder (e.g., a vanilla version, a version that supports caching the 
+results, ...).
+
+An encoder can be used on the examples to get the related embeddings, as well as on the passages (
+to get the embeddings). Note that the same encoder can be used for both (this is configurable in
+the config file).
+
+Once two encoders are created (or one only if the user decided to use the same one for example/passage),
+then a retriever model (`bert_reranker/models/retriever.py`) is create by composing the two.
+A retriever is indeed able to use the two encoders to generate the various embeddings and it will
+then produce a score by performing a simple dot-product.
+
+### Training the models
+
+The file `bert_reranker/models/retriever_trainer.py` takes care of training the models.
+We use PyTorch Lightning to help with training. Because of that, the retriever_trainer will subclass
+`pl.LightningModule` (from PyTorch Lightning), and only implement the `train_step` and
+`validate_step` methods.
+
+In general, you can refer to the PyTorch Lightning for more info:
+https://github.com/PyTorchLightning/pytorch-lightning .
 
 ### To contribute:
 Enable flake8 check before commit:
