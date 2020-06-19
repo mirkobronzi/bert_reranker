@@ -77,7 +77,8 @@ def main():
         action="store_true"
     )
     parser.add_argument(
-        "--predict-outliers", help="will use the sklearn model to predict outliers",
+        "--predict-outliers", help="will use the sklearn model to predict outliers "
+                                   "(only during --predict)",
         action="store_true"
     )
     parser.add_argument(
@@ -91,7 +92,7 @@ def main():
         help="will save ONLY the model weights (not the pytorch lightning object)"
         " to this file",
     )
-    parser.add_argument("--predict-to", help="write predictions here)")
+    parser.add_argument("--predict-to", help="will write predictions here)")
     parser.add_argument(
         "--redirect-log",
         help="will intercept any stdout/err and log it",
@@ -104,7 +105,7 @@ def main():
     )
     parser.add_argument(
         "--multiple-thresholds",
-        help="will print results for various thresholds (when doing --predict)",
+        help="will print results for various thresholds (only when doing --predict)",
         action="store_true",
     )
     parser.add_argument('--log', help='log to this file (in addition to stdout/err)')
@@ -193,7 +194,7 @@ def main():
     elif args.save_weights_to is not None:
         torch.save(ret_trainee.retriever.state_dict(), args.save_weights_to)
     else:
-        logger.warning("please select one between --train / --predict / --file_to_emb")
+        logger.warning("please select one between --train / --predict / --file-to-emb")
 
 
 def init_model(

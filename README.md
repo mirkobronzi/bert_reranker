@@ -1,6 +1,6 @@
 # Embedding-based Bert Re-Ranker
 
-## Repository info
+## Info
 This repository contains the code to train/use a deep learning model which
 solves the following task: given a question `q` , and N candidate master
 questions `Q`, find the master question in `Q` that is semantically closer
@@ -10,7 +10,7 @@ In short, this is done by using a model to embed the various questions
 (usually BERT), so that every question is represented by a vector.
 Then a dot-product can be used to compute the similarity of the vectors/questions.
 
-### Out-of-domain
+### Out-of-domain questions (or outliers)
 
 This repository also provide the code to spot out-of-domain (or outlier) questions.
 That is, if the the question `q` has no similar master question in `Q`, then
@@ -138,6 +138,19 @@ See the example under if you want to run an hyper-parameter search procedure:
     sh run.sh
 
 Note that this will be done by using Orion (https://github.com/Epistimio/orion).
+
+## Code structure
+
+The file `bert_reranker/main.py` is the main entry point to run the operations above.
+It mainly takes care of assembling together the various part of the code, in particular:
+ - the code to load the data
+ - the code to create the models
+ - the code to train the models
+
+### Data loading
+
+Data is handled in `bert_reranker/data/data_loader.py`. This file provides a PyTorch DataSet
+implementation that is able to wrap the data in the format we specified above.
 
 ### To contribute:
 Enable flake8 check before commit:
