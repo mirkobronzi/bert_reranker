@@ -1,24 +1,56 @@
 # Embedding-based Bert Re-Ranker
 
-## What is it
-This repos contains the code to train/use a deep learning model which
+## Repository info
+This repository contains the code to train/use a deep learning model which
 solves the following task: given a question `q` , and N candidate master
 questions `Q`, find the master question in `Q` that is semantically closer
 to `q`.
 
 In short, this is done by using a model to embed the various questions
 (usually BERT), so that every question is represented by a vector.
-The a dot-product can be used to compute the similarity of the vectors/questions.
+Then a dot-product can be used to compute the similarity of the vectors/questions.
 
 ### Out-of-domain
 
-This repos also provide the code to spot out-of-domain (or outlier) questions.
+This repository also provide the code to spot out-of-domain (or outlier) questions.
 That is, if the the question `q` has no similar master question in `Q`, then
 the model will predict that `q` is an outlier.
 
-This is done using an outlier detector model. The process is basically a pipeline:
+This is done using an outlier detector model.
+So, putting everything together, the process is basically a pipeline:
  - run the outlier detector model. If `q` is an outlier, return this, otherwise
  - run the main model and find the closest element in `Q`, and return it.
+ 
+## Data
+
+The expected data format is a json file that is a dictionary with two components:
+`examples` and `passages`.
+
+### Examples
+
+An example is a user question that we want to match. The main important fields are:
+- `question`: which represent the user question.
+- `passage_id`: which is the id of the passage that is the best match for this example.
+
+### Passages
+
+A passage represent a master question (i.e., an element from the `Q` set - see above).
+It contains several information; the most important ones are:
+ - the `passage_id` (used as identifier)
+ - the `reference_type` - used to mark the passages as ID (in this case the `reference_type` 
+ starts with “faq”) or OOD (in this case the `reference_type` does not start with “faq”)
+ - the `section_headers`: the last element in this list represents the text of the master question.
+
+### Sources
+
+Both examples and passages have a `source` field. This is used to match an example to the possible passages.
+For example, if a user is direct to the FAQ Quebec website, only the passages that are from the 
+FAQ Quebec website are considered as candidates.
+
+Thanks to this `source` field, we can handle multiple sources in our model.
+
+(more in details, have a single joint model that can serve more sources, instead of training 
+a separate model per source)
 
 ## How to run
 
