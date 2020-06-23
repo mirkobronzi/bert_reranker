@@ -16,7 +16,9 @@ SKLEARN_MODEL_FILE_NAME = 'sklearn_outlier_model.pkl'
 
 
 def main():
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser('script used to train the outlier detector model.'
+                                     'It takes as input the embedding already produced'
+                                     'by some other embedding model (e.g., BERT).')
     parser.add_argument('--embeddings', help='numpy file with embeddings', required=True)
     parser.add_argument('--output', help='will store the model output in this folder',
                         required=True)

@@ -24,6 +24,11 @@ def get_batched_pairs(qa_pairs, batch_size):
 
 class Predictor:
 
+    """
+    Main class to generate prediction. It consider only in-domain part.
+    (so, there is no model to decide if something is in-domain or out of domain)
+    """
+
     def __init__(self, retriever_trainee):
         self.retriever_trainee = retriever_trainee
         self.max_question_len = self.retriever_trainee.retriever.max_question_len
@@ -62,6 +67,7 @@ class Predictor:
         normalized_scores = []
         indices_of_correct_passage = []
 
+        # first collect and embed all the candidates (so we avoid recomputing them again and again
         source2embedded_passages = {}
         for source, passages in source2passages.items():
             logger.info('encoding source {}'.format(source))
@@ -72,6 +78,7 @@ class Predictor:
             else:
                 source2embedded_passages[source] = None
 
+        # then loop over the examples and produce a prediction
         for example in tqdm(json_data["examples"]):
             question = example["question"]
             questions.append(question)
@@ -103,6 +110,9 @@ class Predictor:
 
 
 class PredictorWithOutlierDetector(Predictor):
+    """
+        Generates predictionand it include also the model used to detect outliers.
+    """
 
     def __init__(self, retriever_trainee, outlier_detector_model):
         super(PredictorWithOutlierDetector, self).__init__(retriever_trainee)
@@ -115,7 +125,7 @@ class PredictorWithOutlierDetector(Predictor):
         if in_domain == 1:  # in-domain
             return super(PredictorWithOutlierDetector, self).make_single_prediction(
                 emb_question, source, source2embedded_passages, question_already_embedded=True)
-        else:
+        else:  # out-of-domain (-1 is the result we return for out-of-domain)
             return -1, 1.0
 
 

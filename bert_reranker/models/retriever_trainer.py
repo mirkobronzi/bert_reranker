@@ -30,6 +30,12 @@ def prepare_soft_targets(target_ints, num_classes):
 
 class RetrieverTrainer(pl.LightningModule):
 
+    """
+    This class implements the LightningModule from PyTorch Lightning.
+    In particular, it defines the methods to to train_step, train_valid.
+    See PyTorch Lightning documentation for more info.
+    """
+
     def __init__(self, retriever, train_data, dev_data, test_data, loss_type,
                  optimizer_type):
         super(RetrieverTrainer, self).__init__()
