@@ -29,6 +29,10 @@ def hashable(input_id):
 
 class BertEncoder(GeneralEncoder):
 
+    """
+    The main BERT encode class.
+    """
+
     def __init__(self, hyper_params, bert_model, name=''):
         model_hparams = hyper_params['model']
         check_and_log_hp(
@@ -65,6 +69,12 @@ class BertEncoder(GeneralEncoder):
 
 
 class CachedBertEncoder(BertEncoder):
+
+    """
+    A BERT encoder with an added cache wrapper.
+    Note this does not make sense if the embedding can change overtime.
+    (so, use it only if the BERT model is kept frozen)
+    """
 
     def __init__(self, hyper_params, bert_model, name=''):
         model_hparams = hyper_params['model']

@@ -92,7 +92,7 @@ def get_passage_content2pid(passages, duplicates_are_ok=False):
 
 def get_passage_last_header(passage, return_error_for_ood=False):
     if is_in_distribution(passage):
-        return passage['reference']['section_headers'][0]
+        return passage['reference']['section_headers'][-1]
     elif return_error_for_ood:
         raise ValueError('passage is ood')
     else:
