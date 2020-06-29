@@ -13,6 +13,8 @@ def main():
     parser.add_argument("--input", help="main json file", required=True)
     parser.add_argument("--input-ood", help="json file where to extract the ood", required=True)
     parser.add_argument("--output", help="output file", required=True)
+    parser.add_argument("--max-ood", help="max amount of ood to use. -1 means all of them",
+                        type=int, default=-1)
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.INFO)
@@ -68,6 +70,8 @@ def main():
             highest_id_for_example += 1
             result['examples'].append(example)
             added_ood += 1
+        if args.max_ood > -1 and added_ood >= args.max_ood:
+            break
 
     logger.info('kept {} ood from {} (and skipped {} id from the same file)'.format(
         added_ood, args.input_ood, id_count
