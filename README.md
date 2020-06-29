@@ -12,14 +12,19 @@ Then a dot-product can be used to compute the similarity of the vectors/question
 
 ### Out-of-domain questions (or outliers)
 
-This repository also provide the code to spot out-of-domain (or outlier) questions.
-That is, if the the question `q` has no similar master question in `Q`, then
+This repository also provides the code to spot out-of-domain (or outlier) questions.
+That is, if the question `q` has no similar master question in `Q`, then
 the model will predict that `q` is an outlier.
 
 This is done using an outlier detector model.
-So, putting everything together, the process is basically a pipeline:
+The process can be summarized as follows:
  - run the outlier detector model. If `q` is an outlier, return this, otherwise
  - run the main model and find the closest element in `Q`, and return it.
+ 
+ This is shown in the following figure.
+ 
+ ![Bert Reranker (3)](https://user-images.githubusercontent.com/18450628/86026223-26615980-b9fd-11ea-8c10-6f6f755bc0f5.jpg)
+
  
 ## Data
 
