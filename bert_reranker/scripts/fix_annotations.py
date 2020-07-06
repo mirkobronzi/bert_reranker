@@ -1,3 +1,9 @@
+"""
+Script used to apply the manual fixes to a json data file.
+Manual fixes are manually annotated corrections to data.
+The file containing the manual fixes should be conform to the format used in --prediction, when
+adding the option --write-fix-report .
+"""
 import argparse
 import json
 import logging
@@ -20,7 +26,7 @@ def fix_annotations(input_data, input_manually_fixed_data):
 
 
 def main():
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(__doc__)
     parser.add_argument("--input-json", help="original json file", required=True)
     parser.add_argument("--input-manually-fixed-json", help="file with manual fixes", required=True)
     parser.add_argument("--output", help="folder where to write the output", required=True)

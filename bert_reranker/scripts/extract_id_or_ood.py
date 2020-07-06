@@ -1,3 +1,6 @@
+"""
+Script used to extract in-distibution and/or out-of-distribution from a data file.
+"""
 import argparse
 import json
 import logging
@@ -9,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 
 def main():
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(__doc__)
     parser.add_argument("--input", help="join files to filter", required=True)
     parser.add_argument("--output", help="output file", required=True)
     parser.add_argument("--keep-id", help="will keep id", action="store_true")
