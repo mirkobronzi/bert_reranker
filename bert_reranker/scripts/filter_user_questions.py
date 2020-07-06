@@ -1,3 +1,9 @@
+"""
+Script used to find the overlap between mode data files - in term of passages.
+Given one (or more than one file) FS containing passages and examples, and given a reference file R
+containing some passages, it will extract from FS only the examples related to the passages
+that area also present in R.
+"""
 import argparse
 import json
 import logging
@@ -40,7 +46,7 @@ def filter_user_questions(input_to_filter, faq_contents):
 
 
 def main():
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(__doc__)
     parser.add_argument("--inputs", help="join files to filter", required=True, type=str, nargs='+')
     parser.add_argument("--faq-file", help="file containing the reference FAQ", required=True)
     parser.add_argument("--output", help="folder that will contain the output", required=True)

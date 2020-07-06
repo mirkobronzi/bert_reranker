@@ -1,3 +1,9 @@
+"""
+Script used to generate some stats (tokenization-wise) on a data file.
+It will also provide some examples of tokenization.
+Note that more tokenization techniques can be used.
+(use --tokenizer-name to specify a tokenizer, and see Hugging Face documentation for a list)
+"""
 import argparse
 import json
 import logging
@@ -74,7 +80,7 @@ def evaluate_tokenizer_cutoff_from_txt(sentences, tokenizer, max_sentence_length
 
 
 def main():
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(__doc__)
     parser.add_argument('--input',
                         help='data file containing questions and answers', required=True)
     parser.add_argument('--tokenizer-name',

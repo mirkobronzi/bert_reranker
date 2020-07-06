@@ -1,3 +1,7 @@
+"""
+Script that merges more than one embedding pickle file (usually obtained with --file-to-emb) into
+a single pickle file.
+"""
 import argparse
 import logging
 import pickle

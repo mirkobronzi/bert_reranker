@@ -1,3 +1,8 @@
+"""
+Script used to add out-of-distribution examples in a data file.
+It basically merges tw ofiles: #1 containing in-distrubution examples,
+and #2 containing out-of-distribution examples.
+"""
 import argparse
 import json
 import logging
@@ -9,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 def main():
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(__doc__)
     parser.add_argument("--input", help="main json file", required=True)
     parser.add_argument("--input-ood", help="json file where to extract the ood", required=True)
     parser.add_argument("--output", help="output file", required=True)
