@@ -22,7 +22,7 @@ The process can be summarized as follows:
  
  This is shown in the following figure.
  
- ![Bert Reranker (3)](https://user-images.githubusercontent.com/18450628/86026223-26615980-b9fd-11ea-8c10-6f6f755bc0f5.jpg)
+![Bert Reranker MAIS (10)](https://user-images.githubusercontent.com/18450628/86838332-09b4c980-c06e-11ea-9265-a8c8339d3421.png)
 
  
 ## Data
