@@ -252,13 +252,12 @@ def generate_embeddings(ret_trainee, input_file=None, out_file=None, json_data=N
 
     passage_header_embs = []
     ood = 0
-    all_passage_texts = []
+    passage_texts = []
     if embed_passages:
         for source, passages in source2passages.items():
             logger.info('embedding passages for source {}'.format(source))
             texts = [get_passage_last_header(passage, return_error_for_ood=False) for
                      passage in passages]
-            all_passage_texts.extend(texts)
             batches = create_batches(batch_size, texts)
             for i, batch in tqdm(enumerate(batches)):
                 emb_batch = ret_trainee.retriever.embed_paragraph(batch)
@@ -266,11 +265,12 @@ def generate_embeddings(ret_trainee, input_file=None, out_file=None, json_data=N
                     related_passage = passages[(i * batch_size) + ex_index]
                     if is_in_distribution(related_passage):
                         passage_header_embs.append(emb)
+                        passage_texts.append(texts[ex_index])
                     else:
                         ood += 1
 
     to_serialize = {"question_embs": question_embs, "passage_header_embs": passage_header_embs,
-                    "question_labels": labels, "passage_texts": all_passage_texts,
+                    "question_labels": labels, "passage_texts": passage_texts,
                     "question_texts": question_texts}
     if out_file:
         with open(out_file, "wb") as out_stream:
