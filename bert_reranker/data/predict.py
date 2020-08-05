@@ -4,6 +4,7 @@ import math
 import pickle
 
 import numpy as np
+import torch
 from tqdm import tqdm
 
 from bert_reranker.data.data_loader import (
@@ -264,7 +265,7 @@ def generate_embeddings(ret_trainee, input_file=None, out_file=None, json_data=N
                 for ex_index in range(emb_batch.shape[0]):
                     related_passage = passages[(i * batch_size) + ex_index]
                     if is_in_distribution(related_passage):
-                        passage_header_embs.append(emb)
+                        passage_header_embs.append(torch.unsqueeze(emb_batch[ex_index], 0))
                         passage_texts.append(texts[ex_index])
                     else:
                         ood += 1
