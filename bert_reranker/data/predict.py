@@ -4,6 +4,7 @@ import math
 import pickle
 
 import numpy as np
+import torch
 from tqdm import tqdm
 
 from bert_reranker.data.data_loader import (
@@ -11,6 +12,7 @@ from bert_reranker.data.data_loader import (
     _encode_passages,
     get_passage_last_header, get_question, get_passage_id, is_in_distribution, OOD_STRING,
     get_passage_content2pid, )
+from bert_reranker.models.retriever import create_batches
 
 logger = logging.getLogger(__name__)
 
@@ -72,8 +74,7 @@ class Predictor:
         for source, passages in source2passages.items():
             logger.info('encoding source {}'.format(source))
             if passages:
-                embedded_passages = self.retriever.embed_paragrphs(passages,
-                                                                   progressbar=True)
+                embedded_passages = self.retriever.embed_paragraphs(passages, progressbar=True)
                 source2embedded_passages[source] = embedded_passages
             else:
                 source2embedded_passages[source] = None
@@ -226,7 +227,7 @@ def log_results_to_file(indices_of_correct_passage, normalized_scores, out_strea
 
 
 def generate_embeddings(ret_trainee, input_file=None, out_file=None, json_data=None,
-                        embed_passages=True):
+                        embed_passages=True, batch_size=2):
     if input_file:
         with open(input_file, "r", encoding="utf-8") as f:
             json_data = json.load(f)
@@ -252,22 +253,25 @@ def generate_embeddings(ret_trainee, input_file=None, out_file=None, json_data=N
 
     passage_header_embs = []
     ood = 0
-    passage_texts = []
+    all_passage_texts = []
     if embed_passages:
         for source, passages in source2passages.items():
             logger.info('embedding passages for source {}'.format(source))
-            for passage in tqdm(passages):
-                if is_in_distribution(passage):
-                    passage_text = get_passage_last_header(passage, return_error_for_ood=True)
-                    emb = ret_trainee.retriever.embed_paragraph(
-                        passage_text)
-                    passage_header_embs.append(emb)
-                    passage_texts.append(passage_text)
-                else:
-                    ood += 1
+            texts = [get_passage_last_header(passage, return_error_for_ood=False) for
+                             passage in passages]
+            all_passage_texts.extend(texts)
+            batches = create_batches(batch_size, texts)
+            for i, batch in tqdm(enumerate(batches)):
+                emb_batch = ret_trainee.retriever.embed_paragraph(batch)
+                for ex_index in range(emb_batch.shape[0]):
+                    related_passage = passages[(i * batch_size) + ex_index]
+                    if is_in_distribution(related_passage):
+                        passage_header_embs.append(emb)
+                    else:
+                        ood += 1
 
     to_serialize = {"question_embs": question_embs, "passage_header_embs": passage_header_embs,
-                    "question_labels": labels, "passage_texts": passage_texts,
+                    "question_labels": labels, "passage_texts": all_passage_texts,
                     "question_texts": question_texts}
     if out_file:
         with open(out_file, "wb") as out_stream:

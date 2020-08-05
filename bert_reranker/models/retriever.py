@@ -70,7 +70,7 @@ class Retriever(nn.Module):
     def embed_paragraph(self, paragraph):
         self.eval()
         with torch.no_grad():
-            paragraph_inputs = self.tokenizer.encode_plus(
+            paragraph_inputs = self.tokenizer.batch_encode_plus(
                 paragraph, add_special_tokens=True, max_length=self.max_paragraph_len,
                 pad_to_max_length=True, return_tensors='pt')
             tmp_device = next(self.bert_paragraph_encoder.parameters()).device
@@ -112,20 +112,29 @@ class Retriever(nn.Module):
             else:
                 q_emb = self.embed_question(question)
 
-            relevance_scores = embs_dot_product(p_embs, q_emb)
+            relevance_scores = embedding_dot_product(p_embs, q_emb)
             relevance_scores = relevance_scores.squeeze(0)  # no batch dimension
 
             normalized_scores = self.softmax(relevance_scores)
             _, prediction = torch.max(relevance_scores, 0)
             return prediction, normalized_scores[prediction]
 
-    def embed_paragrphs(self, passages, progressbar=False):
+    def embed_paragraphs(self, passages, progressbar=False, batch_size=2):
         p_embs = []
         pg_fun = tqdm.tqdm if progressbar else lambda x: x
-        for passage in pg_fun(passages):
-            p_embs.append(self.embed_paragraph(passage))
-        p_embs = torch.stack(p_embs, dim=1)
+        batches = create_batches(batch_size, passages)
+        for batch in pg_fun(batches):
+            p_embs.append(self.embed_paragraph(batch))
+        p_embs = torch.cat(p_embs, dim=0)
         return p_embs
+
+
+def create_batches(batch_size, examples):
+    batches = []
+    for i in range(0, len(examples), batch_size):
+        to = i + batch_size if i + batch_size < len(examples) else len(examples)
+        batches.append(examples[i:to])
+    return batches
 
 
 class EmbeddingRetriever(Retriever):
@@ -145,8 +154,9 @@ class EmbeddingRetriever(Retriever):
         return embs_dot_product(p_embs, q_emb)
 
 
-def embs_dot_product(p_embs, q_emb):
-    return torch.bmm(q_emb.unsqueeze(1), p_embs.transpose(2, 1)).squeeze(1)
+def embedding_dot_product(p_embs, q_emb):
+    # torch.bmm(q_emb.unsqueeze(1), p_embs.transpose(2, 1)).squeeze(1)
+    return torch.mm(q_emb, p_embs.transpose(0, 1))
 
 
 def _add_batch_dim(tensor):
