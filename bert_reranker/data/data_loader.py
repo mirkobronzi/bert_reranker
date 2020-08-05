@@ -8,6 +8,7 @@ from torch.utils.data import DataLoader, Dataset
 logger = logging.getLogger(__name__)
 
 OOD_STRING = '__out-of-distribution__'
+ID_NO_CANDIDATE_STRING = '__id-with-no-associated-candidate__'
 
 
 def encode_sentence(sentence, max_length, tokenizer):
