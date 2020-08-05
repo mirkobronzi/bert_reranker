@@ -4,7 +4,6 @@ import math
 import pickle
 
 import numpy as np
-import torch
 from tqdm import tqdm
 
 from bert_reranker.data.data_loader import (
@@ -258,7 +257,7 @@ def generate_embeddings(ret_trainee, input_file=None, out_file=None, json_data=N
         for source, passages in source2passages.items():
             logger.info('embedding passages for source {}'.format(source))
             texts = [get_passage_last_header(passage, return_error_for_ood=False) for
-                             passage in passages]
+                     passage in passages]
             all_passage_texts.extend(texts)
             batches = create_batches(batch_size, texts)
             for i, batch in tqdm(enumerate(batches)):
