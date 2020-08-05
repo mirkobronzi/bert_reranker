@@ -108,6 +108,11 @@ def main():
         help="will print results for various thresholds (only when doing --predict)",
         action="store_true",
     )
+    parser.add_argument(
+        "--predict-batch-size",
+        help="batch size for prediction and for embedding generation phase",
+        type=int, default=1
+    )
     parser.add_argument('--log', help='log to this file (in addition to stdout/err)')
     parser.add_argument("--debug", help="will log more info", action="store_true")
     args = parser.parse_args()
@@ -175,7 +180,8 @@ def main():
             json_file=args.predict,
             predict_to=args.predict_to,
             multiple_thresholds=args.multiple_thresholds,
-            write_fix_report=args.write_fix_report
+            write_fix_report=args.write_fix_report,
+            batch_size=args.predict_batch_size
         )
     elif args.file_to_emb:
         if args.write_emb_to is None:
@@ -190,7 +196,8 @@ def main():
         _ = generate_embeddings(
             ret_trainee,
             input_file=args.file_to_emb,
-            out_file=args.write_emb_to
+            out_file=args.write_emb_to,
+            batch_size=args.predict_batch_size
         )
     elif args.save_weights_to is not None:
         torch.save(ret_trainee.retriever.state_dict(), args.save_weights_to)

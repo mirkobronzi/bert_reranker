@@ -38,7 +38,8 @@ class Predictor:
         self.retriever = retriever_trainee.retriever
         self.no_candidate_warnings = 0
 
-    def generate_predictions(self, json_file, predict_to, multiple_thresholds, write_fix_report):
+    def generate_predictions(self, json_file, predict_to, multiple_thresholds, write_fix_report,
+                             batch_size):
 
         with open(json_file, "r", encoding="utf-8") as f:
             json_data = json.load(f)
@@ -53,7 +54,7 @@ class Predictor:
             do_not_encode=True
         )
 
-        res = self.compute_results(json_data, passage_id2index, source2passages)
+        res = self.compute_results(json_data, passage_id2index, source2passages, batch_size)
         predictions, questions, sources, normalized_scores, indices_of_correct_passage = res
         generate_and_log_results(indices_of_correct_passage, normalized_scores, predict_to,
                                  predictions, questions, source2passages, sources,
@@ -61,7 +62,7 @@ class Predictor:
                                  write_fix_report=write_fix_report,
                                  json_data=json_data)
 
-    def compute_results(self, json_data, passage_id2index, source2passages):
+    def compute_results(self, json_data, passage_id2index, source2passages, batch_size):
 
         predictions = []
         questions = []
@@ -74,7 +75,8 @@ class Predictor:
         for source, passages in source2passages.items():
             logger.info('encoding source {}'.format(source))
             if passages:
-                embedded_passages = self.retriever.embed_paragraphs(passages, progressbar=True)
+                embedded_passages = self.retriever.embed_paragraphs(passages, progressbar=True,
+                                                                    batch_size=batch_size)
                 source2embedded_passages[source] = embedded_passages
             else:
                 source2embedded_passages[source] = None

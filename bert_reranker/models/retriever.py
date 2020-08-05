@@ -119,7 +119,7 @@ class Retriever(nn.Module):
             _, prediction = torch.max(relevance_scores, 0)
             return prediction, normalized_scores[prediction]
 
-    def embed_paragraphs(self, passages, progressbar=False, batch_size=2):
+    def embed_paragraphs(self, passages, progressbar=False, batch_size=1):
         p_embs = []
         pg_fun = tqdm.tqdm if progressbar else lambda x: x
         batches = create_batches(batch_size, passages)
