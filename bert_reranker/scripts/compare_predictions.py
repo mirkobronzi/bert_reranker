@@ -7,8 +7,6 @@ import re
 from collections import defaultdict
 from pprint import pformat
 
-logger = logging.getLogger(__name__)
-
 PREDICTION_RE = re.compile('^prediction: ')
 END_PREDICTION_RE = re.compile(' .*$')
 
@@ -69,9 +67,10 @@ def analyze(result1, result2):
         else:
             same[result1[i][1]] += 1
 
-    logger.info('summary:\nsame results: {}\n'.format(pformat(same)))
-    logger.info('summary:\ndifferent results: {}\n'.format(pformat(different)))
-    logger.info('differences:\n{}'.format('\n'.join([str(x) for x in differences])))
+    print('summary:\nsame results: {}\n'.format(pformat(same)))
+    print('summary:\ndifferent results: {}\n'.format(pformat(different)))
+    for left, right in differences:
+        print('<<\n' + left[0] + '\n' + left[1] + '\n--\n' + right[0] + '\n' + right[1] + '\n>>\n')
 
 
 if __name__ == "__main__":
