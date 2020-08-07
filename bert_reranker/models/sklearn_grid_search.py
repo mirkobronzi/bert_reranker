@@ -114,7 +114,11 @@ def main():
 
     # pd dataframe to save results as .csv
     # we save and read to/from disk to bypass the scoring method
-    results_df = pd.DataFrame(columns=['n_samples', 'OOD', 'ID', 'Acc', 'Params'])
+    df_columns = [args.test_embeddings]
+    df_columns.extend(args.eval_embeddings)
+    df_columns.append('contamination')
+    df_columns.append('n_neighbors')
+    results_df = pd.DataFrame(columns=df_columns)
     results_df.to_csv('results_lof.csv')
 
     def scoring(estimator, X, y=None, args=args):
@@ -128,6 +132,7 @@ def main():
         results_df = pd.read_csv('results_lof.csv', index_col=0)
 
         # Load testing embeddings for fine tuning
+        reported_accuracy = []
         with open(args.test_embeddings, "rb") as in_stream:
             data = pickle.load(in_stream)
         question_embeddings = np.concatenate(data["question_embs"])
@@ -135,6 +140,7 @@ def main():
         preds = estimator.predict(question_embeddings)
         test_acc = accuracy_score(labels, preds)
         conf_mat = confusion_matrix(labels, preds)
+        reported_accuracy.append(test_acc)
 
         logger.info("Evaluating on: {}".format(args.test_embeddings))
         logger.info("Total number of samples: {}".format(len(labels)))
@@ -143,10 +149,6 @@ def main():
         logger.info("Accuracy: {}".format(test_acc))
         #  logger.info("Confusion Matrix: {}".format(conf_mat))
         logger.info("="*50)
-
-        fname = args.test_embeddings
-        results = [len(labels), (preds == -1).sum(), (preds == 1).sum(), test_acc, str(estimator)]
-        results_df = add_results_to_df(results_df, results, fname)
 
         # Get results on all eval files
         for file in args.eval_embeddings:
@@ -166,14 +168,11 @@ def main():
             logger.info("Accuracy: {}".format(acc))
             logger.info("="*50)
 
-            fname = file
-            results = [
-                len(labels),
-                (preds == -1).sum(),
-                (preds == 1).sum(),
-                acc,
-                str(estimator)]
-            results_df = add_results_to_df(results_df, results, fname)
+            reported_accuracy.append(acc)
+
+        fname = str(estimator)
+        results = [*reported_accuracy, estimator.contamination, estimator.n_neighbors]
+        results_df = add_results_to_df(results_df, results, fname)
 
         results_df.to_csv('results_lof.csv', index=True)
         return test_acc
