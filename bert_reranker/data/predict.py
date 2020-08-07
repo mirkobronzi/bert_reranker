@@ -104,7 +104,7 @@ class Predictor:
                                           question_already_embedded=question_already_embedded)
         else:
             self.no_candidate_warnings += 1
-            logger.warning('no candidates for source {} - returning 0 by default (so far, this '
+            logger.warning('no candidates for source {} - returning -2 by default (so far, this '
                            'happened {} times)'.format(source, self.no_candidate_warnings))
             return -2, 1.0
 
