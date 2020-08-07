@@ -6,6 +6,7 @@ import os
 import pickle
 
 import numpy as np
+import pandas as pd
 from sklearn.neighbors import LocalOutlierFactor
 from sklearn.ensemble import IsolationForest
 from sklearn.svm import OneClassSVM
@@ -18,13 +19,19 @@ logger = logging.getLogger(__name__)
 
 SKLEARN_MODEL_FILE_NAME = "sklearn_outlier_model.pkl"
 
+def add_results_to_df(df, results, fname):
+    result_df = pd.DataFrame([results], columns=df.columns)
+    df = df.append(result_df)
+    df = df.rename(index={0: fname})
+    return df
+
 
 def get_model_and_params(model_name):
     if model_name == "lof":
         base_clf = LocalOutlierFactor()
         parameters = {
-            "n_neighbors": [3, 4, 5, 6],
-            "contamination": list(np.arange(0.1, 0.5, 0.05)),
+            "n_neighbors": [3, 4, 5, 6, 8, 10, 20],
+            "contamination": list(np.arange(0.1, 0.5, 0.1)),
             "novelty": [True],
         }
     elif model_name == "isolation_forest":
@@ -64,9 +71,11 @@ def main():
     )
     parser.add_argument(
         "--test-embeddings",
-        help="embeddings do evaluate the sklearn model on",
+        help="list of embeddings to fine tune the sklearn model on",
         required=True,
     )
+    parser.add_argument("--eval-embeddings", help="These embeddings will only be evaluated on", required=True, type=str, nargs='+')
+
     parser.add_argument(
         "--keep-ood-for-questions",
         help="will keep ood embeddings for questions- by default, they are "
@@ -92,35 +101,84 @@ def main():
 
     if args.train_on_questions:
         embeddings = collect_question_embeddings(args, data)
+    else:
+        embeddings = []
 
-    elif args.train_on_passage_headers:
-        embeddings = data["passage_header_embs"]
-        logger.info("found {} passage headers embs".format(len(embeddings)))
-        #  labels = np.ones(len(embeddings))
+    if args.train_on_passage_headers:
+        passage_header_embs = data['passage_header_embs']
+        embeddings.extend(passage_header_embs)
+        logger.info('found {} passage headers embs'.format(len(passage_header_embs)))
 
     logger.info("final size of the collected embeddings: {}".format(len(embeddings)))
     embedding_array = np.concatenate(embeddings)
+
+    # pd dataframe to save results as .csv
+    # we save and read to/from disk to bypass the scoring method
+    results_df = pd.DataFrame(columns=['n_samples', 'OOD', 'ID', 'Acc', 'Params'])
+    results_df.to_csv('results_lof.csv')
 
     def scoring(estimator, X, y=None, args=args):
         from sklearn.metrics import accuracy_score
         from sklearn.metrics import confusion_matrix
 
-        # Load testing embeddings
+        logger.info("\n"*2)
+        logger.info("*"*50)
+        logger.info("sklearn model params {}".format(estimator))
+
+        results_df = pd.read_csv('results_lof.csv', index_col=0)
+
+        # Load testing embeddings for fine tuning
         with open(args.test_embeddings, "rb") as in_stream:
             data = pickle.load(in_stream)
         question_embeddings = np.concatenate(data["question_embs"])
         labels = [1 if label == "id" else -1 for label in data["question_labels"]]
         preds = estimator.predict(question_embeddings)
-        acc = accuracy_score(labels, preds)
+        test_acc = accuracy_score(labels, preds)
         conf_mat = confusion_matrix(labels, preds)
 
-        print("estimator params", estimator)
-        print("Accuracy:", acc)
-        print(conf_mat)
-        print("="*50)
-        return acc
+        logger.info("Evaluating on: {}".format(args.test_embeddings))
+        logger.info("Total number of samples: {}".format(len(labels)))
+        logger.info("Number of OOD predictions: {}".format((preds == -1).sum()))
+        logger.info("Number of ID predictions: {}".format((preds == 1).sum()))
+        logger.info("Accuracy: {}".format(test_acc))
+        #  logger.info("Confusion Matrix: {}".format(conf_mat))
+        logger.info("="*50)
 
-    models = ["lof", "isolation_forest", "ocsvm", "elliptic_env"]
+        fname = args.test_embeddings
+        results = [len(labels), (preds == -1).sum(), (preds == 1).sum(), test_acc, str(estimator)]
+        results_df = add_results_to_df(results_df, results, fname)
+
+        # Get results on all eval files
+        for file in args.eval_embeddings:
+            logger.info("Evaluating on: {}".format(file))
+            with open(file, "rb") as in_stream:
+                data = pickle.load(in_stream)
+            question_embeddings = np.concatenate(data["question_embs"])
+            if "exclusion" in file:
+                labels = [-1]*len(data["question_labels"])  # if its an exclusion file, everything is OOD
+            else:
+                labels = [1 if label == "id" else -1 for label in data["question_labels"]]
+            preds = estimator.predict(question_embeddings)
+            acc = accuracy_score(labels, preds)
+            logger.info("Total number of samples: {}".format(len(labels)))
+            logger.info("Number of OOD predictions: {}".format((preds == -1).sum()))
+            logger.info("Number of ID predictions: {}".format((preds == 1).sum()))
+            logger.info("Accuracy: {}".format(acc))
+            logger.info("="*50)
+
+            fname = file
+            results = [
+                len(labels),
+                (preds == -1).sum(),
+                (preds == 1).sum(),
+                acc,
+                str(estimator)]
+            results_df = add_results_to_df(results_df, results, fname)
+
+        results_df.to_csv('results_lof.csv', index=True)
+        return test_acc
+
+    models = ["lof"] #, "isolation_forest", "ocsvm", "elliptic_env"]
 
     best_score = 0
 
