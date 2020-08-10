@@ -69,8 +69,18 @@ def analyze(result1, result2):
 
     print('summary:\nsame results: {}\n'.format(pformat(same)))
     print('summary:\ndifferent results: {}\n'.format(pformat(different)))
+    differences_text = {k: "" for k in different.keys()}
     for left, right in differences:
-        print('<<\n' + left[0] + '\n' + left[1] + '\n--\n' + right[0] + '\n' + right[1] + '\n>>\n')
+        label = left[1] + '<>' + right[1]
+        assert label in differences_text.keys()
+        example_text = '<<\n' + left[0] + '\n' + left[1] + '\n--\n' + right[0] + '\n' + right[1] + \
+                       '\n>>\n'
+        differences_text[label] += example_text
+
+    print('\n\ndifferences:')
+    for label, text in differences_text.items():
+        print("***: {}".format(label))
+        print(text)
 
 
 if __name__ == "__main__":
