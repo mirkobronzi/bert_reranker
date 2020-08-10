@@ -48,7 +48,7 @@ def get_model_and_params(model_name):
         base_clf = OneClassSVM()
         parameters = {
             "kernel": ["linear", "poly", "rbf"],
-            "gamma": [0.001, 0.005, 0.01, 0.1]
+            "gamma": [0.001, 0.005, 0.01, 0.1],
         }
     elif model_name == "elliptic_env":
         base_clf = EllipticEnvelope()
@@ -80,7 +80,7 @@ def main():
         help="These embeddings will only be evaluated on",
         required=True,
         type=str,
-        nargs='+'
+        nargs="+",
     )
 
     parser.add_argument(
@@ -112,9 +112,9 @@ def main():
         embeddings = []
 
     if args.train_on_passage_headers:
-        passage_header_embs = data['passage_header_embs']
+        passage_header_embs = data["passage_header_embs"]
         embeddings.extend(passage_header_embs)
-        logger.info('found {} passage headers embs'.format(len(passage_header_embs)))
+        logger.info("found {} passage headers embs".format(len(passage_header_embs)))
 
     logger.info("final size of the collected embeddings: {}".format(len(embeddings)))
     embedding_array = np.concatenate(embeddings)
@@ -123,19 +123,19 @@ def main():
     # we save and read to/from disk to bypass the scoring method
     df_columns = [args.test_embeddings]
     df_columns.extend(args.eval_embeddings)
-    df_columns.append('contamination')
-    df_columns.append('n_neighbors')
+    df_columns.append("contamination")
+    df_columns.append("n_neighbors")
     results_df = pd.DataFrame(columns=df_columns)
-    results_df.to_csv('results_lof.csv')
+    results_df.to_csv("results_lof.csv")
 
     def scoring(estimator, X, y=None, args=args):
         from sklearn.metrics import accuracy_score
 
-        logger.info("\n"*2)
-        logger.info("*"*50)
+        logger.info("\n" * 2)
+        logger.info("*" * 50)
         logger.info("sklearn model params {}".format(estimator))
 
-        results_df = pd.read_csv('results_lof.csv', index_col=0)
+        results_df = pd.read_csv("results_lof.csv", index_col=0)
 
         # Load testing embeddings for fine tuning
         reported_accuracy = []
@@ -152,7 +152,7 @@ def main():
         logger.info("Number of OOD predictions: {}".format((preds == -1).sum()))
         logger.info("Number of ID predictions: {}".format((preds == 1).sum()))
         logger.info("Accuracy: {}".format(test_acc))
-        logger.info("="*50)
+        logger.info("=" * 50)
 
         # Get results on all eval files
         for file in args.eval_embeddings:
@@ -161,16 +161,18 @@ def main():
                 data = pickle.load(in_stream)
             question_embeddings = np.concatenate(data["question_embs"])
             if "exclusion" in file:  # if its an exclusion file, everything is OOD
-                labels = [-1]*len(data["question_labels"])
+                labels = [-1] * len(data["question_labels"])
             else:
-                labels = [1 if label == "id" else -1 for label in data["question_labels"]]
+                labels = [
+                    1 if label == "id" else -1 for label in data["question_labels"]
+                ]
             preds = estimator.predict(question_embeddings)
             acc = accuracy_score(labels, preds)
             logger.info("Total number of samples: {}".format(len(labels)))
             logger.info("Number of OOD predictions: {}".format((preds == -1).sum()))
             logger.info("Number of ID predictions: {}".format((preds == 1).sum()))
             logger.info("Accuracy: {}".format(acc))
-            logger.info("="*50)
+            logger.info("=" * 50)
 
             reported_accuracy.append(acc)
 
@@ -178,7 +180,7 @@ def main():
         results = [*reported_accuracy, estimator.contamination, estimator.n_neighbors]
         results_df = add_results_to_df(results_df, results, fname)
 
-        results_df.to_csv('results_lof.csv', index=True)
+        results_df.to_csv("results_lof.csv", index=True)
         return test_acc
 
     models = ["lof", "isolation_forest", "ocsvm", "elliptic_env"]
