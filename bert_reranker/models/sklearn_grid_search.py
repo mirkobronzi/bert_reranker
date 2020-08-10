@@ -19,6 +19,7 @@ logger = logging.getLogger(__name__)
 
 SKLEARN_MODEL_FILE_NAME = "sklearn_outlier_model.pkl"
 
+
 def add_results_to_df(df, results, fname):
     result_df = pd.DataFrame([results], columns=df.columns)
     df = df.append(result_df)
@@ -74,7 +75,13 @@ def main():
         help="list of embeddings to fine tune the sklearn model on",
         required=True,
     )
-    parser.add_argument("--eval-embeddings", help="These embeddings will only be evaluated on", required=True, type=str, nargs='+')
+    parser.add_argument(
+        "--eval-embeddings",
+        help="These embeddings will only be evaluated on",
+        required=True,
+        type=str,
+        nargs='+'
+    )
 
     parser.add_argument(
         "--keep-ood-for-questions",
@@ -123,7 +130,6 @@ def main():
 
     def scoring(estimator, X, y=None, args=args):
         from sklearn.metrics import accuracy_score
-        from sklearn.metrics import confusion_matrix
 
         logger.info("\n"*2)
         logger.info("*"*50)
@@ -139,7 +145,6 @@ def main():
         labels = [1 if label == "id" else -1 for label in data["question_labels"]]
         preds = estimator.predict(question_embeddings)
         test_acc = accuracy_score(labels, preds)
-        conf_mat = confusion_matrix(labels, preds)
         reported_accuracy.append(test_acc)
 
         logger.info("Evaluating on: {}".format(args.test_embeddings))
@@ -147,7 +152,6 @@ def main():
         logger.info("Number of OOD predictions: {}".format((preds == -1).sum()))
         logger.info("Number of ID predictions: {}".format((preds == 1).sum()))
         logger.info("Accuracy: {}".format(test_acc))
-        #  logger.info("Confusion Matrix: {}".format(conf_mat))
         logger.info("="*50)
 
         # Get results on all eval files
@@ -156,8 +160,8 @@ def main():
             with open(file, "rb") as in_stream:
                 data = pickle.load(in_stream)
             question_embeddings = np.concatenate(data["question_embs"])
-            if "exclusion" in file:
-                labels = [-1]*len(data["question_labels"])  # if its an exclusion file, everything is OOD
+            if "exclusion" in file:  # if its an exclusion file, everything is OOD
+                labels = [-1]*len(data["question_labels"])
             else:
                 labels = [1 if label == "id" else -1 for label in data["question_labels"]]
             preds = estimator.predict(question_embeddings)
@@ -177,7 +181,7 @@ def main():
         results_df.to_csv('results_lof.csv', index=True)
         return test_acc
 
-    models = ["lof"] #, "isolation_forest", "ocsvm", "elliptic_env"]
+    models = ["lof", "isolation_forest", "ocsvm", "elliptic_env"]
 
     best_score = 0
 
