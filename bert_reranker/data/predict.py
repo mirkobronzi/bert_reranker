@@ -104,7 +104,7 @@ class Predictor:
                                           question_already_embedded=question_already_embedded)
         else:
             self.no_candidate_warnings += 1
-            logger.warning('no candidates for source {} - returning 0 by default (so far, this '
+            logger.warning('no candidates for source {} - returning -2 by default (so far, this '
                            'happened {} times)'.format(source, self.no_candidate_warnings))
             return -2, 1.0
 
@@ -200,9 +200,9 @@ def log_results_to_file(indices_of_correct_passage, normalized_scores, out_strea
         if prediction >= 0:
             prediction_content = source2passages[source][prediction]
         elif prediction == -1:
-            return OOD_STRING
+            prediction_content = OOD_STRING
         elif prediction == -2:
-            return ID_NO_CANDIDATE_STRING
+            prediction_content = ID_NO_CANDIDATE_STRING
         else:
             raise ValueError('wrong prediction index: {}'.format(prediction))
         out_stream.write(
