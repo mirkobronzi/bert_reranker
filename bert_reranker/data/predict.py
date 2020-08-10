@@ -10,7 +10,7 @@ from bert_reranker.data.data_loader import (
     get_passages_by_source,
     _encode_passages,
     get_passage_last_header, get_question, get_passage_id, is_in_distribution, OOD_STRING,
-    get_passage_content2pid, )
+    get_passage_content2pid, ID_NO_CANDIDATE_STRING, )
 
 logger = logging.getLogger(__name__)
 
@@ -104,7 +104,7 @@ class Predictor:
                                           question_already_embedded=question_already_embedded)
         else:
             self.no_candidate_warnings += 1
-            logger.warning('no candidates for source {} - returning 0 by default (so far, this '
+            logger.warning('no candidates for source {} - returning -2 by default (so far, this '
                            'happened {} times)'.format(source, self.no_candidate_warnings))
             return -2, 1.0
 
@@ -197,7 +197,14 @@ def log_results_to_file(indices_of_correct_passage, normalized_scores, out_strea
         else:
             raise ValueError('wrong prediction/target combination')
 
-        prediction_content = source2passages[source][prediction] if prediction >= 0 else OOD_STRING
+        if prediction >= 0:
+            prediction_content = source2passages[source][prediction]
+        elif prediction == -1:
+            prediction_content = OOD_STRING
+        elif prediction == -2:
+            prediction_content = ID_NO_CANDIDATE_STRING
+        else:
+            raise ValueError('wrong prediction index: {}'.format(prediction))
         out_stream.write(
             "prediction: {} / norm score {:3.3}\nprediction content:"
             "\n\t{}\n".format(
