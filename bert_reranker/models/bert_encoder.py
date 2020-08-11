@@ -60,11 +60,18 @@ class BertEncoder(GeneralEncoder):
 
         if self.freeze_bert:
             with torch.no_grad():
-                bert_hs, _ = self.bert(input_ids=input_ids, attention_mask=attention_mask,
-                                       token_type_ids=token_type_ids)
-        else:
-            bert_hs, _ = self.bert(input_ids=input_ids, attention_mask=attention_mask,
+                result = self.bert(input_ids=input_ids, attention_mask=attention_mask,
                                    token_type_ids=token_type_ids)
+        else:
+            result = self.bert(input_ids=input_ids, attention_mask=attention_mask,
+                               token_type_ids=token_type_ids)
+
+        # some models return more than one result - we are only interested in the first one
+        if len(result) > 1:
+            bert_hs, _ = result
+        else:
+            bert_hs = result[0]
+
         return bert_hs
 
 
